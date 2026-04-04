@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Anabela Castelôa Gil · Painel</title>
+<style>
+  :root {
+    --bg-primary: #ffffff;
+    --bg-secondary: #f5f5f4;
+    --bg-tertiary: #eeede9;
+    --text-primary: #1a1a18;
+    --text-secondary: #5f5e5a;
+    --text-tertiary: #888780;
+    --border: rgba(0,0,0,0.1);
+    --border-md: rgba(0,0,0,0.18);
+    --accent: #534AB7;
+    --accent-bg: #EEEDFE;
+    --accent-text: #3C3489;
+    --accent-sub: #7F77DD;
+    --green: #1D9E75;
+    --green-bg: #EAF3DE;
+    --green-text: #27500A;
+    --green-sub: #639922;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg-primary: #1c1c1a;
+      --bg-secondary: #242422;
+      --bg-tertiary: #2c2c2a;
+      --text-primary: #f0efe9;
+      --text-secondary: #a8a79f;
+      --text-tertiary: #6a6a64;
+      --border: rgba(255,255,255,0.08);
+      --border-md: rgba(255,255,255,0.15);
+      --accent: #7F77DD;
+      --accent-bg: #26215C;
+      --accent-text: #CECBF6;
+      --accent-sub: #AFA9EC;
+      --green: #1D9E75;
+      --green-bg: #085041;
+      --green-text: #9FE1CB;
+      --green-sub: #5DCAA5;
+    }
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Georgia', serif;
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    min-height: 100vh;
+  }
+
+  .shell {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem 3rem;
+  }
+
+  .header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+    padding-bottom: 1.25rem;
+    border-bottom: 0.5px solid var(--border-md);
+  }
+
+  .header h1 {
+    font-size: 22px;
+    font-weight: normal;
+    color: var(--text-primary);
+    letter-spacing: -0.01em;
+  }
+
+  .header p {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-top: 3px;
+    font-family: 'Helvetica Neue', sans-serif;
+  }
+
+  .header .date {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    font-family: 'Helvetica Neue', sans-serif;
+    text-align: right;
+    padding-top: 4px;
+  }
+
+  .g4 { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 10px; margin-bottom: 14px; }
+  .g3 { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 10px; margin-bottom: 14px; }
+  .g2 { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 14px; margin-bottom: 14px; }
+
+  .metric {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    padding: 14px 16px;
+  }
+  .metric.accent { background: var(--accent-bg); }
+  .metric.green-m { background: var(--green-bg); }
+  .metric .lbl {
+    font-size: 11px;
+    color: var(--text-secondary);
+    margin-bottom: 5px;
+    font-family: 'Helvetica Neue', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+  }
+  .metric.accent .lbl { color: var(--accent-sub); }
+  .metric.green-m .lbl { color: var(--green-sub); }
+  .metric .val {
+    font-size: 22px;
+    font-weight: normal;
+    color: var(--text-primary);
+    letter-spacing: -0.02em;
+  }
+  .metric.accent .val { color: var(--accent-text); }
+  .metric.green-m .val { color: var(--green-text); }
+  .metric .sub {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    margin-top: 3px;
+    font-family: 'Helvetica Neue', sans-serif;
+  }
+  .metric.accent .sub { color: var(--accent-sub); }
+  .metric.green-m .sub { color: var(--green-sub); }
+
+  .insight {
+    background: var(--bg-primary);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 12px 14px;
+  }
+  .insight .ititle {
+    font-size: 10px;
+    font-weight: normal;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    margin-bottom: 6px;
+    font-family: 'Helvetica Neue', sans-serif;
+  }
+  .insight .ival {
+    font-size: 16px;
+    color: var(--text-primary);
+    letter-spacing: -0.01em;
+  }
+  .insight .isub {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    margin-top: 3px;
+    font-family: 'Helvetica Neue', sans-serif;
+  }
+
+  .card {
+    background: var(--bg-primary);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 18px 20px;
+    margin-bottom: 14px;
+  }
+
+  .card-title {
+    font-size: 10px;
+    font-weight: normal;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    margin-bottom: 14px;
+    font-family: 'Helvetica Neue', sans-serif;
+  }
+
+  .leg {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 10px;
+    font-size: 11px;
+    color: var(--text-secondary);
+    font-family: 'Helvetica Neue', sans-serif;
+  }
+  .leg span { display: flex; align-items: center; gap: 5px; }
+  .ldot { width: 9px; height: 9px; border-radius: 2px; flex-shrink: 0; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: fixed; font-family: 'Helvetica Neue', sans-serif; }
+  thead th {
+    text-align: left;
+    font-weight: normal;
+    color: var(--text-tertiary);
+    border-bottom: 0.5px solid var(--border-md);
+    padding: 6px 8px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+  }
+  tbody td {
+    padding: 9px 8px;
+    color: var(--text-primary);
+    border-bottom: 0.5px solid var(--border);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: var(--bg-secondary); }
+
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-family: 'Helvetica Neue', sans-serif;
+    letter-spacing: .02em;
+  }
+  .bc { background: #EAF3DE; color: #27500A; }
+  .bx { background: #FCEBEB; color: #791F1F; }
+  .bp { background: #FAEEDA; color: #633806; }
+
+  @media (prefers-color-scheme: dark) {
+    .bc { background: #085041; color: #9FE1CB; }
+    .bx { background: #501313; color: #F09595; }
+    .bp { background: #412402; color: #FAC775; }
+  }
+
+  .tabs { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
+  .tabs button {
+    background: transparent;
+    border: 0.5px solid var(--border-md);
+    border-radius: var(--radius-md);
+    padding: 5px 12px;
+    font-size: 11px;
+    cursor: pointer;
+    color: var(--text-secondary);
+    font-family: 'Helvetica Neue', sans-serif;
+    transition: background .15s;
+  }
+  .tabs button:hover { background: var(--bg-secondary); }
+  .tabs button.active {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border-color: var(--border-md);
+  }
+
+  .future-row { background: rgba(29,158,117,0.05) !important; }
+
+  @media (max-width: 720px) {
+    .g4 { grid-template-columns: repeat(2, minmax(0,1fr)); }
+    .g3 { grid-template-columns: repeat(2, minmax(0,1fr)); }
+    .g2 { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <div class="header">
+    <div>
+      <h1>Anabela Castelôa Gil</h1>
+      <p>Paivas · Estúdio de Beleza e Depilação</p>
+    </div>
+    <div class="date" id="date-label"></div>
+  </div>
+
+  <div class="g4">
+    <div class="metric accent">
+      <div class="lbl">Receita realizada</div>
+      <div class="val" id="m-rev-done">—</div>
+      <div class="sub">até hoje</div>
+    </div>
+    <div class="metric green-m">
+      <div class="lbl">Receita prevista</div>
+      <div class="val" id="m-rev-future">—</div>
+      <div class="sub">próximos 30 dias</div>
+    </div>
+    <div class="metric">
+      <div class="lbl">Marcações totais</div>
+      <div class="val" id="m-total">—</div>
+      <div class="sub" id="m-total-sub"></div>
+    </div>
+    <div class="metric">
+      <div class="lbl">Clientes únicos</div>
+      <div class="val" id="m-clients">—</div>
+      <div class="sub" id="m-clients-sub"></div>
+    </div>
+  </div>
+
+  <div class="g3">
+    <div class="insight">
+      <div class="ititle">Esta semana</div>
+      <div class="ival" id="i-week-count">—</div>
+      <div class="isub" id="i-week-rev"></div>
+    </div>
+    <div class="insight">
+      <div class="ititle">Próximas 48h</div>
+      <div class="ival" id="i-48h">—</div>
+      <div class="isub">marcações agendadas</div>
+    </div>
+    <div class="insight">
+      <div class="ititle">Serviço mais popular</div>
+      <div class="ival" id="i-top-svc">—</div>
+      <div class="isub" id="i-top-svc-sub"></div>
+    </div>
+    <div class="insight">
+      <div class="ititle">Média por marcação</div>
+      <div class="ival" id="i-avg">—</div>
+      <div class="isub">receita média estimada</div>
+    </div>
+    <div class="insight">
+      <div class="ititle">Dia mais movimentado</div>
+      <div class="ival" id="i-busy-day">—</div>
+      <div class="isub">historicamente</div>
+    </div>
+    <div class="insight">
+      <div class="ititle">Hora de pico</div>
+      <div class="ival" id="i-peak-hour">—</div>
+      <div class="isub">mais marcações</div>
+    </div>
+  </div>
+
+  <div class="g2">
+    <div class="card">
+      <div class="card-title">Serviços mais pedidos</div>
+      <div class="leg" id="leg-svc"></div>
+      <div style="position:relative;height:200px"><canvas id="cSvc"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Receita por serviço (€)</div>
+      <div class="leg" id="leg-rev"></div>
+      <div style="position:relative;height:200px"><canvas id="cRev"></canvas></div>
+    </div>
+  </div>
+
+  <div class="g2">
+    <div class="card">
+      <div class="card-title">Marcações por mês</div>
+      <div style="position:relative;height:170px"><canvas id="cMonth"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Hora de início mais frequente</div>
+      <div style="position:relative;height:170px"><canvas id="cHour"></canvas></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Marcações</div>
+    <div class="tabs">
+      <button class="active" onclick="ft('all',this)">Todas</button>
+      <button onclick="ft('past',this)">Passadas</button>
+      <button onclick="ft('upcoming',this)">Futuras</button>
+      <button onclick="ft('confirmed',this)">Confirmadas</button>
+      <button onclick="ft('cancelled',this)">Canceladas</button>
+    </div>
+    <div style="overflow-x:auto">
+      <table>
+        <thead><tr>
+          <th style="width:22%">Cliente</th>
+          <th style="width:30%">Serviços</th>
+          <th style="width:22%">Data e hora</th>
+          <th style="width:13%">Preço</th>
+          <th style="width:13%">Estado</th>
+        </tr></thead>
+        <tbody id="tbl"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script>
+const SB_URL = 'https://yaqybiaemnejqquuvpsw.supabase.co';
+const SB_KEY = 'sb_publishable_Q3PLqXfv9_iGNLvNHmTpYw_XvrT75Z3';
+const sb = supabase.createClient(SB_URL, SB_KEY);
+
+const COLORS = ['#534AB7','#1D9E75','#D85A30','#D4537E','#378ADD','#BA7517','#E24B4A','#3B6D11'];
+const DAYS_PT = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
+const MONTHS_PT = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+const CHART_TICK_COLOR = isDark ? '#6a6a64' : '#888780';
+const CHART_GRID_COLOR = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)';
+
+let charts = {}, allEvts = [], tableData = [];
+
+const ALIASES = {
+  'P.I':'Perna Inteira','PI':'Perna Inteira','M.P':'Meia Perna','MP':'Meia Perna',
+  'SOB':'Sobrancelha','SOB.':'Sobrancelha','AX':'Axila','V':'Virilha',
+  'TUTAL':'Virilha Completa','TOTAL':'Virilha Completa','ROSTO':'Rosto Completo',
+  'R':'Rosto Completo','MÃOS':'Mãos','MAOS':'Mãos','PÉS':'Pés','PES':'Pés',
+  'BANHO':'Banho','MASSAGEM':'Massagem','TUDO':'Tudo','PEITO':'Peito','COSTAS':'Costas'
+};
+const sortedA = Object.keys(ALIASES).sort((a,b) => b.length - a.length);
+
+function parseSvc(summary) {
+  const parts = (summary||'').toUpperCase().replace(/,/g,' ').replace(/;/g,' ').split(/\s+/);
+  const found = [], nameParts = [], seen = new Set();
+  for (const p of parts) {
+    let matched = false;
+    for (const a of sortedA) {
+      if (p === a) { const f = ALIASES[a]; if (!seen.has(f)) { seen.add(f); found.push(f); } matched = true; break; }
+    }
+    if (!matched && p) nameParts.push(p.charAt(0) + p.slice(1).toLowerCase());
+  }
+  return { services: found, client: nameParts.join(' ') };
+}
+
+function fmt(n) {
+  return new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n);
+}
+
+function fmtDT(dt) {
+  if (!dt) return '—';
+  const d = new Date(dt);
+  return d.toLocaleDateString('pt-PT', { day: '2-digit', month: 'short', year: 'numeric' })
+    + ' ' + d.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
+}
+
+function makeLeg(id, labels, colors) {
+  document.getElementById(id).innerHTML = labels.map((l,i) =>
+    `<span><span class="ldot" style="background:${colors[i%colors.length]}"></span>${l}</span>`
+  ).join('');
+}
+
+function makeChart(id, type, labels, data, colors, isCurrency=false) {
+  if (charts[id]) charts[id].destroy();
+  charts[id] = new Chart(document.getElementById(id), {
+    type,
+    data: { labels, datasets: [{ data, backgroundColor: colors, borderWidth: 0, borderRadius: type === 'bar' ? 4 : 0 }] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: c => isCurrency ? ` €${Math.round(c.raw)}` : ` ${c.raw}` } }
+      },
+      scales: type === 'bar' ? {
+        x: { grid: { display: false }, ticks: { color: CHART_TICK_COLOR, font: { size: 10 }, maxRotation: 40, autoSkip: false } },
+        y: { grid: { color: CHART_GRID_COLOR }, ticks: { color: CHART_TICK_COLOR, font: { size: 10 } } }
+      } : undefined
+    }
+  });
+}
+
+function ft(filter, btn) {
+  document.querySelectorAll('.tabs button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const now = new Date();
+  let rows = tableData;
+  if (filter === 'past') rows = tableData.filter(r => new Date(r.event_start_time) < now);
+  else if (filter === 'upcoming') rows = tableData.filter(r => new Date(r.event_start_time) >= now);
+  else if (filter === 'confirmed') rows = tableData.filter(r => r.status === 'confirmed');
+  else if (filter === 'cancelled') rows = tableData.filter(r => r.status === 'cancelled');
+  renderTable(rows);
+}
+
+function renderTable(rows) {
+  const tbody = document.getElementById('tbl');
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="5" style="color:var(--text-tertiary);padding:14px 8px;font-family:Helvetica Neue,sans-serif">Sem marcações.</td></tr>';
+    return;
+  }
+  const now = new Date();
+  tbody.innerHTML = rows.slice(0, 40).map(r => {
+    const p = parseSvc(r.service || r.summary || '');
+    const svcs = p.services.slice(0, 3).join(', ') || '—';
+    const isFuture = new Date(r.event_start_time) >= now;
+    const badge = r.status === 'confirmed' ? 'bc' : r.status === 'cancelled' ? 'bx' : 'bp';
+    const stateLabel = r.status === 'confirmed' ? 'Confirmado' : r.status === 'cancelled' ? 'Cancelado' : 'Pendente';
+    const rowClass = isFuture ? ' class="future-row"' : '';
+    return `<tr${rowClass}>
+      <td style="font-weight:500">${p.client || '—'}</td>
+      <td style="color:var(--text-secondary);font-size:12px">${svcs}</td>
+      <td style="color:var(--text-secondary);font-size:12px">${fmtDT(r.event_start_time)}</td>
+      <td>${fmt(Number(r.service_price || 0))}</td>
+      <td><span class="badge ${badge}">${stateLabel}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+async function load() {
+  const today = new Date();
+  document.getElementById('date-label').textContent =
+    today.toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+
+  const [evRes, clRes] = await Promise.all([
+    sb.from('events').select('*').order('event_start_time', { ascending: false }),
+    sb.from('clients').select('*')
+  ]);
+  allEvts = evRes.data || [];
+  const clients = clRes.data || [];
+
+  const now = new Date();
+  const in30 = new Date(now.getTime() + 30*24*60*60*1000);
+  const in48 = new Date(now.getTime() + 48*60*60*1000);
+  const weekStart = new Date(now); weekStart.setDate(now.getDate() - now.getDay());
+
+  const pastEvts    = allEvts.filter(e => e.event_start_time && new Date(e.event_start_time) <= now);
+  const futureEvts  = allEvts.filter(e => e.event_start_time && new Date(e.event_start_time) > now);
+  const next30      = futureEvts.filter(e => new Date(e.event_start_time) <= in30);
+  const next48      = futureEvts.filter(e => new Date(e.event_start_time) <= in48);
+  const thisWeek    = allEvts.filter(e => { const d = new Date(e.event_start_time); return d >= weekStart && d <= now; });
+
+  const revDone   = pastEvts.reduce((s,e) => s + Number(e.service_price||0), 0);
+  const revFuture = next30.reduce((s,e) => s + Number(e.service_price||0), 0);
+  const weekRev   = thisWeek.reduce((s,e) => s + Number(e.service_price||0), 0);
+  const avgPrice  = pastEvts.length ? revDone / pastEvts.length : 0;
+  const uniqueClients = new Set(clients.map(c => c.client_name)).size;
+
+  document.getElementById('m-rev-done').textContent    = fmt(revDone);
+  document.getElementById('m-rev-future').textContent  = fmt(revFuture);
+  document.getElementById('m-total').textContent       = allEvts.length;
+  document.getElementById('m-total-sub').textContent   = `${pastEvts.length} realizadas · ${futureEvts.length} futuras`;
+  document.getElementById('m-clients').textContent     = uniqueClients;
+  document.getElementById('m-clients-sub').textContent = `${clients.length} registos no total`;
+  document.getElementById('i-week-count').textContent  = `${thisWeek.length} marcações`;
+  document.getElementById('i-week-rev').textContent    = `${fmt(weekRev)} esta semana`;
+  document.getElementById('i-48h').textContent         = next48.length;
+  document.getElementById('i-avg').textContent         = fmt(Math.round(avgPrice));
+
+  const svcCounts = {};
+  allEvts.forEach(e => {
+    const p = parseSvc(e.service || e.summary || '');
+    const svcs = p.services.length ? p.services : ['Outro'];
+    svcs.forEach(s => { svcCounts[s] = (svcCounts[s]||0) + 1; });
+  });
+  const topSvc = Object.entries(svcCounts).sort((a,b) => b[1]-a[1]);
+
+  if (topSvc.length) {
+    document.getElementById('i-top-svc').textContent     = topSvc[0][0];
+    document.getElementById('i-top-svc-sub').textContent = `${topSvc[0][1]} vezes`;
+  }
+
+  const dayCounts  = Array(7).fill(0);
+  const hourCounts = Array(24).fill(0);
+  allEvts.forEach(e => {
+    if (!e.event_start_time) return;
+    const d = new Date(e.event_start_time);
+    dayCounts[d.getDay()]++;
+    hourCounts[d.getHours()]++;
+  });
+  const busyDay  = dayCounts.indexOf(Math.max(...dayCounts));
+  const peakHour = hourCounts.indexOf(Math.max(...hourCounts));
+  document.getElementById('i-busy-day').textContent   = DAYS_PT[busyDay] || '—';
+  document.getElementById('i-peak-hour').textContent  = peakHour > 0 ? `${peakHour}h00` : '—';
+
+  const top7svc = topSvc.slice(0, 7);
+  makeLeg('leg-svc', top7svc.map(x=>x[0]), COLORS);
+  makeChart('cSvc', 'bar', top7svc.map(x=>x[0]), top7svc.map(x=>x[1]), COLORS.slice(0, top7svc.length));
+
+  const svcRev = {};
+  allEvts.forEach(e => {
+    const p = parseSvc(e.service || e.summary || '');
+    const svcs = p.services.length ? p.services : ['Outro'];
+    svcs.forEach(s => { svcRev[s] = (svcRev[s]||0) + Number(e.service_price||0)/svcs.length; });
+  });
+  const top7rev = Object.entries(svcRev).sort((a,b) => b[1]-a[1]).slice(0,7);
+  makeLeg('leg-rev', top7rev.map(x=>x[0]), COLORS);
+  makeChart('cRev', 'bar', top7rev.map(x=>x[0]), top7rev.map(x=>Math.round(x[1])), COLORS.slice(0,top7rev.length), true);
+
+  const monthCounts = {};
+  allEvts.forEach(e => {
+    if (!e.event_start_time) return;
+    const d = new Date(e.event_start_time);
+    const k = `${MONTHS_PT[d.getMonth()]} ${String(d.getFullYear()).slice(2)}`;
+    monthCounts[k] = (monthCounts[k]||0) + 1;
+  });
+  const mKeys = Object.keys(monthCounts).slice(-12);
+  makeChart('cMonth', 'bar', mKeys, mKeys.map(k=>monthCounts[k]), mKeys.map(()=>'#534AB7'));
+
+  const workH = Array.from({length:13}, (_,i) => i+8);
+  makeChart('cHour', 'bar', workH.map(h=>`${h}h`), workH.map(h=>hourCounts[h]), workH.map(()=>'#1D9E75'));
+
+  tableData = [...allEvts];
+  renderTable(tableData);
+}
+
+load();
+</script>
+</body>
+</html>
