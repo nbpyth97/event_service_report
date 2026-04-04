@@ -14,7 +14,7 @@ SCOPES = ['https://www.googleapis.com/auth/calendar.readonly']
 
 
 
-def main(token_path='token_anabela.json', credentials_path='credentials_anabela.json'):
+def main(token_path='credential_token/token_anabela.json', credentials_path='credential_token/credentials_anabela.json'):
     creds = None
     token_path = f'{token_path}'
 
@@ -52,10 +52,10 @@ def main(token_path='token_anabela.json', credentials_path='credentials_anabela.
     now = datetime.datetime.utcnow().isoformat() + 'Z'
 
     # Fetch all pages
-    # time_min = (datetime.datetime.utcnow() - datetime.timedelta(days=365*1)).isoformat() + 'Z'
-    # time_max = (datetime.datetime.utcnow() + datetime.timedelta(days=365*1)).isoformat() + 'Z'
-    time_min = (datetime.datetime.utcnow() - datetime.timedelta(days=0)).isoformat() + 'Z'
-    time_max = (datetime.datetime.utcnow() + datetime.timedelta(days=1)).isoformat() + 'Z'
+    time_min = (datetime.datetime.utcnow() - datetime.timedelta(days=365*1)).isoformat() + 'Z'
+    time_max = (datetime.datetime.utcnow() + datetime.timedelta(days=365*1)).isoformat() + 'Z'
+    # time_min = (datetime.datetime.utcnow() - datetime.timedelta(days=0)).isoformat() + 'Z'
+    # time_max = (datetime.datetime.utcnow() + datetime.timedelta(days=1)).isoformat() + 'Z'
 
     list_of_events = [] # that goes to the function 
     events = []
