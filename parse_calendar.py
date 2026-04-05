@@ -2,11 +2,15 @@ import os
 import ast
 import pandas as pd
 from supabase import create_client, Client
+from dotenv import load_dotenv
 
-url = "https://yaqybiaemnejqquuvpsw.supabase.co"
-key = "sb_publishable_Q3PLqXfv9_iGNLvNHmTpYw_XvrT75Z3"
+load_dotenv(dotenv_path=r"C:\Users\gonçalo\Desktop\google_calendar\.env")
+
+url = os.getenv("VITE_SUPABASE_URL")
+key = os.getenv("VITE_SUPABASE_ANON_KEY")
 organizer_name = 'Anabela'
 project_id = 1
+print(url,key)
 
 supabase: Client = create_client(url, key)
 
