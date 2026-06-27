@@ -4,7 +4,8 @@ import pandas as pd
 from supabase import create_client, Client
 from dotenv import load_dotenv
 
-load_dotenv(dotenv_path=r"C:\Users\gonçalo\Desktop\google_calendar\.env")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+load_dotenv(dotenv_path=os.path.join(BASE_DIR, ".env"))
 
 url = os.getenv("VITE_SUPABASE_URL")
 key = os.getenv("VITE_SUPABASE_ANON_KEY")
@@ -113,6 +114,10 @@ SERVICE_ALIASES = {
     # Men services
     "PEITO":    "Peito",
     "COSTAS":   "Costas",
+    "BRAÇOS":   "Braço",
+    "BRACOS":   "Braço",
+    "AXILAS":   "Axila",
+    "SOBRANCELHAS": "Sobrancelha",
 }
 
 services_women = {
@@ -272,7 +277,11 @@ def parse_services(summary):
         if not matched:
             name_parts.append(part)
 
-    client_name = ' '.join(name_parts).title()
+    cleaned_name_parts = name_parts[:]
+    while cleaned_name_parts and (any(ch.isdigit() for ch in cleaned_name_parts[-1]) or '€' in cleaned_name_parts[-1]):
+        cleaned_name_parts.pop()
+
+    client_name = ' '.join(cleaned_name_parts).title() if found_services else ""
     total_price = sum(s["price"] for s in found_services) if found_services else 15
     total_duration = sum(s["duration_min"] for s in found_services) if found_services else 45
 
@@ -344,12 +353,13 @@ for chunk in chunks:
                     "organizer_email": organizer_email
                     }).execute()
 
-                supabase.schema("public").table("clients").upsert({
-                    "event_id": event_id,
-                    "project_id": f"{project_id}",
-                    "client_name": client_name,
-                    "client_phone": client_nr
-                }).execute()
+                if client_name:
+                    supabase.schema("public").table("clients").upsert({
+                        "event_id": event_id,
+                        "project_id": f"{project_id}",
+                        "client_name": client_name,
+                        "client_phone": client_nr
+                    }).execute()
 
                 supabase.schema("public").table("organizers").upsert({
                     "event_id": event_id,

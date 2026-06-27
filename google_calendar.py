@@ -1,8 +1,8 @@
 from __future__ import print_function
 import datetime
 import os.path
-from annotated_types import doc
 import requests
+import os
 # import spacy
 
 from google.oauth2.credentials import Credentials
@@ -13,10 +13,12 @@ from googleapiclient.discovery import build
 SCOPES = ['https://www.googleapis.com/auth/calendar.readonly']
 
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+TOKEN_PATH = os.path.join(BASE_DIR, 'token_anabela.json')
+CREDENTIALS_PATH = os.path.join(BASE_DIR, 'credentials_anabela.json')
 
-def main(token_path='credential_token/token_anabela.json', credentials_path='credential_token/credentials_anabela.json'):
+def main(token_path=TOKEN_PATH, credentials_path=CREDENTIALS_PATH):
     creds = None
-    token_path = f'{token_path}'
 
     # Load saved token
     if os.path.exists(token_path):
@@ -28,7 +30,7 @@ def main(token_path='credential_token/token_anabela.json', credentials_path='cre
             creds.refresh(Request())
         else:
             flow = InstalledAppFlow.from_client_secrets_file(
-                f'{credentials_path}', SCOPES)
+                credentials_path, SCOPES)
             creds = flow.run_local_server(port=0)
 
         # Save credentials
@@ -59,36 +61,43 @@ def main(token_path='credential_token/token_anabela.json', credentials_path='cre
 
     list_of_events = [] # that goes to the function 
     events = []
-
-    page_token = None
+    seen_events = set()
 
     for cal in calendar_list['items']:
+        page_token = None
 
-        # while True:
-        events_result = service.events().list(
-                calendarId=f"{cal['id']}",
-                timeMin=time_min,
-                timeMax=time_max,
-                maxResults=250,
-                singleEvents=True,
-                orderBy='startTime',
-                pageToken=page_token
-            ).execute()
+        while True:
+            events_result = service.events().list(
+                    calendarId=f"{cal['id']}",
+                    timeMin=time_min,
+                    timeMax=time_max,
+                    maxResults=250,
+                    singleEvents=True,
+                    orderBy='startTime',
+                    pageToken=page_token
+                ).execute()
 
-        events.extend(events_result.get('items', []))
+            for event in events_result.get('items', []):
+                event_key = (cal['id'], event.get('id'))
+                if event_key in seen_events:
+                    continue
+                seen_events.add(event_key)
+                events.append(event)
 
-        page_token = events_result.get('nextPageToken')
+            page_token = events_result.get('nextPageToken')
+            if not page_token:
+                break
 
-        events = sorted(
-            events,
-            key=lambda e: e['start'].get('dateTime') or e['start'].get('date'),
-            reverse=True
-        )
-        
-        print('write event')
+    events = sorted(
+        events,
+        key=lambda e: e['start'].get('dateTime') or e['start'].get('date'),
+        reverse=True
+    )
 
-        with open('events.txt', 'a', encoding='utf-8') as f:
-            f.write(f"{events} $$$")
+    print('write event')
+
+    with open('events.txt', 'w', encoding='utf-8') as f:
+        f.write(f"{events} $$$")
 
 
 main()
