@@ -1,5 +1,7 @@
 from __future__ import print_function
+import argparse
 import datetime
+import json
 import os.path
 import requests
 import os
@@ -12,12 +14,21 @@ from googleapiclient.discovery import build
 
 SCOPES = ['https://www.googleapis.com/auth/calendar.readonly']
 
-
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-TOKEN_PATH = os.path.join(BASE_DIR, 'token_anabela.json')
-CREDENTIALS_PATH = os.path.join(BASE_DIR, 'credentials_anabela.json')
 
-def main(token_path=TOKEN_PATH, credentials_path=CREDENTIALS_PATH):
+
+def load_tenant_config(tenant):
+    config_path = os.path.join(BASE_DIR, 'tenants', tenant, 'config.json')
+    with open(config_path, 'r', encoding='utf-8') as f:
+        return json.load(f)
+
+
+def main(tenant):
+    config = load_tenant_config(tenant)
+    token_path = os.path.join(BASE_DIR, config['google_token_path'])
+    credentials_path = os.path.join(BASE_DIR, config['google_credentials_path'])
+    events_path = os.path.join(BASE_DIR, config['events_file'])
+
     creds = None
 
     # Load saved token
@@ -54,8 +65,8 @@ def main(token_path=TOKEN_PATH, credentials_path=CREDENTIALS_PATH):
     now = datetime.datetime.utcnow().isoformat() + 'Z'
 
     # Fetch all pages
-    time_min = (datetime.datetime.utcnow() - datetime.timedelta(days=365*1)).isoformat() + 'Z'
-    time_max = (datetime.datetime.utcnow() + datetime.timedelta(days=365*1)).isoformat() + 'Z'
+    time_min = (datetime.datetime.utcnow() - datetime.timedelta(days=7*1)).isoformat() + 'Z'
+    time_max = (datetime.datetime.utcnow() + datetime.timedelta(days=30*1)).isoformat() + 'Z'
     # time_min = (datetime.datetime.utcnow() - datetime.timedelta(days=0)).isoformat() + 'Z'
     # time_max = (datetime.datetime.utcnow() + datetime.timedelta(days=1)).isoformat() + 'Z'
 
@@ -96,8 +107,13 @@ def main(token_path=TOKEN_PATH, credentials_path=CREDENTIALS_PATH):
 
     print('write event')
 
-    with open('events.txt', 'w', encoding='utf-8') as f:
+    os.makedirs(os.path.dirname(events_path), exist_ok=True)
+    with open(events_path, 'w', encoding='utf-8') as f:
         f.write(f"{events} $$$")
 
 
-main()
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--tenant', required=True, help="Tenant folder name under tenants/, e.g. 'anabela'")
+    args = parser.parse_args()
+    main(args.tenant)

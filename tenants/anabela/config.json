@@ -1,0 +1,12 @@
+{
+  "project_id": "1",
+  "business_name": "Anabela Castelôa Gil",
+  "location_label": "Estúdio de Beleza · Paivas",
+  "default_location": "Paivas",
+  "known_creator_emails": ["casteloa.luanda@gmail.com"],
+  "excluded_client_names": ["DENISE", "MÃE", "NUNO"],
+  "google_credentials_path": "credentials_anabela.json",
+  "google_token_path": "token_anabela.json",
+  "events_file": "tenants/anabela/events.txt",
+  "whatsapp_enabled": true
+}

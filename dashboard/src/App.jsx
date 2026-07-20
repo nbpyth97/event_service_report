@@ -5,6 +5,10 @@ import {
 } from 'recharts';
 import { supabase } from './supabaseClient';
 
+const PROJECT_ID     = import.meta.env.VITE_PROJECT_ID;
+const BUSINESS_NAME  = import.meta.env.VITE_BUSINESS_NAME  || 'Painel de gestão';
+const LOCATION_LABEL = import.meta.env.VITE_LOCATION_LABEL || '';
+
 // ─── Palette ────────────────────────────────────────────────────────────────
 const COLORS = ['#2563EB','#14B8A6','#7C3AED','#F59E0B','#DC2626','#0EA5E9','#10B981','#6366F1'];
 
@@ -185,8 +189,8 @@ export default function Dashboard() {
   useEffect(() => {
     (async () => {
       const [evRes, clRes, scRes] = await Promise.all([
-        supabase.from('events').select('*').order('event_start_time', {ascending:false}),
-        supabase.from('clients').select('*'),
+        supabase.from('events').select('*').eq('project_id', PROJECT_ID).order('event_start_time', {ascending:false}),
+        supabase.from('clients').select('*').eq('project_id', PROJECT_ID),
         supabase.from('service_costs').select('*'),
       ]);
       setEvents(evRes.data       || []);
@@ -469,8 +473,8 @@ export default function Dashboard() {
         {/* ── Header ── */}
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-end',marginBottom:'28px',paddingBottom:'20px',borderBottom:`2px solid ${T.border}`}}>
           <div>
-            <div style={{fontSize:12,color:T.muted,letterSpacing:'0.12em',textTransform:'uppercase',fontWeight:600,marginBottom:6}}>Estúdio de Beleza · Paivas</div>
-            <h1 style={{fontSize:26,fontWeight:700,letterSpacing:'-0.02em',margin:0,color:T.text}}>Anabela Castelôa Gil</h1>
+            <div style={{fontSize:12,color:T.muted,letterSpacing:'0.12em',textTransform:'uppercase',fontWeight:600,marginBottom:6}}>{LOCATION_LABEL}</div>
+            <h1 style={{fontSize:26,fontWeight:700,letterSpacing:'-0.02em',margin:0,color:T.text}}>{BUSINESS_NAME}</h1>
           </div>
           <div style={{textAlign:'right'}}>
             <div style={{fontSize:14,color:T.sub,textTransform:'capitalize',fontWeight:500}}>{today}</div>

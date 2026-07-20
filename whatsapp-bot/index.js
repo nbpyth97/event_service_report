@@ -1,3 +1,4 @@
+const fs = require('fs');
 const path = require('path');
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
@@ -6,11 +7,21 @@ require('dotenv').config({ path: path.resolve(__dirname, '..', '.env') });
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = process.env.VITE_SUPABASE_ANON_KEY;
+const TENANT = process.env.TENANT;
 
 if (!SUPABASE_URL || !SUPABASE_KEY) {
   console.error('Missing Supabase credentials in ../.env (VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY).');
   process.exit(1);
 }
+
+if (!TENANT) {
+  console.error('Missing TENANT env var. Run as: TENANT=anabela node index.js');
+  process.exit(1);
+}
+
+const tenantConfigPath = path.resolve(__dirname, '..', 'tenants', TENANT, 'config.json');
+const tenantConfig = JSON.parse(fs.readFileSync(tenantConfigPath, 'utf-8'));
+const PROJECT_ID = tenantConfig.project_id;
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -58,6 +69,7 @@ async function fetchTomorrowRecipients() {
   const { data: events, error: eventsError } = await supabase
     .from('events')
     .select('event_id, service, event_start_time, status')
+    .eq('project_id', PROJECT_ID)
     .gte('event_start_time', start.toISOString())
     .lte('event_start_time', end.toISOString())
     .neq('status', 'cancelled');
@@ -71,6 +83,7 @@ async function fetchTomorrowRecipients() {
   const { data: clients, error: clientsError } = await supabase
     .from('clients')
     .select('event_id, client_name, client_phone')
+    .eq('project_id', PROJECT_ID)
     .in('event_id', eventIds);
 
   if (clientsError) throw clientsError;
@@ -98,7 +111,7 @@ async function fetchTomorrowRecipients() {
 }
 
 const client = new Client({
-  authStrategy: new LocalAuth(),
+  authStrategy: new LocalAuth({ clientId: TENANT }),
 });
 
 client.on('qr', (qr) => {
