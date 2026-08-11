@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend:
+    name: Backend tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: meeting_scheduler_test
+          POSTGRES_USER: meeting_scheduler
+          POSTGRES_PASSWORD: changeme
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U meeting_scheduler"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+
+      - name: Install dependencies
+        working-directory: src/backend
+        run: uv sync
+
+      - name: Run migrations
+        working-directory: src/backend
+        env:
+          DATABASE_URL: postgresql+asyncpg://meeting_scheduler:changeme@localhost:5432/meeting_scheduler_test
+          SECRET_KEY: ci-test-secret
+        run: uv run alembic upgrade head
+
+      - name: Run tests
+        working-directory: src/backend
+        env:
+          DATABASE_URL: postgresql+asyncpg://meeting_scheduler:changeme@localhost:5432/meeting_scheduler_test
+          SECRET_KEY: ci-test-secret
+        run: uv run pytest
+
+  frontend:
+    name: Frontend build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: src/frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: src/frontend
+        run: npm ci
+
+      - name: Type check
+        working-directory: src/frontend
+        run: npx tsc --noEmit
+
+      - name: Build
+        working-directory: src/frontend
+        run: npm run build

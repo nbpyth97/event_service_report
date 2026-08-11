@@ -1,0 +1,66 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: deploy-main
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Build frontend and deploy to server
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: src/frontend/package-lock.json
+
+      - name: Build frontend
+        working-directory: src/frontend
+        run: |
+          npm ci
+          npm run build
+
+      - name: Install sshpass
+        run: sudo apt-get update && sudo apt-get install -y sshpass
+
+      - name: Rsync frontend build to server
+        env:
+          SSHPASS: ${{ secrets.SSH_PASSWORD }}
+        run: |
+          sshpass -e rsync -avzc --delete -e "ssh -p 1111 -o StrictHostKeyChecking=no" \
+            src/frontend/dist/ "${{ secrets.SSH_USER }}@${{ secrets.HOST }}:/var/www/meeting-scheduler/"
+
+      - name: Deploy backend (git pull + compose up)
+        env:
+          SSHPASS: ${{ secrets.SSH_PASSWORD }}
+        run: |
+          sshpass -e ssh -p 1111 -o StrictHostKeyChecking=no "${{ secrets.SSH_USER }}@${{ secrets.HOST }}" '
+            set -e
+            cd "${{ secrets.DEPLOY_PATH }}"
+            git pull --ff-only
+            docker compose up -d --build --remove-orphans
+          '
+
+      - name: Wait for backend health check
+        env:
+          SSHPASS: ${{ secrets.SSH_PASSWORD }}
+        run: |
+          sshpass -e ssh -p 1111 -o StrictHostKeyChecking=no "${{ secrets.SSH_USER }}@${{ secrets.HOST }}" '
+            for i in 1 2 3 4; do
+              if curl -sf http://localhost:8000/api/health > /dev/null; then
+                echo "Backend healthy"
+                exit 0
+              fi
+              echo "Health check attempt $i failed, retrying in 25s..."
+              sleep 25
+            done
+            echo "Backend failed health check after deploy" >&2
+            exit 1
+          '

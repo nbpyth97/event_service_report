@@ -1,6 +1,8 @@
 credential_token/
 __pycache__/
 tenants/*/token_write.json
+credentials_*.json
+token_*.json
 
 # Python
 __pycache__/
