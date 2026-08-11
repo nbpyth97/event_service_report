@@ -178,6 +178,11 @@ for chunk in chunks:
         if not event.get('start', {}).get('dateTime'):
             continue
 
+        if event.get('extendedProperties', {}).get('private', {}).get('source') == 'booking-site':
+            # Written directly by the booking site's confirm/decline endpoints -
+            # skip so this pipeline never overwrites it with a mis-parsed guess.
+            continue
+
         creator_email = event.get('creator', {}).get('email', '')
         if creator_email not in KNOWN_CREATOR_EMAILS:
             continue

@@ -1,2 +1,3 @@
 credential_token/
 __pycache__/
+tenants/*/token_write.json

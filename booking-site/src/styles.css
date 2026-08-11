@@ -1,0 +1,180 @@
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: -apple-system, "Segoe UI", sans-serif;
+  background: #F8FAFC;
+  color: #0F172A;
+}
+a { color: #2563EB; }
+
+.page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 32px 20px 64px;
+}
+
+.header { margin-bottom: 28px; }
+.eyebrow {
+  font-size: 12px;
+  color: #64748B;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+h1 { font-size: 26px; margin: 0 0 6px; letter-spacing: -0.02em; }
+.sub { color: #475569; margin: 0; }
+.back-link {
+  display: inline-block;
+  margin-bottom: 14px;
+  font-size: 14px;
+  text-decoration: none;
+  color: #2563EB;
+}
+
+.section-title {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #64748B;
+  margin: 28px 0 12px;
+}
+
+.service-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+.service-card {
+  display: block;
+  background: #fff;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  padding: 16px 18px;
+  text-decoration: none;
+  color: inherit;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  transition: border-color 0.15s;
+}
+.service-card:hover { border-color: #2563EB; }
+.service-name { font-weight: 600; margin-bottom: 4px; }
+.service-meta { font-size: 13px; color: #64748B; }
+
+.booking-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  align-items: start;
+}
+@media (max-width: 640px) {
+  .booking-layout { grid-template-columns: 1fr; }
+}
+
+.calendar-grid {
+  background: #fff;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  padding: 16px;
+}
+.calendar-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.calendar-nav button {
+  background: none;
+  border: 1px solid #E2E8F0;
+  border-radius: 6px;
+  width: 28px;
+  height: 28px;
+  cursor: pointer;
+  font-size: 16px;
+}
+.calendar-title { font-weight: 600; font-size: 14px; text-transform: capitalize; }
+.calendar-dow-row, .calendar-days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+.calendar-dow { text-align: center; font-size: 11px; color: #94A3B8; padding: 4px 0; }
+.calendar-cell {
+  aspect-ratio: 1;
+  border: none;
+  background: none;
+  border-radius: 8px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.calendar-cell:not(.empty):not(.disabled):hover { background: #EFF6FF; }
+.calendar-cell.disabled { color: #CBD5E1; cursor: default; }
+.calendar-cell.selected { background: #2563EB; color: #fff; font-weight: 600; }
+.calendar-cell.empty { visibility: hidden; }
+
+.timeslot-list {
+  background: #fff;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  padding: 16px;
+}
+.timeslot-title { font-weight: 600; font-size: 14px; margin-bottom: 10px; }
+.timeslot-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+  gap: 8px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+.timeslot-btn {
+  border: 1px solid #E2E8F0;
+  background: #fff;
+  border-radius: 8px;
+  padding: 8px 4px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.timeslot-btn:hover { border-color: #2563EB; }
+.timeslot-btn.selected { background: #2563EB; border-color: #2563EB; color: #fff; font-weight: 600; }
+.muted { color: #94A3B8; font-size: 13px; }
+
+.booking-form {
+  background: #fff;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  padding: 20px;
+  margin-top: 20px;
+}
+.form-row { margin-bottom: 14px; }
+.form-row label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+.form-row input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  font-size: 14px;
+}
+.booking-form button[type="submit"] {
+  width: 100%;
+  background: #2563EB;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.booking-form button[type="submit"]:disabled { opacity: 0.6; cursor: default; }
+.form-note { font-size: 12px; color: #64748B; margin: 10px 0 0; }
+
+.error-msg { color: #DC2626; font-size: 14px; margin-top: 12px; }
+
+.result-card {
+  background: #fff;
+  border: 1px solid #E2E8F0;
+  border-radius: 14px;
+  padding: 32px;
+  text-align: center;
+}
+.result-card h1 { margin-bottom: 12px; }
+.result-card p { color: #475569; line-height: 1.5; }
