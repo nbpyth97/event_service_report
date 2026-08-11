@@ -1,3 +1,88 @@
 credential_token/
 __pycache__/
 tenants/*/token_write.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv
+.ruff_cache
+.mypy_cache
+
+# Database
+*.db
+*.sqlite3
+
+# Environment
+.env
+.env.local
+.env.test
+env/*.env
+
+# IDE
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
+
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Whatsapp bot
+.wwebjs_auth/
+.wwebjs_cache/
+run.log
+
+
+# Coverage
+htmlcov/
+.coverage
+.pytest_cache/
+src/frontend/coverage/
+
+# Docker
+**/specs/
+
+# Claude / AI secrets
+.claude/secrets.json
+.claude/config.local.json
+.claude/settings.local.json
+# Local memory / cache
+.claude/cache/
+.claude/history/
+
+# Agent gate artifacts (transient — uploaded to CI, not committed)
+gate-results.json
+mypy-results.json
+radon-cc.json
+radon-mi.json
+junit-unit.xml
+ci-quality-report.md
+.claude/tmp/
+
+# SSH deployment keys (keep locally, don't commit to git)
+.github/deploy_key
+.github/deploy_key.pub
+*.pub
+# Local CI artifacts
+ci-out/
