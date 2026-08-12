@@ -17,7 +17,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version: "24"
           cache: npm
           cache-dependency-path: src/frontend/package-lock.json
 
@@ -48,19 +48,48 @@ jobs:
             docker compose up -d --build --remove-orphans
           '
 
-      - name: Wait for backend health check
+  health-live:
+    name: Backend liveness check
+    runs-on: ubuntu-latest
+    needs: deploy
+    steps:
+      - name: Wait for backend liveness (/api/health/live)
         env:
           SSHPASS: ${{ secrets.SSH_PASSWORD }}
         run: |
+          sudo apt-get update && sudo apt-get install -y sshpass
           sshpass -e ssh -p 1111 -o StrictHostKeyChecking=no "${{ secrets.SSH_USER }}@${{ secrets.HOST }}" '
             for i in 1 2 3 4; do
-              if curl -sf http://localhost:8000/api/health > /dev/null; then
-                echo "Backend healthy"
+              if curl -sf http://localhost:8000/api/health/live > /dev/null; then
+                echo "Backend process is up"
                 exit 0
               fi
-              echo "Health check attempt $i failed, retrying in 25s..."
+              echo "Liveness check attempt $i failed, retrying in 25s..."
               sleep 25
             done
-            echo "Backend failed health check after deploy" >&2
+            echo "Backend failed liveness check after deploy" >&2
+            exit 1
+          '
+
+  health-ready:
+    name: Backend readiness check
+    runs-on: ubuntu-latest
+    needs: health-live
+    steps:
+      - name: Wait for backend readiness (/api/health/ready)
+        env:
+          SSHPASS: ${{ secrets.SSH_PASSWORD }}
+        run: |
+          sudo apt-get update && sudo apt-get install -y sshpass
+          sshpass -e ssh -p 1111 -o StrictHostKeyChecking=no "${{ secrets.SSH_USER }}@${{ secrets.HOST }}" '
+            for i in 1 2 3 4; do
+              if curl -sf http://localhost:8000/api/health/ready > /dev/null; then
+                echo "Backend is ready (dependencies reachable)"
+                exit 0
+              fi
+              echo "Readiness check attempt $i failed, retrying in 25s..."
+              sleep 25
+            done
+            echo "Backend failed readiness check after deploy" >&2
             exit 1
           '
