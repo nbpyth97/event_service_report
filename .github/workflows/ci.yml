@@ -12,13 +12,13 @@ jobs:
       postgres:
         image: postgres:16-alpine
         env:
-          POSTGRES_DB: meeting_scheduler_test
-          POSTGRES_USER: meeting_scheduler
-          POSTGRES_PASSWORD: changeme
+          POSTGRES_DB: ${{ secrets.CI_POSTGRES_DB }}
+          POSTGRES_USER: ${{ secrets.CI_POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.CI_POSTGRES_PASSWORD }}
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U meeting_scheduler"
+          --health-cmd "pg_isready -U ${{ secrets.CI_POSTGRES_USER }}"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -35,14 +35,14 @@ jobs:
       - name: Run migrations
         working-directory: src/backend
         env:
-          DATABASE_URL: postgresql+asyncpg://meeting_scheduler:changeme@localhost:5432/meeting_scheduler_test
+          DATABASE_URL: postgresql+asyncpg://${{ secrets.CI_POSTGRES_USER }}:${{ secrets.CI_POSTGRES_PASSWORD }}@localhost:5432/${{ secrets.CI_POSTGRES_DB }}
           SECRET_KEY: ci-test-secret
         run: uv run alembic upgrade head
 
       - name: Run tests
         working-directory: src/backend
         env:
-          DATABASE_URL: postgresql+asyncpg://meeting_scheduler:changeme@localhost:5432/meeting_scheduler_test
+          DATABASE_URL: postgresql+asyncpg://${{ secrets.CI_POSTGRES_USER }}:${{ secrets.CI_POSTGRES_PASSWORD }}@localhost:5432/${{ secrets.CI_POSTGRES_DB }}
           SECRET_KEY: ci-test-secret
         run: uv run pytest
 
@@ -54,7 +54,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version: "24"
           cache: npm
           cache-dependency-path: src/frontend/package-lock.json
 
