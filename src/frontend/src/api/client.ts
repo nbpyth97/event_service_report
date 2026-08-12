@@ -25,11 +25,35 @@ export interface Agendamento {
   start_time: string;
   end_time: string;
   status: "pending" | "confirmed" | "declined" | "cancelled";
+  customer_name: string;
+  service_name: string;
+  service_price: string;
+  service_duration_min: number;
 }
 
 export interface AccessTokenWithUser {
   access_token: string;
   user: User;
+}
+
+export type DayHours = { open: string; close: string } | null;
+
+export interface CompanySettings {
+  timezone: string;
+  slot_interval_min: number;
+  min_lead_time_min: number;
+  business_hours: Record<"mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun", DayHours>;
+}
+
+export interface Company {
+  id: string;
+  slug: string;
+  name: string;
+  settings: CompanySettings;
+}
+
+export interface Availability {
+  slots: string[];
 }
 
 const STATUS_MESSAGES: Record<number, string> = {
@@ -96,6 +120,10 @@ export const api = {
   updateService: (id: string, payload: Partial<{ name: string; price: string; duration_min: number; active: boolean }>) =>
     request<Service>(`/api/services/${id}`, { method: "PATCH", body: JSON.stringify(payload) }),
   deleteService: (id: string) => request<void>(`/api/services/${id}`, { method: "DELETE" }),
+  availability: (serviceId: string, date: string) =>
+    request<Availability>(`/api/services/${serviceId}/availability?date=${date}`),
+
+  myCompany: () => request<Company>("/api/companies/me"),
 
   agendamentos: () => request<Agendamento[]>("/api/agendamentos"),
   createAgendamento: (payload: { service_id: string; start_time: string }) =>

@@ -4,7 +4,21 @@ import { api } from "@/api/client";
 export const queryKeys = {
   services: ["services"] as const,
   agendamentos: ["agendamentos"] as const,
+  company: ["company"] as const,
+  availability: (serviceId: string, date: string) => ["availability", serviceId, date] as const,
 };
+
+export function useMyCompany() {
+  return useQuery({ queryKey: queryKeys.company, queryFn: api.myCompany, staleTime: Infinity });
+}
+
+export function useAvailability(serviceId: string, date: string | null) {
+  return useQuery({
+    queryKey: queryKeys.availability(serviceId, date ?? ""),
+    queryFn: () => api.availability(serviceId, date as string),
+    enabled: Boolean(serviceId) && Boolean(date),
+  });
+}
 
 export function useServices() {
   return useQuery({ queryKey: queryKeys.services, queryFn: api.services });
@@ -43,7 +57,10 @@ export function useCreateAgendamento() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: api.createAgendamento,
-    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.agendamentos }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.agendamentos });
+      qc.invalidateQueries({ queryKey: ["availability"] });
+    },
   });
 }
 

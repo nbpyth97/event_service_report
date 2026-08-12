@@ -5,6 +5,7 @@ import LoginPage from "@/pages/LoginPage";
 import RegisterPage from "@/pages/RegisterPage";
 import DashboardPage from "@/pages/DashboardPage";
 import ServicesPage from "@/pages/ServicesPage";
+import BookingPage from "@/pages/BookingPage";
 import AgendamentosPage from "@/pages/AgendamentosPage";
 
 function AppShell() {
@@ -37,6 +38,7 @@ export default function App() {
         <Route element={<AppShell />}>
           <Route path="/" element={<DashboardPage />} />
           <Route path="/services" element={<ServicesPage />} />
+          <Route path="/book/:serviceId" element={<BookingPage />} />
           <Route path="/agendamentos" element={<AgendamentosPage />} />
         </Route>
       </Route>
