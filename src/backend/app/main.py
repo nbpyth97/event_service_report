@@ -4,7 +4,7 @@ from fastapi import Depends, FastAPI
 
 from app.core.auth import get_current_user
 from app.middleware import setup_middleware
-from app.routers import agendamentos, auth, health, services
+from app.routers import agendamentos, auth, companies, health, services
 
 
 @asynccontextmanager
@@ -21,3 +21,4 @@ app.include_router(health.router)
 app.include_router(auth.router)
 app.include_router(services.router, dependencies=[Depends(get_current_user)])
 app.include_router(agendamentos.router, dependencies=[Depends(get_current_user)])
+app.include_router(companies.router, dependencies=[Depends(get_current_user)])

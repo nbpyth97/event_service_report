@@ -1,3 +1,4 @@
+import copy
 import uuid
 from datetime import datetime, timedelta, timezone
 
@@ -8,12 +9,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth import create_access_token, create_refresh_token, decode_token, hash_password, verify_and_update_password
 from app.core.config import settings
-from app.core.models import Company, RefreshToken, User
+from app.core.models import DEFAULT_COMPANY_SETTINGS, Company, RefreshToken, User
 from app.core.schemas import LoginPayload, RegisterCompanyPayload, RegisterCustomerPayload
 
 
 async def register_company_and_admin(db: AsyncSession, payload: RegisterCompanyPayload) -> User:
-    company = Company(slug=payload.company_slug, name=payload.company_name)
+    company = Company(
+        slug=payload.company_slug,
+        name=payload.company_name,
+        settings=copy.deepcopy(DEFAULT_COMPANY_SETTINGS),
+    )
     db.add(company)
     try:
         await db.flush()

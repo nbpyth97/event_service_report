@@ -1,4 +1,5 @@
 import uuid
+from datetime import date
 
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -6,8 +7,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.auth import get_current_user, require_admin
 from app.core.database import get_db
 from app.core.models import User
-from app.core.schemas import ServiceCreate, ServiceOut, ServiceUpdate
-from app.services import services_service
+from app.core.schemas import AvailabilityOut, ServiceCreate, ServiceOut, ServiceUpdate
+from app.services import availability_service, services_service
 
 router = APIRouter(prefix="/api/services", tags=["services"])
 
@@ -24,6 +25,17 @@ async def get_service(
     service_id: uuid.UUID, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)
 ):
     return await services_service.get_service(db, current_user.tenant_id, service_id)
+
+
+@router.get("/{service_id}/availability", response_model=AvailabilityOut)
+async def get_availability(
+    service_id: uuid.UUID,
+    date: date,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    slots = await availability_service.get_available_slots(db, current_user.tenant_id, service_id, date)
+    return AvailabilityOut(slots=slots)
 
 
 @router.post("", response_model=ServiceOut, status_code=201, dependencies=[Depends(require_admin)])

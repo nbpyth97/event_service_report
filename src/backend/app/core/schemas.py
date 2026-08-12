@@ -84,3 +84,20 @@ class AgendamentoOut(BaseModel):
     start_time: datetime
     end_time: datetime
     status: str
+    customer_name: str
+    service_name: str
+    service_price: Decimal
+    service_duration_min: int
+
+
+class CompanyOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    slug: str
+    name: str
+    settings: dict
+
+
+class AvailabilityOut(BaseModel):
+    slots: list[datetime]

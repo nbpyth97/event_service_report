@@ -4,10 +4,17 @@ from datetime import timedelta
 from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.core.models import Agendamento, User
 from app.core.schemas import AgendamentoCreate
 from app.services.services_service import get_service
+
+
+def _with_relations(stmt):
+    # AgendamentoOut.customer_name/service_name/etc read these off the ORM
+    # object — eager-load so they never trigger a lazy load on an async session.
+    return stmt.options(selectinload(Agendamento.service), selectinload(Agendamento.creator))
 
 
 async def create_agendamento(
@@ -25,12 +32,13 @@ async def create_agendamento(
     )
     db.add(agendamento)
     await db.commit()
-    await db.refresh(agendamento)
-    return agendamento
+    return await get_agendamento(db, tenant_id, agendamento.id)
 
 
 async def get_agendamento(db: AsyncSession, tenant_id: uuid.UUID, agendamento_id: uuid.UUID) -> Agendamento:
-    stmt = select(Agendamento).where(Agendamento.id == agendamento_id, Agendamento.tenant_id == tenant_id)
+    stmt = _with_relations(select(Agendamento)).where(
+        Agendamento.id == agendamento_id, Agendamento.tenant_id == tenant_id
+    )
     agendamento = (await db.execute(stmt)).scalar_one_or_none()
     if not agendamento:
         raise HTTPException(status_code=404, detail="Agendamento not found")
@@ -38,7 +46,7 @@ async def get_agendamento(db: AsyncSession, tenant_id: uuid.UUID, agendamento_id
 
 
 async def list_agendamentos(db: AsyncSession, current_user: User) -> list[Agendamento]:
-    stmt = select(Agendamento).where(Agendamento.tenant_id == current_user.tenant_id)
+    stmt = _with_relations(select(Agendamento)).where(Agendamento.tenant_id == current_user.tenant_id)
     if current_user.role != "admin":
         stmt = stmt.where(Agendamento.created_by == current_user.id)
     stmt = stmt.order_by(Agendamento.start_time)
@@ -52,5 +60,4 @@ async def update_status(
     agendamento = await get_agendamento(db, tenant_id, agendamento_id)
     agendamento.status = status
     await db.commit()
-    await db.refresh(agendamento)
-    return agendamento
+    return await get_agendamento(db, tenant_id, agendamento_id)

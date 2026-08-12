@@ -11,6 +11,25 @@ from app.core.database import Base
 ROLES = ("admin", "user")
 AGENDAMENTO_STATUSES = ("pending", "confirmed", "declined", "cancelled")
 
+# Initial value for Company.settings on registration — business_hours keys are
+# Python's date.weekday() names (mon..sun), open/close in "HH:MM" 24h local time.
+# A day mapped to None means closed. Mirrors the beauty-salon pilot tenant's
+# real hours (tenants/anabela/config.json) as a sane default for any new company.
+DEFAULT_COMPANY_SETTINGS = {
+    "timezone": "Europe/Lisbon",
+    "slot_interval_min": 15,
+    "min_lead_time_min": 30,
+    "business_hours": {
+        "mon": None,
+        "tue": {"open": "08:00", "close": "19:00"},
+        "wed": {"open": "08:00", "close": "19:00"},
+        "thu": {"open": "08:00", "close": "19:00"},
+        "fri": {"open": "08:00", "close": "19:00"},
+        "sat": {"open": "08:00", "close": "19:00"},
+        "sun": None,
+    },
+}
+
 
 def utcnow() -> datetime:
     return datetime.now(timezone.utc)
@@ -92,6 +111,26 @@ class Agendamento(Base):
 
     company: Mapped["Company"] = relationship(back_populates="agendamentos")
     service: Mapped["Service"] = relationship(back_populates="agendamentos")
+    creator: Mapped["User"] = relationship()
+
+    # Presentation-friendly accessors for the admin detail view — read from
+    # already eager-loaded relationships (see agendamentos_service._with_relations),
+    # never trigger a lazy load.
+    @property
+    def customer_name(self) -> str:
+        return self.creator.name
+
+    @property
+    def service_name(self) -> str:
+        return self.service.name
+
+    @property
+    def service_price(self) -> Decimal:
+        return self.service.price
+
+    @property
+    def service_duration_min(self) -> int:
+        return self.service.duration_min
 
 
 class RefreshToken(Base):
