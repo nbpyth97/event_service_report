@@ -17,10 +17,18 @@ export default function ServiceForm() {
 
   return (
     <form onSubmit={handleSubmit} className="service-form">
-      <input placeholder="Nome do serviço" value={name} onChange={(e) => setName(e.target.value)} required />
       <input
+        aria-label="Nome do serviço"
+        placeholder="Nome do serviço"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        required
+      />
+      <input
+        aria-label="Preço em euros"
         placeholder="Preço"
         type="number"
+        inputMode="decimal"
         min="0"
         step="0.01"
         value={price}
@@ -28,8 +36,10 @@ export default function ServiceForm() {
         required
       />
       <input
+        aria-label="Duração em minutos"
         placeholder="Duração (min)"
         type="number"
+        inputMode="numeric"
         min="1"
         value={durationMin}
         onChange={(e) => setDurationMin(e.target.value)}
