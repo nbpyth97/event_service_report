@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { CalendarCheck, CalendarDays, Scissors, User, Wallet } from "lucide-react";
+import { Briefcase, CalendarCheck, CalendarDays, User, Wallet } from "lucide-react";
 import { useAgendamentos, useServices } from "@/hooks/queries";
 import { fmtDateTime, fmtPrice } from "@/lib/format";
 import StatCard from "@/components/StatCard";
@@ -44,7 +44,7 @@ export default function DashboardPage() {
 
       <div className="dashboard-cards">
         <StatCard
-          icon={Scissors}
+          icon={Briefcase}
           value={servicesLoading ? "…" : (services?.length ?? 0)}
           label="Serviços"
           secondary={servicesLoading ? undefined : `${activeServices} ativos`}

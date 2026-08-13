@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { NavLink, Outlet, Route, Routes } from "react-router-dom";
-import { CalendarCheck, LayoutGrid, LogOut, Moon, Scissors, Sun } from "lucide-react";
+import { Briefcase, CalendarCheck, LayoutGrid, LogOut, Moon, Sun } from "lucide-react";
 import ProtectedRoute from "@/router/ProtectedRoute";
 import { useCurrentUser } from "@/auth/user";
 import { useMyCompany } from "@/hooks/queries";
@@ -17,7 +17,7 @@ import AgendamentosPage from "@/pages/AgendamentosPage";
 const NAV_ITEMS = [
   { to: "/", label: "Painel", icon: LayoutGrid, end: true },
   { to: "/agendamentos", label: "Agendamentos", icon: CalendarCheck, end: false },
-  { to: "/services", label: "Serviços", icon: Scissors, end: false },
+  { to: "/services", label: "Serviços", icon: Briefcase, end: false },
 ];
 
 type Theme = "light" | "dark";
