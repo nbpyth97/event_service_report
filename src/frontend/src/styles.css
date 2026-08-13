@@ -14,6 +14,11 @@
      close inspection. */
   --color-pending: #b45309;
   --color-pending-soft: #fef3e2;
+  /* Theme-invariant (same value in both themes) — used only for the
+     status-breakdown bar/dot decorative fill, which the dark theme's amber
+     (#e08e3e) reads better on than the darker --color-pending used for text
+     contrast on the light theme's pale --color-pending-soft background. */
+  --color-pending-chart: #e08e3e;
   --color-confirmed: #16a34a;
   --color-confirmed-soft: #ecfdf3;
   --color-declined: #dc2626;
@@ -1010,7 +1015,7 @@ button:disabled {
 }
 
 .status-breakdown-segment.status-pending {
-  background: var(--color-pending);
+  background: var(--color-pending-chart);
 }
 .status-breakdown-segment.status-confirmed {
   background: var(--color-confirmed);
@@ -1046,7 +1051,7 @@ button:disabled {
 }
 
 .status-breakdown-legend-item.status-pending .status-breakdown-dot {
-  background: var(--color-pending);
+  background: var(--color-pending-chart);
 }
 .status-breakdown-legend-item.status-confirmed .status-breakdown-dot {
   background: var(--color-confirmed);
