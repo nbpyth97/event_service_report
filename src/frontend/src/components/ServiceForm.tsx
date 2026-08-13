@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from "react";
+import { Clock, Euro, Plus, Tag } from "lucide-react";
 import { useCreateService } from "@/hooks/queries";
 
 export default function ServiceForm() {
@@ -17,35 +18,64 @@ export default function ServiceForm() {
 
   return (
     <form onSubmit={handleSubmit} className="service-form">
-      <input
-        aria-label="Nome do serviço"
-        placeholder="Nome do serviço"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        required
-      />
-      <input
-        aria-label="Preço em euros"
-        placeholder="Preço"
-        type="number"
-        inputMode="decimal"
-        min="0"
-        step="0.01"
-        value={price}
-        onChange={(e) => setPrice(e.target.value)}
-        required
-      />
-      <input
-        aria-label="Duração em minutos"
-        placeholder="Duração (min)"
-        type="number"
-        inputMode="numeric"
-        min="1"
-        value={durationMin}
-        onChange={(e) => setDurationMin(e.target.value)}
-        required
-      />
+      <p className="service-form-label">Novo serviço</p>
+
+      <label className="service-form-field">
+        <span>Nome do serviço</span>
+        <div className="service-form-input-wrap">
+          <Tag size={16} aria-hidden="true" />
+          <input
+            aria-label="Nome do serviço"
+            placeholder="Ex.: Manicure"
+            value={name}
+            autoComplete="off"
+            onChange={(e) => setName(e.target.value)}
+            required
+          />
+        </div>
+      </label>
+
+      <div className="service-form-row">
+        <label className="service-form-field">
+          <span>Preço</span>
+          <div className="service-form-input-wrap">
+            <Euro size={16} aria-hidden="true" />
+            <input
+              aria-label="Preço em euros"
+              placeholder="0,00"
+              type="number"
+              inputMode="decimal"
+              min="0"
+              step="0.01"
+              value={price}
+              autoComplete="off"
+              onChange={(e) => setPrice(e.target.value)}
+              required
+            />
+          </div>
+        </label>
+        <label className="service-form-field">
+          <span>Duração</span>
+          <div className="service-form-input-wrap">
+            <Clock size={16} aria-hidden="true" />
+            <input
+              aria-label="Duração em minutos"
+              placeholder="30"
+              type="number"
+              inputMode="numeric"
+              min="1"
+              value={durationMin}
+              autoComplete="off"
+              onChange={(e) => setDurationMin(e.target.value)}
+              required
+            />
+            <span className="service-form-input-suffix">min</span>
+          </div>
+        </label>
+      </div>
+
       <button type="submit" disabled={createService.isPending}>
+        <Plus size={16} aria-hidden="true" />
         {createService.isPending ? "Salvando…" : "Adicionar serviço"}
       </button>
     </form>

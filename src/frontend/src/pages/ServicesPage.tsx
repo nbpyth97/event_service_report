@@ -11,7 +11,6 @@ export default function ServicesPage() {
 
   return (
     <div className="page">
-      <h1>Serviços</h1>
       {isAdmin && <ServiceForm />}
       {isLoading ? (
         <p>Carregando…</p>
