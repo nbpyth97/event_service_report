@@ -1,0 +1,27 @@
+name: Invalidate tenant tokens
+
+on:
+  workflow_dispatch:
+    inputs:
+      tenant_slug:
+        description: "Company slug whose refresh tokens should all be revoked"
+        required: true
+        type: string
+
+jobs:
+  invalidate:
+    name: Revoke all refresh tokens for a tenant
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install sshpass
+        run: sudo apt-get update && sudo apt-get install -y sshpass
+
+      - name: Run invalidate_tenant_tokens on server
+        env:
+          SSHPASS: ${{ secrets.SSH_PASSWORD }}
+        run: |
+          sshpass -e ssh -p 1111 -o StrictHostKeyChecking=no "${{ secrets.SSH_USER }}@${{ secrets.HOST }}" '
+            set -e
+            cd "${{ secrets.DEPLOY_PATH }}"
+            docker compose exec -T backend uv run python -m app.scripts.invalidate_tenant_tokens "${{ inputs.tenant_slug }}"
+          '
