@@ -339,6 +339,149 @@ body {
   background: var(--color-declined-soft);
 }
 
+.notification-bell {
+  position: relative;
+}
+
+.notification-bell-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  min-width: 15px;
+  height: 15px;
+  padding: 0 3px;
+  border-radius: 999px;
+  background: var(--color-declined);
+  color: #fff;
+  font-size: 0.62rem;
+  font-weight: 700;
+  line-height: 15px;
+  text-align: center;
+}
+
+/* Notification/reminder panel — layout and grid ported from the
+   activity-tracker reference (src/frontend/src/components/NotificationPanel.tsx
+   + its .panel* CSS): a fixed, viewport-centered modal with a dimming
+   backdrop, rather than a dropdown anchored to the trigger icon. This is
+   what keeps it readable and centered on narrow mobile viewports instead of
+   a small anchored popover running off-screen. */
+.reminder-panel-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 30;
+}
+
+.reminder-panel {
+  position: fixed;
+  top: 64px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 24px);
+  max-width: 440px;
+  max-height: 70vh;
+  overflow-y: auto;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  z-index: 31;
+  padding: 0.75rem;
+}
+
+:root[data-theme="dark"] .reminder-panel {
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.reminder-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.reminder-panel-title {
+  font-size: 1.02rem;
+  font-weight: 700;
+  color: var(--color-ink);
+}
+
+.reminder-panel-close {
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0.2rem 0.3rem;
+}
+
+.reminder-panel-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.reminder-panel-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  width: 100%;
+  text-align: left;
+  background: var(--color-bg);
+  color: var(--color-ink);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 0.6rem 0.7rem;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.88rem;
+  transition: background 0.15s ease, transform 0.1s ease, border-color 0.15s ease;
+}
+
+.reminder-panel-item:active {
+  transform: scale(0.98);
+}
+
+@media (hover: hover) {
+  .reminder-panel-item:hover {
+    border-color: var(--color-primary);
+  }
+}
+
+.reminder-panel-item-unread {
+  background: var(--color-primary-soft);
+}
+
+.reminder-panel-item-message {
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.reminder-panel-item-time {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--color-muted);
+}
+
+.reminder-panel-empty {
+  color: var(--color-muted);
+  font-size: 0.85rem;
+  padding: 0.5rem 0.2rem;
+}
+
+/* Starting-soon reminders reuse the bell's badge/panel shell but in the
+   app's existing warm "needs attention" tone (matches
+   .ledger-header-status-alert), so the two live indicators read as related
+   but distinct at a glance. */
+.starting-soon-badge {
+  background: var(--color-pending);
+}
+
 .page {
   padding: 1rem;
   max-width: 800px;

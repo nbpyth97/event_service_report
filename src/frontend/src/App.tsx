@@ -1,9 +1,12 @@
 import { useEffect, useState } from "react";
 import { NavLink, Outlet, Route, Routes } from "react-router-dom";
-import { Bell, CalendarCheck, Clock, LayoutGrid, LogOut, Moon, Scissors, Sun } from "lucide-react";
+import { CalendarCheck, LayoutGrid, LogOut, Moon, Scissors, Sun } from "lucide-react";
 import ProtectedRoute from "@/router/ProtectedRoute";
 import { useCurrentUser } from "@/auth/user";
 import { useMyCompany } from "@/hooks/queries";
+import { useNotificationStream } from "@/hooks/useNotificationStream";
+import NotificationBell from "@/components/NotificationBell";
+import StartingSoonIndicator from "@/components/StartingSoonIndicator";
 import LoginPage from "@/pages/LoginPage";
 import RegisterPage from "@/pages/RegisterPage";
 import DashboardPage from "@/pages/DashboardPage";
@@ -44,6 +47,8 @@ function AppShell() {
   const { data: company } = useMyCompany();
   const [theme, setTheme] = useState<Theme>(initialTheme);
 
+  useNotificationStream(user?.role === "admin");
+
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
     localStorage.setItem(THEME_KEY, theme);
@@ -62,12 +67,12 @@ function AppShell() {
           </span>
         </div>
         <div className="app-nav-account">
-          <button type="button" className="app-nav-logout" disabled title="Histórico (em breve)" aria-label="Histórico (em breve)">
-            <Clock size={17} aria-hidden="true" />
-          </button>
-          <button type="button" className="app-nav-logout" disabled title="Notificações (em breve)" aria-label="Notificações (em breve)">
-            <Bell size={17} aria-hidden="true" />
-          </button>
+          {user?.role === "admin" && (
+            <>
+              <StartingSoonIndicator />
+              <NotificationBell />
+            </>
+          )}
           <span className="app-nav-divider" aria-hidden="true" />
           <button
             type="button"

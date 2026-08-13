@@ -6,6 +6,7 @@ export const queryKeys = {
   agendamentos: ["agendamentos"] as const,
   company: ["company"] as const,
   availability: (serviceId: string, date: string) => ["availability", serviceId, date] as const,
+  notifications: ["notifications"] as const,
 };
 
 export function useMyCompany() {
@@ -50,7 +51,7 @@ export function useDeleteService() {
 }
 
 export function useAgendamentos() {
-  return useQuery({ queryKey: queryKeys.agendamentos, queryFn: api.agendamentos });
+  return useQuery({ queryKey: queryKeys.agendamentos, queryFn: api.agendamentos, refetchInterval: 5 * 60 * 1000 });
 }
 
 export function useCreateAgendamento() {
@@ -70,5 +71,17 @@ export function useUpdateAgendamentoStatus() {
     mutationFn: ({ id, status }: { id: string; status: "confirmed" | "declined" | "cancelled" }) =>
       api.updateAgendamentoStatus(id, status),
     onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.agendamentos }),
+  });
+}
+
+export function useNotifications() {
+  return useQuery({ queryKey: queryKeys.notifications, queryFn: api.notifications });
+}
+
+export function useMarkNotificationRead() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: api.markNotificationRead,
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.notifications }),
   });
 }
