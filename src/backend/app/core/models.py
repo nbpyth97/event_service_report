@@ -10,6 +10,7 @@ from app.core.database import Base
 
 ROLES = ("admin", "user")
 AGENDAMENTO_STATUSES = ("pending", "confirmed", "declined", "cancelled")
+NOTIFICATION_TYPES = ("booking_pending", "booking_cancelled")
 
 # Initial value for Company.settings on registration — business_hours keys are
 # Python's date.weekday() names (mon..sun), open/close in "HH:MM" 24h local time.
@@ -139,6 +140,29 @@ class Agendamento(Base):
     @property
     def service_duration_min(self) -> int:
         return self.service.duration_min
+
+
+class Notification(Base):
+    __tablename__ = "notifications"
+    __table_args__ = (
+        CheckConstraint("type IN ('booking_pending', 'booking_cancelled')", name="ck_notifications_type"),
+        Index("ix_notifications_tenant_id_recipient_id_created_at", "tenant_id", "recipient_id", "created_at"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("companies.id"), nullable=False, index=True
+    )
+    recipient_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True
+    )
+    type: Mapped[str] = mapped_column(String(30), nullable=False)
+    agendamento_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("agendamentos.id"), nullable=True
+    )
+    message: Mapped[str] = mapped_column(String(500), nullable=False)
+    read_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
 
 
 class RefreshToken(Base):

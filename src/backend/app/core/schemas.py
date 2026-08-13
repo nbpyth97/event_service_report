@@ -103,3 +103,15 @@ class CompanyOut(BaseModel):
 
 class AvailabilityOut(BaseModel):
     slots: list[datetime]
+
+
+class NotificationOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    tenant_id: uuid.UUID
+    type: str
+    agendamento_id: uuid.UUID | None
+    message: str
+    read_at: datetime | None
+    created_at: datetime

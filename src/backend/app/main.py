@@ -4,14 +4,19 @@ from fastapi import Depends, FastAPI
 
 from app.core.auth import get_current_user
 from app.middleware import setup_middleware
-from app.routers import agendamentos, auth, companies, health, services
+from app.routers import agendamentos, auth, companies, health, notifications, services
+from app.services.notifications_service import listen_for_notifications
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Schema is owned by Alembic (`alembic upgrade head`, run by the container
     # entrypoint before uvicorn starts) — no create_all here, to avoid drift.
-    yield
+    listen_connection = await listen_for_notifications()
+    try:
+        yield
+    finally:
+        await listen_connection.close()
 
 
 app = FastAPI(title="Meeting Scheduler API", lifespan=lifespan)
@@ -22,3 +27,4 @@ app.include_router(auth.router)
 app.include_router(services.router, dependencies=[Depends(get_current_user)])
 app.include_router(agendamentos.router, dependencies=[Depends(get_current_user)])
 app.include_router(companies.router, dependencies=[Depends(get_current_user)])
+app.include_router(notifications.router)

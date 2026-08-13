@@ -8,6 +8,7 @@ from sqlalchemy.orm import selectinload
 
 from app.core.models import Agendamento, User
 from app.core.schemas import AgendamentoCreate
+from app.services import notifications_service
 from app.services.services_service import get_service
 
 
@@ -32,7 +33,9 @@ async def create_agendamento(
     )
     db.add(agendamento)
     await db.commit()
-    return await get_agendamento(db, tenant_id, agendamento.id)
+    result = await get_agendamento(db, tenant_id, agendamento.id)
+    await notifications_service.notify_booking_pending(db, tenant_id, result)
+    return result
 
 
 async def get_agendamento(db: AsyncSession, tenant_id: uuid.UUID, agendamento_id: uuid.UUID) -> Agendamento:
@@ -58,6 +61,10 @@ async def update_status(
 ) -> Agendamento:
     """Admin-only (gated by require_admin at the router) — admins manage all bookings for their company."""
     agendamento = await get_agendamento(db, tenant_id, agendamento_id)
+    previous_status = agendamento.status
     agendamento.status = status
     await db.commit()
-    return await get_agendamento(db, tenant_id, agendamento_id)
+    result = await get_agendamento(db, tenant_id, agendamento_id)
+    if previous_status == "confirmed" and status in ("declined", "cancelled"):
+        await notifications_service.notify_booking_cancelled(db, tenant_id, result)
+    return result
