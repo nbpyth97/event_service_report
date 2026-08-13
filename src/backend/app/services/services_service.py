@@ -8,8 +8,11 @@ from app.core.models import Service
 from app.core.schemas import ServiceCreate, ServiceUpdate
 
 
-async def list_services(db: AsyncSession, tenant_id: uuid.UUID) -> list[Service]:
-    stmt = select(Service).where(Service.tenant_id == tenant_id, Service.active.is_(True)).order_by(Service.name)
+async def list_services(db: AsyncSession, tenant_id: uuid.UUID, include_inactive: bool = False) -> list[Service]:
+    stmt = select(Service).where(Service.tenant_id == tenant_id)
+    if not include_inactive:
+        stmt = stmt.where(Service.active.is_(True))
+    stmt = stmt.order_by(Service.name)
     return list((await db.execute(stmt)).scalars().all())
 
 

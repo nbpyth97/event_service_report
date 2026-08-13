@@ -17,7 +17,7 @@ router = APIRouter(prefix="/api/services", tags=["services"])
 async def list_services(
     current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)
 ):
-    return await services_service.list_services(db, current_user.tenant_id)
+    return await services_service.list_services(db, current_user.tenant_id, include_inactive=current_user.role == "admin")
 
 
 @router.get("/{service_id}", response_model=ServiceOut)
