@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
-import { Eye, EyeOff } from "lucide-react";
+import { Building2, Eye, EyeOff, Lock, Phone, Tag, User } from "lucide-react";
 import { api } from "@/api/client";
 import { useCurrentUser } from "@/auth/user";
 
@@ -13,6 +13,7 @@ export default function RegisterPage() {
   const [tenantSlug, setTenantSlug] = useState("");
   const [companyName, setCompanySlug] = useState("");
   const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -27,7 +28,7 @@ export default function RegisterPage() {
     setSubmitting(true);
     try {
       if (mode === "customer") {
-        await api.registerCustomer(tenantSlug, { name, password });
+        await api.registerCustomer(tenantSlug, { name, password, phone: phone.trim() || undefined });
       } else {
         await api.registerCompany({
           company_name: companyName,
@@ -76,13 +77,17 @@ export default function RegisterPage() {
             <label className="auth-label" htmlFor="company-name">
               Nome da empresa
             </label>
-            <input
-              id="company-name"
-              placeholder="Nome da empresa"
-              value={companyName}
-              onChange={(e) => setCompanySlug(e.target.value)}
-              required
-            />
+            <div className="service-form-input-wrap">
+              <Building2 size={16} aria-hidden="true" />
+              <input
+                id="company-name"
+                placeholder="Nome da empresa"
+                value={companyName}
+                autoComplete="organization"
+                onChange={(e) => setCompanySlug(e.target.value)}
+                required
+              />
+            </div>
           </div>
         )}
 
@@ -90,34 +95,73 @@ export default function RegisterPage() {
           <label className="auth-label" htmlFor="register-slug">
             Slug da empresa
           </label>
-          <input
-            id="register-slug"
-            placeholder="ex: acme"
-            value={tenantSlug}
-            onChange={(e) => setTenantSlug(e.target.value)}
-            pattern="^[a-z0-9-]+$"
-            required
-          />
+          <div className="service-form-input-wrap">
+            <Tag size={16} aria-hidden="true" />
+            <input
+              id="register-slug"
+              placeholder="ex: acme"
+              type="search"
+              value={tenantSlug}
+              autoComplete="off"
+              autoCorrect="off"
+              spellCheck={false}
+              onChange={(e) => setTenantSlug(e.target.value)}
+              pattern="^[a-z0-9-]+$"
+              required
+            />
+          </div>
         </div>
 
         <div className="auth-field">
           <label className="auth-label" htmlFor="register-name">
             {mode === "company" ? "Seu nome (administrador)" : "Seu nome"}
           </label>
-          <input id="register-name" placeholder="Nome" value={name} onChange={(e) => setName(e.target.value)} required />
+          <div className="service-form-input-wrap">
+            <User size={16} aria-hidden="true" />
+            <input
+              id="register-name"
+              placeholder="Nome"
+              value={name}
+              autoComplete="name"
+              onChange={(e) => setName(e.target.value)}
+              required
+            />
+          </div>
         </div>
+
+        {mode === "customer" && (
+          <div className="auth-field">
+            <label className="auth-label" htmlFor="register-phone">
+              Telemóvel (opcional)
+            </label>
+            <div className="service-form-input-wrap">
+              <Phone size={16} aria-hidden="true" />
+              <input
+                id="register-phone"
+                placeholder="+351 912 345 678"
+                type="tel"
+                value={phone}
+                autoComplete="tel"
+                onChange={(e) => setPhone(e.target.value)}
+              />
+            </div>
+            <p className="auth-field-hint">Usado apenas para contacto via WhatsApp sobre as suas marcações.</p>
+          </div>
+        )}
 
         <div className="auth-field">
           <label className="auth-label" htmlFor="register-password">
             Senha
           </label>
-          <div className="auth-input-group">
+          <div className="service-form-input-wrap">
+            <Lock size={16} aria-hidden="true" />
             <input
               id="register-password"
               placeholder="Senha"
               type={showPassword ? "text" : "password"}
               minLength={8}
               value={password}
+              autoComplete="new-password"
               onChange={(e) => setPassword(e.target.value)}
               required
             />

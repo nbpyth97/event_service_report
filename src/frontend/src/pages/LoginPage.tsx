@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { Navigate, Link } from "react-router-dom";
-import { Eye, EyeOff } from "lucide-react";
+import { Building2, Eye, EyeOff, Lock, User } from "lucide-react";
 import { useCurrentUser } from "@/auth/user";
 
 export default function LoginPage() {
@@ -50,35 +50,46 @@ export default function LoginPage() {
           <label className="auth-label" htmlFor="tenant-slug">
             Empresa
           </label>
-          <input
-            id="tenant-slug"
-            placeholder="ex: acme"
-            value={tenantSlug}
-            autoFocus
-            onChange={(e) => setTenantSlug(e.target.value)}
-            required
-          />
+          <div className="service-form-input-wrap">
+            <Building2 size={16} aria-hidden="true" />
+            <input
+              id="tenant-slug"
+              placeholder="ex: acme"
+              type="search"
+              value={tenantSlug}
+              autoFocus
+              autoComplete="off"
+              autoCorrect="off"
+              spellCheck={false}
+              onChange={(e) => setTenantSlug(e.target.value)}
+              required
+            />
+          </div>
         </div>
 
         <div className="auth-field">
           <label className="auth-label" htmlFor="login-name">
             Usuário
           </label>
-          <input
-            id="login-name"
-            placeholder="Usuário"
-            value={name}
-            autoComplete="username"
-            onChange={(e) => setName(e.target.value)}
-            required
-          />
+          <div className="service-form-input-wrap">
+            <User size={16} aria-hidden="true" />
+            <input
+              id="login-name"
+              placeholder="Usuário"
+              value={name}
+              autoComplete="username"
+              onChange={(e) => setName(e.target.value)}
+              required
+            />
+          </div>
         </div>
 
         <div className="auth-field">
           <label className="auth-label" htmlFor="login-password">
             Senha
           </label>
-          <div className="auth-input-group">
+          <div className="service-form-input-wrap">
+            <Lock size={16} aria-hidden="true" />
             <input
               id="login-password"
               placeholder="Senha"
