@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import AgendamentoList from "@/components/AgendamentoList";
 import DayTimeline from "@/components/DayTimeline";
 import AgendamentoDateRangePicker, { computePresetRange } from "@/components/AgendamentoDateRangePicker";
@@ -49,8 +49,42 @@ export default function AgendamentosPage() {
   const [personQuery, setPersonQuery] = useState("");
   const [defaultsReady, setDefaultsReady] = useState(false);
   const defaultsApplied = useRef(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [highlightedId, setHighlightedId] = useState<string | null>(null);
+  const highlightRequest = searchParams.get("highlight");
 
   const pendingCount = agendamentos?.filter((a) => a.status === "pending").length ?? 0;
+
+  // Deep link from a notification/reminder click: force whatever filters are
+  // needed so the target booking is actually visible, then strip the query
+  // param (the local highlightedId state is what keeps the border/scroll
+  // alive from here on, not the URL). Runs independently of the one-time
+  // smart-default effect below so it also fires for a second click while
+  // already on this page. Declared first so its defaultsApplied.current
+  // write (when a highlight is requested at first mount) wins the race
+  // against the smart-default effect in the same commit.
+  useEffect(() => {
+    if (!highlightRequest || !agendamentos) return;
+    const target = agendamentos.find((a) => a.id === highlightRequest);
+    if (target) {
+      setMode("overview");
+      const key: StatusFilterKey = target.status === "cancelled" ? "declined" : (target.status as StatusFilterKey);
+      setSelectedStatuses((prev) => (prev.includes(key) ? prev : [...prev, key]));
+      setDatePreset("all");
+      setDateRange(computePresetRange("all"));
+      setHighlightedId(target.id);
+    }
+    defaultsApplied.current = true;
+    setDefaultsReady(true);
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete("highlight");
+        return next;
+      },
+      { replace: true }
+    );
+  }, [highlightRequest, agendamentos, setSearchParams]);
 
   // Smart first-load default: open straight to what needs a decision. If
   // there's nothing pending, "esta semana" of confirmed bookings is the more
@@ -159,6 +193,7 @@ export default function AgendamentosPage() {
           <AgendamentoList
             agendamentos={dayVisible ?? []}
             emptyMessage={(agendamentos?.length ?? 0) > 0 ? "Nenhuma marcação neste dia." : undefined}
+            highlightedId={highlightedId}
           />
         </>
       ) : (
@@ -179,6 +214,7 @@ export default function AgendamentosPage() {
                 ? "Nenhuma marcação encontrada para estes filtros."
                 : undefined
             }
+            highlightedId={highlightedId}
           />
         </>
       )}

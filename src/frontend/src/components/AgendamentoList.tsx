@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CheckCircle2, MessageCircle, XCircle } from "lucide-react";
 import type { Agendamento } from "@/api/client";
 import { useCurrentUser } from "@/auth/user";
@@ -41,14 +41,24 @@ function AppointmentRow({
   agendamento,
   isAdmin,
   onOpenDetail,
+  highlighted,
 }: {
   agendamento: Agendamento;
   isAdmin: boolean;
   onOpenDetail: () => void;
+  highlighted: boolean;
 }) {
   const updateStatus = useUpdateAgendamentoStatus();
   const { showSuccess } = useToast();
   const [confirmingDecline, setConfirmingDecline] = useState(false);
+  const rowRef = useRef<HTMLLIElement>(null);
+
+  // Deep-linked from a notification/reminder click — scroll it into view,
+  // centered so it stays reachable on a small mobile viewport instead of
+  // landing just off the top or bottom edge.
+  useEffect(() => {
+    if (highlighted) rowRef.current?.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
+  }, [highlighted]);
 
   const handleConfirm = () => {
     updateStatus.mutate(
@@ -66,7 +76,10 @@ function AppointmentRow({
   };
 
   return (
-    <li className={`appt-row${agendamento.status === "pending" ? " appt-row-pending" : ""}`}>
+    <li
+      ref={rowRef}
+      className={`appt-row${agendamento.status === "pending" ? " appt-row-pending" : ""}${highlighted ? " appt-row-highlighted" : ""}`}
+    >
       <button type="button" className="appt-row-trigger" onClick={onOpenDetail}>
         <div className="appt-row-time">
           <span className="appt-row-time-value">{fmtTime(agendamento.start_time)}</span>
@@ -141,9 +154,11 @@ function AppointmentRow({
 export default function AgendamentoList({
   agendamentos,
   emptyMessage,
+  highlightedId,
 }: {
   agendamentos: Agendamento[];
   emptyMessage?: string;
+  highlightedId?: string | null;
 }) {
   const { user } = useCurrentUser();
   const isAdmin = user?.role === "admin";
@@ -178,6 +193,7 @@ export default function AgendamentoList({
                 agendamento={agendamento}
                 isAdmin={isAdmin}
                 onOpenDetail={() => setSelectedId(agendamento.id)}
+                highlighted={agendamento.id === highlightedId}
               />
             ))}
           </ul>

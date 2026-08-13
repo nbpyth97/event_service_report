@@ -2099,6 +2099,20 @@ button:disabled {
   border-left: 3px solid var(--color-pending);
 }
 
+/* Deep-linked from a notification/reminder click — marks the specific
+   booking the admin was pointed at, distinct from the pending strip above. */
+.appt-row-highlighted {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* The outline alone is the "you're here" signal — the trigger's normal hover
+   underline on the customer name is redundant next to it and reads as a
+   stray link. */
+.appt-row-highlighted .appt-row-trigger:hover .appt-row-primary {
+  text-decoration: none;
+}
+
 .appt-row-trigger {
   display: flex;
   align-items: center;
