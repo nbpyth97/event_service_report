@@ -10,10 +10,13 @@ export default function NotificationBell() {
   const { data: notifications } = useNotifications();
   const markRead = useMarkNotificationRead();
   const navigate = useNavigate();
-  const unreadCount = notifications?.filter((n) => !n.read_at).length ?? 0;
+  const unreadCount = notifications?.length ?? 0;
 
+  // GET /notifications only ever returns unread rows, so marking one read
+  // is what removes it from the list — the refetch after invalidation
+  // drops it for good, surviving a page reload (no local dismiss state).
   const handleItemClick = (n: Notification) => {
-    if (!n.read_at) markRead.mutate(n.id);
+    markRead.mutate(n.id);
     setOpen(false);
     if (n.agendamento_id) navigate(`/agendamentos?highlight=${n.agendamento_id}`);
   };
@@ -48,7 +51,7 @@ export default function NotificationBell() {
                   <li key={n.id}>
                     <button
                       type="button"
-                      className={n.read_at ? "reminder-panel-item" : "reminder-panel-item reminder-panel-item-unread"}
+                      className="reminder-panel-item reminder-panel-item-unread"
                       onClick={() => handleItemClick(n)}
                     >
                       <span className="reminder-panel-item-message">{n.message}</span>

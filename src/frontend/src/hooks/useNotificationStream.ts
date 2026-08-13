@@ -26,6 +26,12 @@ export function useNotificationStream(enabled: boolean): void {
       source = new EventSource(`/api/notifications/stream?token=${encodeURIComponent(token)}`);
       source.addEventListener("notification", () => {
         qc.invalidateQueries({ queryKey: queryKeys.notifications });
+        // A notification always corresponds to a booking change (new pending,
+        // or a confirmed one cancelled/declined) — without this, the
+        // agendamentos list stays stale until its 5-minute refetchInterval,
+        // so clicking a fresh notification's deep link can't find the
+        // booking to highlight yet.
+        qc.invalidateQueries({ queryKey: queryKeys.agendamentos });
       });
 
       reconnectTimer = setTimeout(async () => {
