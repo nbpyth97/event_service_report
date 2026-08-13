@@ -2105,13 +2105,29 @@ button:disabled {
 }
 
 /* Deep-linked from a notification/reminder click — marks the specific
-   booking the admin was pointed at, distinct from the pending strip above. */
+   booking the admin was pointed at, distinct from the pending strip above.
+   A hard outline ring clashed with the pending left-accent strip and the
+   card's own border-radius, so this is a soft background pulse that fades
+   back to the normal surface instead of leaving a permanent ring. */
 .appt-row-highlighted {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
+  animation: appt-row-highlight-fade 2.4s ease-out forwards;
 }
 
-/* The outline alone is the "you're here" signal — the trigger's normal hover
+@keyframes appt-row-highlight-fade {
+  0% {
+    background-color: color-mix(in srgb, var(--color-primary) 22%, var(--color-primary-soft));
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 35%, transparent);
+  }
+  70% {
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 10%, transparent);
+  }
+  100% {
+    background-color: var(--color-surface);
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+/* The tint alone is the "you're here" signal — the trigger's normal hover
    underline on the customer name is redundant next to it and reads as a
    stray link. */
 .appt-row-highlighted .appt-row-trigger:hover .appt-row-primary {
@@ -2177,6 +2193,13 @@ button:disabled {
   white-space: nowrap;
 }
 
+/* Customer names are free-typed at registration and often arrive all
+   lowercase ("joana") — capitalize for display only, without touching the
+   stored value. */
+.appt-row-customer-name {
+  text-transform: capitalize;
+}
+
 .appt-row-secondary {
   font-size: 0.82rem;
   color: var(--color-muted);
@@ -2216,6 +2239,17 @@ button:disabled {
   margin-top: 0;
 }
 
+/* Sits between the appointment header and the Confirmar/Recusar bar — not
+   inside the trigger button above (an <a> can't nest inside a <button>), so
+   this sibling row carries its own horizontal padding to line up with the
+   button's edges instead. Communication (WhatsApp) reads as tied to the
+   customer's identity, separate from the status decision below it, and
+   stays available regardless of the booking's current status. */
+.appt-row-contact {
+  padding: 0 0.9rem 0.6rem;
+  margin-top: -0.2rem;
+}
+
 .ticket-row {
   display: flex;
   align-items: center;
@@ -2232,14 +2266,22 @@ button:disabled {
   font-weight: 600;
 }
 
+.ticket-customer-name {
+  text-transform: capitalize;
+}
+
 .ticket-meta {
   color: var(--color-muted);
   font-family: var(--font-mono);
   font-size: 0.82rem;
 }
 
+/* Right-aligned, auto-width buttons — anchored under the price/status
+   column instead of centered, which left awkward empty space on both
+   sides on wider cards. */
 .ticket-actions {
   display: flex;
+  justify-content: flex-end;
   gap: 0.6rem;
   margin-top: 0.7rem;
 }
@@ -2249,29 +2291,24 @@ button:disabled {
   align-items: center;
   justify-content: center;
   gap: 0.4rem;
-  flex: 1;
+  flex: 0 0 auto;
+  min-width: 140px;
+  padding: 0 1.4rem;
   min-height: var(--touch-min);
 }
 
-/* Compact, icon-only, and deliberately not flex:1 — it rides alongside
-   Confirmar/Recusar without competing with them for width. WhatsApp's own
-   brand green, since it's a link to an external app, not an in-app action. */
-.ticket-whatsapp-btn {
-  display: flex;
+/* Communication link, not a button — WhatsApp brand green, matching its use
+   elsewhere as a link out to an external app. */
+.ticket-whatsapp-link {
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  width: var(--touch-min);
-  min-height: var(--touch-min);
-  background: #25d366;
-  color: #fff;
-  border-radius: 6px;
+  gap: 0.3rem;
+  color: #1fa855;
+  font-size: 0.78rem;
+  font-weight: 600;
   text-decoration: none;
 }
 
-.ticket-whatsapp-btn:hover {
-  background: #1fb959;
-}
 
 /* Confirmar reads as positive (green), matching --color-confirmed
    everywhere else in the app — not the generic primary blue, which has no
@@ -2280,15 +2317,19 @@ button:disabled {
   background: var(--color-confirmed);
 }
 
+/* Soft tint instead of a thin outline — a 1.5px border at this size reads
+   unpolished and easily loses contrast; a tinted fill keeps Recusar clearly
+   a real action without matching Confirmar's visual weight. */
 .ticket-decline-btn {
-  background: var(--color-surface);
+  background: var(--color-declined-soft);
   color: var(--color-declined);
-  border: 1.5px solid var(--color-declined);
+  border: none;
 }
 
 .ticket-decline-confirm {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 0.6rem;
   margin-top: 0.7rem;
   flex-wrap: wrap;
@@ -2305,6 +2346,8 @@ button:disabled {
   align-items: center;
   justify-content: center;
   gap: 0.4rem;
+  flex: 0 0 auto;
+  padding: 0 1.1rem;
   min-height: var(--touch-min);
 }
 

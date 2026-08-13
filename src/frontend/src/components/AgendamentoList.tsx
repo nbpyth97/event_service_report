@@ -88,7 +88,7 @@ function AppointmentRow({
         <div className="appt-row-identity">
           {isAdmin ? (
             <>
-              <span className="appt-row-primary">{agendamento.customer_name}</span>
+              <span className="appt-row-primary appt-row-customer-name">{agendamento.customer_name}</span>
               <span className="appt-row-secondary">{agendamento.service_name}</span>
             </>
           ) : (
@@ -101,12 +101,27 @@ function AppointmentRow({
         </div>
       </button>
 
+      {isAdmin && agendamento.customer_phone && (
+        // Sibling of the trigger button, not nested inside it — an <a> can't
+        // nest inside a <button>. Communication (WhatsApp) lives with the
+        // customer's identity, separate from the Confirmar/Recusar decision
+        // buttons below, and stays available regardless of status.
+        <div className="appt-row-contact">
+          <a
+            href={waLink(agendamento.customer_phone, `Olá ${agendamento.customer_name}, sobre a sua marcação de ${agendamento.service_name}.`)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="ticket-whatsapp-link"
+            aria-label={`Contactar ${agendamento.customer_name} via WhatsApp`}
+          >
+            <MessageCircle size={13} aria-hidden="true" />
+            WhatsApp
+          </a>
+        </div>
+      )}
+
       {isAdmin && agendamento.status === "pending" && !confirmingDecline && (
         <div className="ticket-actions">
-          <button type="button" className="ticket-confirm-btn" onClick={handleConfirm} disabled={updateStatus.isPending}>
-            <CheckCircle2 size={15} aria-hidden="true" />
-            Confirmar
-          </button>
           <button
             type="button"
             className="ticket-decline-btn"
@@ -116,18 +131,10 @@ function AppointmentRow({
             <XCircle size={15} aria-hidden="true" />
             Recusar
           </button>
-          {agendamento.customer_phone && (
-            <a
-              href={waLink(agendamento.customer_phone, `Olá ${agendamento.customer_name}, sobre a sua marcação de ${agendamento.service_name}.`)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="ticket-whatsapp-btn"
-              aria-label={`Contactar ${agendamento.customer_name} via WhatsApp`}
-              title="Contactar via WhatsApp"
-            >
-              <MessageCircle size={17} aria-hidden="true" />
-            </a>
-          )}
+          <button type="button" className="ticket-confirm-btn" onClick={handleConfirm} disabled={updateStatus.isPending}>
+            <CheckCircle2 size={15} aria-hidden="true" />
+            Confirmar
+          </button>
         </div>
       )}
 
