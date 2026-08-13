@@ -108,9 +108,17 @@ async def notify_booking_cancelled(db: AsyncSession, tenant_id: uuid.UUID, agend
 
 
 async def list_notifications(db: AsyncSession, current_user: User) -> list[Notification]:
+    # Unread-only: this is an actionable inbox, not a history log. Marking a
+    # notification read is how it leaves the list, so there's no unbounded
+    # growth to paginate against — an admin's unread count stays small as
+    # bookings get resolved.
     stmt = (
         select(Notification)
-        .where(Notification.tenant_id == current_user.tenant_id, Notification.recipient_id == current_user.id)
+        .where(
+            Notification.tenant_id == current_user.tenant_id,
+            Notification.recipient_id == current_user.id,
+            Notification.read_at.is_(None),
+        )
         .order_by(Notification.created_at.desc())
     )
     return list((await db.execute(stmt)).scalars().all())

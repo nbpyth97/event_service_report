@@ -128,6 +128,10 @@ async def test_mark_notification_read(client, unique_slug):
     assert res.status_code == 200
     assert res.json()["read_at"] is not None
 
+    # the list is unread-only, so a read notification drops out of it
+    res = await client.get("/api/notifications", headers=_auth_headers(admin_token))
+    assert res.json() == []
+
 
 async def test_mark_other_tenants_notification_read_404s(client, unique_slug):
     await _register_company(client, unique_slug)
