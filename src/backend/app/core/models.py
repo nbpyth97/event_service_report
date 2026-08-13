@@ -64,6 +64,10 @@ class User(Base):
     name: Mapped[str] = mapped_column(String(150), nullable=False)
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     role: Mapped[str] = mapped_column(String(20), nullable=False, default="user")
+    # Optional — set at registration, nothing backfills it for existing users.
+    # Only consumer today is the admin's WhatsApp contact link on a booking
+    # (app.core.models.Agendamento.customer_phone); no SMS/OTP flow yet.
+    phone: Mapped[str | None] = mapped_column(String(30), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
 
@@ -119,6 +123,10 @@ class Agendamento(Base):
     @property
     def customer_name(self) -> str:
         return self.creator.name
+
+    @property
+    def customer_phone(self) -> str | None:
+        return self.creator.phone
 
     @property
     def service_name(self) -> str:

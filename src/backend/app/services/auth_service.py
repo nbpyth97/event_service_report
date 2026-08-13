@@ -54,6 +54,7 @@ async def register_customer(db: AsyncSession, tenant_slug: str, payload: Registe
         name=payload.name,
         password_hash=hash_password(payload.password),
         role="user",
+        phone=payload.phone,
     )
     db.add(user)
     try:
