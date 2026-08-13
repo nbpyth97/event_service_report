@@ -26,6 +26,7 @@ export interface Agendamento {
   end_time: string;
   status: "pending" | "confirmed" | "declined" | "cancelled";
   customer_name: string;
+  customer_phone: string | null;
   service_name: string;
   service_price: string;
   service_duration_min: number;
@@ -108,7 +109,7 @@ async function request<T>(path: string, options?: RequestInit, _retried = false)
 export const api = {
   registerCompany: (payload: { company_name: string; company_slug: string; admin_name: string; password: string }) =>
     request<User>("/api/auth/register-company", { method: "POST", body: JSON.stringify(payload) }),
-  registerCustomer: (tenantSlug: string, payload: { name: string; password: string }) =>
+  registerCustomer: (tenantSlug: string, payload: { name: string; password: string; phone?: string }) =>
     request<User>(`/api/auth/${tenantSlug}/register`, { method: "POST", body: JSON.stringify(payload) }),
   login: (payload: { tenant_slug: string; name: string; password: string }) =>
     request<AccessTokenWithUser>("/api/auth/login", { method: "POST", body: JSON.stringify(payload) }),

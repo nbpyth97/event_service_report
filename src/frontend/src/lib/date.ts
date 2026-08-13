@@ -14,3 +14,12 @@ export function addDays(d: Date, days: number): Date {
   next.setDate(next.getDate() + days);
   return next;
 }
+
+// "Hoje" / "Amanhã" read faster than a weekday name when scanning a
+// schedule — full weekday+day+month only once the date is further out.
+export function fmtDateHeading(d: Date): string {
+  const dStr = toDateStr(d);
+  if (dStr === toDateStr(new Date())) return "Hoje";
+  if (dStr === toDateStr(addDays(new Date(), 1))) return "Amanhã";
+  return d.toLocaleDateString("pt-PT", { weekday: "long", day: "2-digit", month: "long" });
+}

@@ -1,4 +1,3 @@
-import { useState } from "react";
 import type { Agendamento, CompanySettings } from "@/api/client";
 import { addDays, dowKeyOf, toDateStr } from "@/lib/date";
 
@@ -25,11 +24,14 @@ function fmtTime(iso: string): string {
 export default function DayTimeline({
   businessHours,
   agendamentos,
+  date,
+  onDateChange,
 }: {
   businessHours: CompanySettings["business_hours"];
   agendamentos: Agendamento[];
+  date: Date;
+  onDateChange: (date: Date) => void;
 }) {
-  const [date, setDate] = useState(() => new Date());
   const dateStr = toDateStr(date);
   const todayStr = toDateStr(new Date());
   const hours = businessHours[dowKeyOf(date)];
@@ -41,16 +43,16 @@ export default function DayTimeline({
   return (
     <div className="day-timeline">
       <div className="day-timeline-nav">
-        <button type="button" onClick={() => setDate((d) => addDays(d, -1))} aria-label="Dia anterior">‹</button>
+        <button type="button" onClick={() => onDateChange(addDays(date, -1))} aria-label="Dia anterior">‹</button>
         <div className="day-timeline-heading">
           <strong>{fmtHeading(date)}</strong>
           {dateStr !== todayStr && (
-            <button type="button" className="day-timeline-today" onClick={() => setDate(new Date())}>
+            <button type="button" className="day-timeline-today" onClick={() => onDateChange(new Date())}>
               Hoje
             </button>
           )}
         </div>
-        <button type="button" onClick={() => setDate((d) => addDays(d, 1))} aria-label="Dia seguinte">›</button>
+        <button type="button" onClick={() => onDateChange(addDays(date, 1))} aria-label="Dia seguinte">›</button>
       </div>
 
       {!hours ? (
