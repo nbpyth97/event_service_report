@@ -1,15 +1,13 @@
 import { CheckCircle2 } from "lucide-react";
 import type { Agendamento } from "@/api/client";
 
-const STEPS = ["Solicitado", "Confirmado", "Concluído"];
+const STEPS = ["Solicitado", "Confirmado"];
 
-// A booking's real lifecycle has no "in transit" phase — unlike a delivery
-// tracker, "done" here just means the confirmed appointment time has passed.
 // Declined/cancelled are terminal branches off this line, not points on it,
-// so callers render a separate banner for those instead of this stepper.
-export function stepIndexOf(agendamento: Agendamento): number {
-  if (agendamento.status === "pending") return 0;
-  return new Date(agendamento.end_time) <= new Date() ? 2 : 1;
+// so callers render a separate banner for those instead of this stepper —
+// stepIndexOf only ever sees "pending" or "confirmed" in practice.
+export function stepIndexOf(agendamento: Pick<Agendamento, "status">): number {
+  return agendamento.status === "pending" ? 0 : 1;
 }
 
 export default function StatusStepper({ stepIndex }: { stepIndex: number }) {

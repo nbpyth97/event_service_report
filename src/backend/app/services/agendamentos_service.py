@@ -9,6 +9,7 @@ from sqlalchemy.orm import selectinload
 from app.core.models import Agendamento, User
 from app.core.schemas import AgendamentoCreate
 from app.services import notifications_service
+from app.services.agendamentos_policy import InvalidStatusTransition, validate_transition
 from app.services.services_service import get_service
 
 
@@ -62,9 +63,13 @@ async def update_status(
     """Admin-only (gated by require_admin at the router) — admins manage all bookings for their company."""
     agendamento = await get_agendamento(db, tenant_id, agendamento_id)
     previous_status = agendamento.status
+    try:
+        validate_transition(previous_status, status)
+    except InvalidStatusTransition as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
     agendamento.status = status
     await db.commit()
     result = await get_agendamento(db, tenant_id, agendamento_id)
-    if previous_status == "confirmed" and status in ("declined", "cancelled"):
+    if previous_status == "confirmed" and status == "cancelled":
         await notifications_service.notify_booking_cancelled(db, tenant_id, result)
     return result
