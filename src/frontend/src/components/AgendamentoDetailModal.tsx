@@ -7,16 +7,6 @@ import { fmtDateTime, fmtPriceValue, fmtTime } from "@/lib/format";
 import { statusUpdateMessage, waLink } from "@/lib/whatsapp";
 import StatusStepper, { stepIndexOf } from "@/components/StatusStepper";
 
-// "Solicitado" for pending (matches StatusStepper's framing of the first
-// step as a request, not just a status) — the terminal ones match
-// StatusChip's vocabulary, since by then they really are the final word.
-const HISTORY_LABEL_PT: Record<Agendamento["status"], string> = {
-  pending: "Solicitado",
-  confirmed: "Confirmado",
-  declined: "Recusado",
-  cancelled: "Cancelado",
-};
-
 export default function AgendamentoDetailModal({
   agendamento,
   isAdmin,
@@ -43,6 +33,9 @@ export default function AgendamentoDetailModal({
   }, [onClose]);
 
   const isEndedState = agendamento.status === "declined" || agendamento.status === "cancelled";
+  const historyTimes = Object.fromEntries((history ?? []).map((h) => [h.to_status, h.changed_at])) as Partial<
+    Record<Agendamento["status"], string>
+  >;
 
   const handleConfirm = () => {
     updateStatus.mutate(
@@ -106,6 +99,9 @@ export default function AgendamentoDetailModal({
           <div className={`status-endstate status-endstate-${agendamento.status}`}>
             <XCircle size={16} aria-hidden="true" />
             {agendamento.status === "declined" ? "Marcação recusada" : "Marcação cancelada"}
+            {historyTimes[agendamento.status] && (
+              <span className="status-endstate-time">{fmtTime(historyTimes[agendamento.status]!)}</span>
+            )}
             {isAdmin && agendamento.customer_phone && agendamento.status === "declined" && (
               <a
                 href={waLink(agendamento.customer_phone, statusUpdateMessage(agendamento))}
@@ -121,7 +117,7 @@ export default function AgendamentoDetailModal({
           </div>
         ) : (
           <div className="status-stepper-row">
-            <StatusStepper stepIndex={stepIndexOf(agendamento)} />
+            <StatusStepper stepIndex={stepIndexOf(agendamento)} timestamps={historyTimes} />
             {isAdmin && agendamento.customer_phone && agendamento.status === "confirmed" && (
               <a
                 href={waLink(agendamento.customer_phone, statusUpdateMessage(agendamento))}
@@ -135,17 +131,6 @@ export default function AgendamentoDetailModal({
               </a>
             )}
           </div>
-        )}
-
-        {history && history.length > 0 && (
-          <ul className="agendamento-history">
-            {history.map((entry, i) => (
-              <li key={i} className="agendamento-history-item">
-                <span className="agendamento-history-label">{HISTORY_LABEL_PT[entry.to_status]}</span>
-                <span className="agendamento-history-time">{fmtTime(entry.changed_at)}</span>
-              </li>
-            ))}
-          </ul>
         )}
 
         <div className="modal-sheet-body">
