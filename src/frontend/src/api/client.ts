@@ -32,6 +32,12 @@ export interface Agendamento {
   service_duration_min: number;
 }
 
+export interface AgendamentoStatusHistoryEntry {
+  from_status: Agendamento["status"] | null;
+  to_status: Agendamento["status"];
+  changed_at: string;
+}
+
 export interface Notification {
   id: string;
   tenant_id: string;
@@ -141,6 +147,7 @@ export const api = {
     request<Agendamento>("/api/agendamentos", { method: "POST", body: JSON.stringify(payload) }),
   updateAgendamentoStatus: (id: string, status: "confirmed" | "declined" | "cancelled") =>
     request<Agendamento>(`/api/agendamentos/${id}/status`, { method: "PATCH", body: JSON.stringify({ status }) }),
+  agendamentoHistory: (id: string) => request<AgendamentoStatusHistoryEntry[]>(`/api/agendamentos/${id}/history`),
 
   notifications: () => request<Notification[]>("/api/notifications"),
   markNotificationRead: (id: string) => request<Notification>(`/api/notifications/${id}/read`, { method: "POST" }),

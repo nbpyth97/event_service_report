@@ -1,11 +1,21 @@
 import { useEffect, useRef, useState } from "react";
 import { BellRing, CalendarDays, CheckCircle2, Clock, Euro, MessageCircle, User, X, XCircle } from "lucide-react";
 import type { Agendamento } from "@/api/client";
-import { useUpdateAgendamentoStatus } from "@/hooks/queries";
+import { useAgendamentoHistory, useUpdateAgendamentoStatus } from "@/hooks/queries";
 import { useToast } from "@/lib/toast";
 import { fmtDateTime, fmtPriceValue, fmtTime } from "@/lib/format";
 import { statusUpdateMessage, waLink } from "@/lib/whatsapp";
 import StatusStepper, { stepIndexOf } from "@/components/StatusStepper";
+
+// "Solicitado" for pending (matches StatusStepper's framing of the first
+// step as a request, not just a status) — the terminal ones match
+// StatusChip's vocabulary, since by then they really are the final word.
+const HISTORY_LABEL_PT: Record<Agendamento["status"], string> = {
+  pending: "Solicitado",
+  confirmed: "Confirmado",
+  declined: "Recusado",
+  cancelled: "Cancelado",
+};
 
 export default function AgendamentoDetailModal({
   agendamento,
@@ -17,6 +27,7 @@ export default function AgendamentoDetailModal({
   onClose: () => void;
 }) {
   const updateStatus = useUpdateAgendamentoStatus();
+  const { data: history } = useAgendamentoHistory(agendamento.id);
   const { showSuccess } = useToast();
   const [confirmingDecline, setConfirmingDecline] = useState(false);
   const [confirmingCancel, setConfirmingCancel] = useState(false);
@@ -124,6 +135,17 @@ export default function AgendamentoDetailModal({
               </a>
             )}
           </div>
+        )}
+
+        {history && history.length > 0 && (
+          <ul className="agendamento-history">
+            {history.map((entry, i) => (
+              <li key={i} className="agendamento-history-item">
+                <span className="agendamento-history-label">{HISTORY_LABEL_PT[entry.to_status]}</span>
+                <span className="agendamento-history-time">{fmtTime(entry.changed_at)}</span>
+              </li>
+            ))}
+          </ul>
         )}
 
         <div className="modal-sheet-body">

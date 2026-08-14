@@ -92,6 +92,14 @@ class AgendamentoOut(BaseModel):
     service_duration_min: int
 
 
+class AgendamentoStatusHistoryOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    from_status: str | None
+    to_status: str
+    changed_at: datetime
+
+
 class CompanyOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

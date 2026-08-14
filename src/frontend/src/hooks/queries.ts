@@ -7,6 +7,7 @@ export const queryKeys = {
   company: ["company"] as const,
   availability: (serviceId: string, date: string) => ["availability", serviceId, date] as const,
   notifications: ["notifications"] as const,
+  agendamentoHistory: (agendamentoId: string) => ["agendamentoHistory", agendamentoId] as const,
 };
 
 export function useMyCompany() {
@@ -82,6 +83,13 @@ export function useUpdateAgendamentoStatus() {
 
 export function useNotifications() {
   return useQuery({ queryKey: queryKeys.notifications, queryFn: api.notifications });
+}
+
+export function useAgendamentoHistory(agendamentoId: string) {
+  return useQuery({
+    queryKey: queryKeys.agendamentoHistory(agendamentoId),
+    queryFn: () => api.agendamentoHistory(agendamentoId),
+  });
 }
 
 export function useMarkNotificationRead() {

@@ -4,7 +4,7 @@ from datetime import timedelta
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.models import Agendamento, User
+from app.core.models import Agendamento, AgendamentoStatusHistory, User
 from app.core.schemas import AgendamentoCreate
 from app.services.agendamentos import repository
 from app.services.agendamentos.policy import InvalidStatusTransition, validate_transition
@@ -54,10 +54,24 @@ async def update_status(
     except InvalidStatusTransition as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
     agendamento.status = status
-    await repository.save(db)
+    history = AgendamentoStatusHistory(
+        tenant_id=tenant_id, agendamento_id=agendamento_id, from_status=previous_status, to_status=status
+    )
+    await repository.save(db, history)
     result = await get_agendamento(db, tenant_id, agendamento_id)
     if previous_status == "pending":
         await notifications_service.resolve_booking_pending(db, tenant_id, agendamento_id)
     if previous_status == "confirmed" and status == "cancelled":
         await notifications_service.notify_booking_cancelled(db, tenant_id, result)
     return result
+
+
+async def get_status_history(db: AsyncSession, current_user: User, agendamento_id: uuid.UUID) -> list[dict]:
+    agendamento = await get_agendamento(db, current_user.tenant_id, agendamento_id)
+    if current_user.role != "admin" and agendamento.created_by != current_user.id:
+        raise HTTPException(status_code=404, detail="Agendamento not found")
+
+    entries = [{"from_status": None, "to_status": "pending", "changed_at": agendamento.created_at}]
+    history = await repository.list_status_history(db, agendamento_id)
+    entries.extend({"from_status": h.from_status, "to_status": h.to_status, "changed_at": h.changed_at} for h in history)
+    return entries

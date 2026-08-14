@@ -2524,6 +2524,32 @@ button:disabled {
   padding: 0.75rem 0.9rem;
 }
 
+/* Status-change timeline — a flat wrapped row of "label HH:MM" pairs, not a
+   full vertical timeline with connector lines; there are at most 2-3
+   entries, so the heavier stepper-style treatment above already carries the
+   "line" visual and this just needs to add the missing timestamps. */
+.agendamento-history {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem 0.9rem;
+  list-style: none;
+  padding: 0;
+  margin: -0.4rem 0 0.9rem;
+  font-size: 0.78rem;
+  color: var(--color-muted);
+}
+
+.agendamento-history-item {
+  display: flex;
+  align-items: baseline;
+  gap: 0.3rem;
+}
+
+.agendamento-history-time {
+  font-family: var(--font-mono);
+}
+
 /* Right-aligned, auto-width buttons — anchored under the price/status
    column instead of centered, which left awkward empty space on both
    sides on wider cards. */

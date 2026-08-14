@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.auth import get_current_user, require_admin
 from app.core.database import get_db
 from app.core.models import User
-from app.core.schemas import AgendamentoCreate, AgendamentoOut, AgendamentoStatusUpdate
+from app.core.schemas import AgendamentoCreate, AgendamentoOut, AgendamentoStatusHistoryOut, AgendamentoStatusUpdate
 from app.services.agendamentos import service as agendamentos_service
 
 router = APIRouter(prefix="/api/agendamentos", tags=["agendamentos"])
@@ -34,3 +34,12 @@ async def update_status(
     db: AsyncSession = Depends(get_db),
 ):
     return await agendamentos_service.update_status(db, current_user.tenant_id, agendamento_id, payload.status)
+
+
+@router.get("/{agendamento_id}/history", response_model=list[AgendamentoStatusHistoryOut])
+async def get_agendamento_history(
+    agendamento_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    return await agendamentos_service.get_status_history(db, current_user, agendamento_id)

@@ -4,7 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.core.models import Agendamento
+from app.core.models import Agendamento, AgendamentoStatusHistory
 
 
 def _with_relations(stmt):
@@ -35,5 +35,18 @@ async def insert(db: AsyncSession, agendamento: Agendamento) -> None:
     await db.commit()
 
 
-async def save(db: AsyncSession) -> None:
+async def save(db: AsyncSession, history: AgendamentoStatusHistory) -> None:
+    """Commits the caller's already-mutated Agendamento together with its
+    status-history row, in one transaction — the history entry should never
+    exist without the state change it describes, or vice versa."""
+    db.add(history)
     await db.commit()
+
+
+async def list_status_history(db: AsyncSession, agendamento_id: uuid.UUID) -> list[AgendamentoStatusHistory]:
+    stmt = (
+        select(AgendamentoStatusHistory)
+        .where(AgendamentoStatusHistory.agendamento_id == agendamento_id)
+        .order_by(AgendamentoStatusHistory.changed_at)
+    )
+    return list((await db.execute(stmt)).scalars().all())

@@ -142,6 +142,29 @@ class Agendamento(Base):
         return self.service.duration_min
 
 
+class AgendamentoStatusHistory(Base):
+    """One row per status transition (never per-creation — Agendamento.created_at
+    already is the "pending" timestamp, so the API layer synthesizes that first
+    timeline entry instead of duplicating it here). Written in the same
+    transaction as the status mutation it records (see agendamentos/service.py
+    update_status) — unlike the notification side effect, this is core domain
+    data and should never exist without the state change it describes."""
+
+    __tablename__ = "agendamento_status_history"
+    __table_args__ = (
+        Index("ix_agendamento_status_history_agendamento_id_changed_at", "agendamento_id", "changed_at"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("companies.id"), nullable=False, index=True
+    )
+    agendamento_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("agendamentos.id"), nullable=False)
+    from_status: Mapped[str] = mapped_column(String(20), nullable=False)
+    to_status: Mapped[str] = mapped_column(String(20), nullable=False)
+    changed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+
+
 class Notification(Base):
     __tablename__ = "notifications"
     __table_args__ = (
