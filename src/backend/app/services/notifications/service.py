@@ -6,15 +6,14 @@ from datetime import datetime, timezone
 
 import asyncpg
 from fastapi import HTTPException
-from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.models import Agendamento, Notification, User
+from app.services.notifications import repository
+from app.services.notifications.repository import NOTIFY_CHANNEL
 
 logger = logging.getLogger(__name__)
-
-NOTIFY_CHANNEL = "notifications_channel"
 
 
 def utcnow() -> datetime:
@@ -65,33 +64,25 @@ async def listen_for_notifications() -> asyncpg.Connection:
     return conn
 
 
-async def _admin_ids(db: AsyncSession, tenant_id: uuid.UUID) -> list[uuid.UUID]:
-    stmt = select(User.id).where(User.tenant_id == tenant_id, User.role == "admin")
-    return list((await db.execute(stmt)).scalars().all())
-
-
 async def _create_and_notify(
     db: AsyncSession, tenant_id: uuid.UUID, type_: str, agendamento_id: uuid.UUID, message: str
 ) -> None:
     """Best-effort: fan out one Notification row per admin plus a Postgres
     NOTIFY. Must never fail or roll back the caller's booking write."""
     try:
-        admin_ids = await _admin_ids(db, tenant_id)
-        for admin_id in admin_ids:
-            db.add(
-                Notification(
-                    tenant_id=tenant_id,
-                    recipient_id=admin_id,
-                    type=type_,
-                    agendamento_id=agendamento_id,
-                    message=message,
-                )
+        admin_ids = await repository.list_admin_ids(db, tenant_id)
+        notifications = [
+            Notification(
+                tenant_id=tenant_id,
+                recipient_id=admin_id,
+                type=type_,
+                agendamento_id=agendamento_id,
+                message=message,
             )
-        await db.commit()
-        await db.execute(
-            text("SELECT pg_notify(:channel, :tenant_id)"), {"channel": NOTIFY_CHANNEL, "tenant_id": str(tenant_id)}
-        )
-        await db.commit()
+            for admin_id in admin_ids
+        ]
+        await repository.insert_many(db, notifications)
+        await repository.notify_channel(db, tenant_id)
     except Exception:
         await db.rollback()
         logger.exception("Failed to create notifications for tenant %s", tenant_id)
@@ -112,29 +103,14 @@ async def list_notifications(db: AsyncSession, current_user: User) -> list[Notif
     # notification read is how it leaves the list, so there's no unbounded
     # growth to paginate against — an admin's unread count stays small as
     # bookings get resolved.
-    stmt = (
-        select(Notification)
-        .where(
-            Notification.tenant_id == current_user.tenant_id,
-            Notification.recipient_id == current_user.id,
-            Notification.read_at.is_(None),
-        )
-        .order_by(Notification.created_at.desc())
-    )
-    return list((await db.execute(stmt)).scalars().all())
+    return await repository.list_unread(db, current_user.tenant_id, current_user.id)
 
 
 async def mark_read(db: AsyncSession, current_user: User, notification_id: uuid.UUID) -> Notification:
-    stmt = select(Notification).where(
-        Notification.id == notification_id,
-        Notification.tenant_id == current_user.tenant_id,
-        Notification.recipient_id == current_user.id,
-    )
-    notification = (await db.execute(stmt)).scalar_one_or_none()
+    notification = await repository.fetch_by_id(db, current_user.tenant_id, current_user.id, notification_id)
     if not notification:
         raise HTTPException(status_code=404, detail="Notification not found")
     if notification.read_at is None:
         notification.read_at = utcnow()
-        await db.commit()
-        await db.refresh(notification)
+        await repository.save(db, notification)
     return notification

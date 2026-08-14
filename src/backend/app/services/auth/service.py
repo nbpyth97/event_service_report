@@ -3,14 +3,13 @@ import uuid
 from datetime import datetime, timedelta, timezone
 
 from fastapi import HTTPException
-from sqlalchemy import select, update
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth import create_access_token, create_refresh_token, decode_token, hash_password, verify_and_update_password
 from app.core.config import settings
 from app.core.models import DEFAULT_COMPANY_SETTINGS, Company, RefreshToken, User
 from app.core.schemas import LoginPayload, RegisterCompanyPayload, RegisterCustomerPayload
+from app.services.auth import repository
 
 
 async def register_company_and_admin(db: AsyncSession, payload: RegisterCompanyPayload) -> User:
@@ -19,11 +18,7 @@ async def register_company_and_admin(db: AsyncSession, payload: RegisterCompanyP
         name=payload.company_name,
         settings=copy.deepcopy(DEFAULT_COMPANY_SETTINGS),
     )
-    db.add(company)
-    try:
-        await db.flush()
-    except IntegrityError:
-        await db.rollback()
+    if not await repository.try_insert_company(db, company):
         raise HTTPException(status_code=409, detail="A company with this slug already exists")
 
     admin = User(
@@ -32,15 +27,12 @@ async def register_company_and_admin(db: AsyncSession, payload: RegisterCompanyP
         password_hash=hash_password(payload.password),
         role="admin",
     )
-    db.add(admin)
-    await db.commit()
-    await db.refresh(admin)
+    await repository.insert_user(db, admin)
     return admin
 
 
 async def _get_company_by_slug(db: AsyncSession, tenant_slug: str) -> Company:
-    stmt = select(Company).where(Company.slug == tenant_slug)
-    company = (await db.execute(stmt)).scalar_one_or_none()
+    company = await repository.fetch_company_by_slug(db, tenant_slug)
     if not company:
         raise HTTPException(status_code=404, detail="Company not found")
     return company
@@ -56,21 +48,15 @@ async def register_customer(db: AsyncSession, tenant_slug: str, payload: Registe
         role="user",
         phone=payload.phone,
     )
-    db.add(user)
-    try:
-        await db.commit()
-    except IntegrityError:
-        await db.rollback()
+    if not await repository.try_insert_user(db, user):
         raise HTTPException(status_code=409, detail="A user with this name already exists in this company")
-    await db.refresh(user)
     return user
 
 
 async def authenticate(db: AsyncSession, payload: LoginPayload) -> User:
     company = await _get_company_by_slug(db, payload.tenant_slug)
 
-    stmt = select(User).where(User.tenant_id == company.id, User.name == payload.name)
-    user = (await db.execute(stmt)).scalar_one_or_none()
+    user = await repository.fetch_user_by_name(db, company.id, payload.name)
     if not user:
         raise HTTPException(status_code=401, detail="Invalid name or password")
 
@@ -79,7 +65,7 @@ async def authenticate(db: AsyncSession, payload: LoginPayload) -> User:
         raise HTTPException(status_code=401, detail="Invalid name or password")
     if new_hash:
         user.password_hash = new_hash
-        await db.commit()
+        await repository.save(db)
 
     return user
 
@@ -87,8 +73,7 @@ async def authenticate(db: AsyncSession, payload: LoginPayload) -> User:
 async def issue_tokens(db: AsyncSession, user: User) -> tuple[str, str]:
     jti = str(uuid.uuid4())
     expires_at = datetime.now(timezone.utc) + timedelta(minutes=settings.refresh_token_expire_minutes)
-    db.add(RefreshToken(user_id=user.id, jti=jti, expires_at=expires_at))
-    await db.commit()
+    await repository.insert_refresh_token(db, RefreshToken(user_id=user.id, jti=jti, expires_at=expires_at))
 
     access_token = create_access_token(user.id)
     refresh_token = create_refresh_token(user.id, jti)
@@ -100,17 +85,15 @@ async def rotate_refresh_token(db: AsyncSession, refresh_token: str) -> tuple[st
     user_id = uuid.UUID(payload["sub"])
     jti = payload["jti"]
 
-    stmt = select(RefreshToken).where(RefreshToken.jti == jti)
-    token_row = (await db.execute(stmt)).scalar_one_or_none()
+    token_row = await repository.fetch_refresh_token_by_jti(db, jti)
     if not token_row or token_row.revoked_at is not None or token_row.expires_at < datetime.now(timezone.utc):
         raise HTTPException(status_code=401, detail="Not authenticated")
 
-    user = await db.get(User, user_id)
+    user = await repository.fetch_user_by_id(db, user_id)
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
 
-    token_row.revoked_at = datetime.now(timezone.utc)
-    await db.commit()
+    await repository.revoke_refresh_token(db, token_row, datetime.now(timezone.utc))
 
     return await issue_tokens(db, user)
 
@@ -120,23 +103,11 @@ async def revoke_refresh_token(db: AsyncSession, refresh_token: str) -> None:
         payload = decode_token(refresh_token, "refresh")
     except HTTPException:
         return
-    stmt = select(RefreshToken).where(RefreshToken.jti == payload["jti"])
-    token_row = (await db.execute(stmt)).scalar_one_or_none()
+    token_row = await repository.fetch_refresh_token_by_jti(db, payload["jti"])
     if token_row and token_row.revoked_at is None:
-        token_row.revoked_at = datetime.now(timezone.utc)
-        await db.commit()
+        await repository.revoke_refresh_token(db, token_row, datetime.now(timezone.utc))
 
 
 async def revoke_all_tokens_for_tenant(db: AsyncSession, tenant_id: uuid.UUID) -> int:
     """CLI-only (see app/scripts/invalidate_tenant_tokens.py) — never called from a router."""
-    stmt = (
-        update(RefreshToken)
-        .where(
-            RefreshToken.revoked_at.is_(None),
-            RefreshToken.user_id.in_(select(User.id).where(User.tenant_id == tenant_id)),
-        )
-        .values(revoked_at=datetime.now(timezone.utc))
-    )
-    result = await db.execute(stmt)
-    await db.commit()
-    return result.rowcount
+    return await repository.revoke_all_for_tenant(db, tenant_id, datetime.now(timezone.utc))

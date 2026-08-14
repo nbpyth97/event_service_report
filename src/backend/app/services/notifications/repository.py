@@ -1,0 +1,53 @@
+import uuid
+
+from sqlalchemy import select, text
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.models import Notification, User
+
+NOTIFY_CHANNEL = "notifications_channel"
+
+
+async def list_admin_ids(db: AsyncSession, tenant_id: uuid.UUID) -> list[uuid.UUID]:
+    stmt = select(User.id).where(User.tenant_id == tenant_id, User.role == "admin")
+    return list((await db.execute(stmt)).scalars().all())
+
+
+async def insert_many(db: AsyncSession, notifications: list[Notification]) -> None:
+    for notification in notifications:
+        db.add(notification)
+    await db.commit()
+
+
+async def notify_channel(db: AsyncSession, tenant_id: uuid.UUID) -> None:
+    await db.execute(text("SELECT pg_notify(:channel, :tenant_id)"), {"channel": NOTIFY_CHANNEL, "tenant_id": str(tenant_id)})
+    await db.commit()
+
+
+async def list_unread(db: AsyncSession, tenant_id: uuid.UUID, recipient_id: uuid.UUID) -> list[Notification]:
+    stmt = (
+        select(Notification)
+        .where(
+            Notification.tenant_id == tenant_id,
+            Notification.recipient_id == recipient_id,
+            Notification.read_at.is_(None),
+        )
+        .order_by(Notification.created_at.desc())
+    )
+    return list((await db.execute(stmt)).scalars().all())
+
+
+async def fetch_by_id(
+    db: AsyncSession, tenant_id: uuid.UUID, recipient_id: uuid.UUID, notification_id: uuid.UUID
+) -> Notification | None:
+    stmt = select(Notification).where(
+        Notification.id == notification_id,
+        Notification.tenant_id == tenant_id,
+        Notification.recipient_id == recipient_id,
+    )
+    return (await db.execute(stmt)).scalar_one_or_none()
+
+
+async def save(db: AsyncSession, notification: Notification) -> None:
+    await db.commit()
+    await db.refresh(notification)
