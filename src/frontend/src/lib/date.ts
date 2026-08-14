@@ -15,6 +15,13 @@ export function addDays(d: Date, days: number): Date {
   return next;
 }
 
+// Monday-first week, matching how the booking calendar and date-range
+// presets both read a "week" — Sunday is the tail end, not the start.
+export function startOfWeek(d: Date): Date {
+  const day = d.getDay();
+  return addDays(d, day === 0 ? -6 : 1 - day);
+}
+
 // "Hoje" / "Amanhã" read faster than a weekday name when scanning a
 // schedule — full weekday+day+month only once the date is further out.
 export function fmtDateHeading(d: Date): string {

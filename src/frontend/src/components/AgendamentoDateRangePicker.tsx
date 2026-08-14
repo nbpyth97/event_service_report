@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { CalendarDays, ChevronDown } from "lucide-react";
-import { addDays, toDateStr } from "@/lib/date";
+import { addDays, startOfWeek, toDateStr } from "@/lib/date";
 
 export interface DateRange {
   start: string;
@@ -28,11 +28,6 @@ function parseDateStr(s: string): Date {
 function fmtDay(s: string): string {
   const d = parseDateStr(s);
   return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`;
-}
-
-function startOfWeek(d: Date): Date {
-  const day = d.getDay();
-  return addDays(d, day === 0 ? -6 : 1 - day);
 }
 
 export function computePresetRange(preset: DatePreset): DateRange {

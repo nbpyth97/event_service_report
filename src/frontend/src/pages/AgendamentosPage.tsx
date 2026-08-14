@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import AgendamentoList from "@/components/AgendamentoList";
-import DayTimeline from "@/components/DayTimeline";
+import CalendarView from "@/components/CalendarView";
 import AgendamentoDateRangePicker, { computePresetRange } from "@/components/AgendamentoDateRangePicker";
 import type { DatePreset, DateRange } from "@/components/AgendamentoDateRangePicker";
 import AgendamentoSearch from "@/components/AgendamentoSearch";
@@ -11,7 +11,7 @@ import { useCurrentUser } from "@/auth/user";
 import { useAgendamentos, useMyCompany } from "@/hooks/queries";
 import { toDateStr } from "@/lib/date";
 
-type Mode = "overview" | "day";
+type Mode = "overview" | "calendar";
 
 const STATUS_ADJECTIVE: Record<StatusFilterKey, string> = {
   pending: "pendentes",
@@ -42,7 +42,6 @@ export default function AgendamentosPage() {
   const { data: company } = useMyCompany();
 
   const [mode, setMode] = useState<Mode>("overview");
-  const [timelineDate, setTimelineDate] = useState(() => new Date());
   const [selectedStatuses, setSelectedStatuses] = useState<StatusFilterKey[]>(["confirmed"]);
   const [datePreset, setDatePreset] = useState<DatePreset>("week");
   const [dateRange, setDateRange] = useState<DateRange>(() => computePresetRange("week"));
@@ -111,17 +110,6 @@ export default function AgendamentosPage() {
     setSelectedStatuses((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]));
   };
 
-  // Day mode — unchanged: admins browse by day, pending requests always stay
-  // visible so browsing forward never hides something still waiting on a
-  // decision.
-  const timelineDateStr = toDateStr(timelineDate);
-  const dayVisible =
-    isAdmin && agendamentos
-      ? agendamentos.filter(
-          (a) => a.status === "pending" || toDateStr(new Date(a.start_time)) === timelineDateStr
-        )
-      : agendamentos;
-
   // Overview mode — date range + (admin) person filter apply first, feeding
   // both the status-tab counts and the final filtered list.
   const dateAndPersonFiltered = useMemo(() => {
@@ -162,40 +150,32 @@ export default function AgendamentosPage() {
           <button
             type="button"
             role="tab"
+            aria-selected={mode === "calendar"}
+            className={mode === "calendar" ? "active" : ""}
+            onClick={() => setMode("calendar")}
+          >
+            Calendário
+          </button>
+          <button
+            type="button"
+            role="tab"
             aria-selected={mode === "overview"}
             className={mode === "overview" ? "active" : ""}
             onClick={() => setMode("overview")}
           >
             Visão geral
           </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={mode === "day"}
-            className={mode === "day" ? "active" : ""}
-            onClick={() => setMode("day")}
-          >
-            Por dia
-          </button>
         </div>
       )}
 
       {isLoading || !defaultsReady ? (
         <p>Carregando…</p>
-      ) : mode === "day" && isAdmin && company ? (
-        <>
-          <DayTimeline
-            businessHours={company.settings.business_hours}
-            agendamentos={agendamentos ?? []}
-            date={timelineDate}
-            onDateChange={setTimelineDate}
-          />
-          <AgendamentoList
-            agendamentos={dayVisible ?? []}
-            emptyMessage={(agendamentos?.length ?? 0) > 0 ? "Nenhuma marcação neste dia." : undefined}
-            highlightedId={highlightedId}
-          />
-        </>
+      ) : mode === "calendar" && isAdmin && company ? (
+        <CalendarView
+          agendamentos={agendamentos ?? []}
+          businessHours={company.settings.business_hours}
+          highlightedId={highlightedId}
+        />
       ) : (
         <>
           <AgendamentoDateRangePicker
