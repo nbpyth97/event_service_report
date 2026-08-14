@@ -98,6 +98,20 @@ async def notify_booking_cancelled(db: AsyncSession, tenant_id: uuid.UUID, agend
     await _create_and_notify(db, tenant_id, "booking_cancelled", agendamento.id, message)
 
 
+async def resolve_booking_pending(db: AsyncSession, tenant_id: uuid.UUID, agendamento_id: uuid.UUID) -> None:
+    """Once a pending booking is confirmed/declined, the "new booking" alert
+    that prompted it is no longer actionable — clear it for every admin
+    instead of leaving a stale pending notification sitting in their inbox.
+    Also pings the channel so any other admin's bell updates live, not just
+    the one who made the change."""
+    try:
+        await repository.mark_unread_by_agendamento_read(db, tenant_id, agendamento_id, "booking_pending", utcnow())
+        await repository.notify_channel(db, tenant_id)
+    except Exception:
+        await db.rollback()
+        logger.exception("Failed to resolve booking_pending notifications for agendamento %s", agendamento_id)
+
+
 async def list_notifications(db: AsyncSession, current_user: User) -> list[Notification]:
     # Unread-only: this is an actionable inbox, not a history log. Marking a
     # notification read is how it leaves the list, so there's no unbounded

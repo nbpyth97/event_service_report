@@ -76,15 +76,16 @@ async def test_confirmed_booking_cancelled_notifies_admin_but_declining_a_pendin
     )
     agendamento = res.json()
 
-    # declining a still-pending booking must not fire a "cancelled" notification
+    # declining a still-pending booking must not fire a "cancelled"
+    # notification, and resolves (marks read) the "booking_pending" alert
+    # that prompted it — it's no longer actionable once declined.
     res = await client.patch(
         f"/api/agendamentos/{agendamento['id']}/status", json={"status": "declined"}, headers=_auth_headers(admin_token)
     )
     assert res.status_code == 200
 
     res = await client.get("/api/notifications", headers=_auth_headers(admin_token))
-    types = [n["type"] for n in res.json()]
-    assert types == ["booking_pending"]
+    assert res.json() == []
 
     # now confirm a second booking, then cancel it — this one should notify
     res = await client.post(
@@ -97,6 +98,11 @@ async def test_confirmed_booking_cancelled_notifies_admin_but_declining_a_pendin
         f"/api/agendamentos/{agendamento2['id']}/status", json={"status": "confirmed"}, headers=_auth_headers(admin_token)
     )
     assert res.status_code == 200
+
+    # confirming resolves its own booking_pending notification too
+    res = await client.get("/api/notifications", headers=_auth_headers(admin_token))
+    assert res.json() == []
+
     res = await client.patch(
         f"/api/agendamentos/{agendamento2['id']}/status", json={"status": "cancelled"}, headers=_auth_headers(admin_token)
     )

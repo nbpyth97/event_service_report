@@ -1,6 +1,7 @@
 import uuid
+from datetime import datetime
 
-from sqlalchemy import select, text
+from sqlalchemy import select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.models import Notification, User
@@ -51,3 +52,20 @@ async def fetch_by_id(
 async def save(db: AsyncSession, notification: Notification) -> None:
     await db.commit()
     await db.refresh(notification)
+
+
+async def mark_unread_by_agendamento_read(
+    db: AsyncSession, tenant_id: uuid.UUID, agendamento_id: uuid.UUID, type_: str, read_at: datetime
+) -> None:
+    stmt = (
+        update(Notification)
+        .where(
+            Notification.tenant_id == tenant_id,
+            Notification.agendamento_id == agendamento_id,
+            Notification.type == type_,
+            Notification.read_at.is_(None),
+        )
+        .values(read_at=read_at)
+    )
+    await db.execute(stmt)
+    await db.commit()

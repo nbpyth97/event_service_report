@@ -56,6 +56,8 @@ async def update_status(
     agendamento.status = status
     await repository.save(db)
     result = await get_agendamento(db, tenant_id, agendamento_id)
+    if previous_status == "pending":
+        await notifications_service.resolve_booking_pending(db, tenant_id, agendamento_id)
     if previous_status == "confirmed" and status == "cancelled":
         await notifications_service.notify_booking_cancelled(db, tenant_id, result)
     return result

@@ -70,7 +70,13 @@ export function useUpdateAgendamentoStatus() {
   return useMutation({
     mutationFn: ({ id, status }: { id: string; status: "confirmed" | "declined" | "cancelled" }) =>
       api.updateAgendamentoStatus(id, status),
-    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.agendamentos }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.agendamentos });
+      // Confirming/declining a pending booking resolves its "new booking"
+      // notification server-side — refetch so the bell's count/card for it
+      // disappears immediately instead of waiting on the next SSE push.
+      qc.invalidateQueries({ queryKey: queryKeys.notifications });
+    },
   });
 }
 
