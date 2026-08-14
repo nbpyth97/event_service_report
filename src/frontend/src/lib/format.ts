@@ -24,3 +24,14 @@ export function fmtDateTime(iso: string): string {
 export function fmtTime(iso: string): string {
   return new Date(iso).toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit" });
 }
+
+// "28/05 14:32" — for status-history timestamps, where a bare HH:MM would be
+// ambiguous once an appointment's transitions span more than one day.
+export function fmtShortDateTime(iso: string): string {
+  const d = new Date(iso);
+  const day = String(d.getDate()).padStart(2, "0");
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const hours = String(d.getHours()).padStart(2, "0");
+  const minutes = String(d.getMinutes()).padStart(2, "0");
+  return `${day}/${month} ${hours}:${minutes}`;
+}

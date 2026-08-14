@@ -1,6 +1,6 @@
 import { CheckCircle2 } from "lucide-react";
 import type { Agendamento } from "@/api/client";
-import { fmtTime } from "@/lib/format";
+import { fmtShortDateTime } from "@/lib/format";
 
 const STEPS = ["Solicitado", "Confirmado"];
 const STEP_STATUSES: Agendamento["status"][] = ["pending", "confirmed"];
@@ -30,7 +30,7 @@ export default function StatusStepper({
               {state === "done" ? <CheckCircle2 size={14} /> : <span className="status-stepper-dot-inner" />}
             </span>
             <span className="status-stepper-label">{label}</span>
-            {timestamp && <span className="status-stepper-time">{fmtTime(timestamp)}</span>}
+            {timestamp && <span className="status-stepper-time">{fmtShortDateTime(timestamp)}</span>}
           </li>
         );
       })}

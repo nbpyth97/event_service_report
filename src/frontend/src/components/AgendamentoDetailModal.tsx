@@ -3,7 +3,7 @@ import { BellRing, CalendarDays, CheckCircle2, Clock, Euro, MessageCircle, User,
 import type { Agendamento } from "@/api/client";
 import { useAgendamentoHistory, useUpdateAgendamentoStatus } from "@/hooks/queries";
 import { useToast } from "@/lib/toast";
-import { fmtDateTime, fmtPriceValue, fmtTime } from "@/lib/format";
+import { fmtDateTime, fmtPriceValue, fmtShortDateTime, fmtTime } from "@/lib/format";
 import { statusUpdateMessage, waLink } from "@/lib/whatsapp";
 import StatusStepper, { stepIndexOf } from "@/components/StatusStepper";
 
@@ -100,7 +100,7 @@ export default function AgendamentoDetailModal({
             <XCircle size={16} aria-hidden="true" />
             {agendamento.status === "declined" ? "Marcação recusada" : "Marcação cancelada"}
             {historyTimes[agendamento.status] && (
-              <span className="status-endstate-time">{fmtTime(historyTimes[agendamento.status]!)}</span>
+              <span className="status-endstate-time">{fmtShortDateTime(historyTimes[agendamento.status]!)}</span>
             )}
             {isAdmin && agendamento.customer_phone && agendamento.status === "declined" && (
               <a
