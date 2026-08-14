@@ -1928,25 +1928,28 @@ button:disabled {
   color: var(--color-pending);
 }
 
-/* Admin's day-timeline — a single bar spanning business hours with each
-   pending/confirmed booking drawn to scale, so "can I fit someone in" is a
-   glance instead of scanning a list of timestamps. */
-.day-timeline {
-  background: var(--color-surface);
-  border-radius: var(--radius-card);
-  padding: 1rem;
+/* Admin's calendar — Day/Week/Month view switcher over the same bookings.
+   Day and Week share one hour-grid implementation (CalendarGrid, variant
+   prop); Month is its own compact tap-to-drill-in grid. */
+.cal-view {
   margin-bottom: 1.25rem;
 }
 
-.day-timeline-nav {
+.cal-view-switch {
+  margin: 0 0 0.75rem;
+}
+
+.cal-nav {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
-  margin-bottom: 0.75rem;
+  background: var(--color-surface);
+  border-radius: var(--radius-card) var(--radius-card) 0 0;
+  padding: 0.6rem 0.75rem;
 }
 
-.day-timeline-nav > button {
+.cal-nav > button {
   background: transparent;
   color: var(--color-ink);
   border: none;
@@ -1955,20 +1958,20 @@ button:disabled {
   min-height: var(--touch-min);
 }
 
-.day-timeline-nav > button:hover {
+.cal-nav > button:hover {
   background: var(--color-primary-soft);
   border-radius: 8px;
 }
 
-.day-timeline-heading {
+.cal-nav-heading {
   display: flex;
   align-items: center;
   gap: 0.6rem;
   text-align: center;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
 }
 
-.day-timeline-today {
+.cal-nav-today {
   font-size: 0.72rem;
   padding: 0.2rem 0.55rem;
   min-height: auto;
@@ -1976,66 +1979,314 @@ button:disabled {
   color: var(--color-primary);
 }
 
-.day-timeline-closed,
-.day-timeline-empty {
-  margin: 0;
+/* Grid (day + week) — one scroll container holds the whole grid: the
+   day-header row sticks to its top, the hour gutter sticks to its left, so
+   both stay put while the grid scrolls underneath in either axis. Day
+   variant is just this same grid with a single, full-width column. */
+.cal-grid-scroll {
+  background: var(--color-surface);
+  border-radius: 0 0 var(--radius-card) var(--radius-card);
+  overflow: auto;
+  max-height: 62vh;
+  -webkit-overflow-scrolling: touch;
 }
 
-.day-timeline-bar-wrap {
+.cal-grid {
+  display: grid;
+  grid-template-rows: auto 1fr;
+}
+
+.cal-grid-day .cal-grid {
+  grid-template-columns: 44px 1fr;
+}
+
+.cal-grid-week .cal-grid {
+  grid-template-columns: 44px repeat(7, 76px);
+}
+
+@media (min-width: 640px) {
+  .cal-grid-week .cal-grid {
+    grid-template-columns: 44px repeat(7, minmax(0, 1fr));
+  }
+}
+
+.cal-grid-corner {
+  position: sticky;
+  top: 0;
+  left: 0;
+  z-index: 4;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.cal-grid-day-head {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: var(--color-surface);
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 0.5rem;
+  justify-content: center;
+  gap: 0.15rem;
+  padding: 0.35rem 0 0.5rem;
+  border-bottom: 1px solid var(--color-border);
 }
 
-.day-timeline-edge {
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
+.cal-grid-day-name {
   color: var(--color-muted);
-  flex-shrink: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-size: 0.6rem;
 }
 
-.day-timeline-bar {
-  position: relative;
-  flex: 1;
-  height: 40px;
-  background: repeating-linear-gradient(
-    90deg,
-    var(--color-confirmed-soft),
-    var(--color-confirmed-soft) calc(100% / 12 - 1px),
-    var(--color-surface) calc(100% / 12 - 1px),
-    var(--color-surface) calc(100% / 12)
-  );
-  border-radius: 6px;
-  overflow: hidden;
-}
-
-.day-timeline-block {
-  position: absolute;
-  top: 3px;
-  bottom: 3px;
-  border-radius: 4px;
+.cal-grid-day-num {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-ink);
+  width: 24px;
+  height: 24px;
   display: flex;
   align-items: center;
-  overflow: hidden;
-  padding: 0 0.3rem;
-  cursor: default;
+  justify-content: center;
+  border-radius: 50%;
 }
 
-.day-timeline-block-pending {
-  background: var(--color-pending);
-}
-
-.day-timeline-block-confirmed {
+.cal-grid-day-head-today .cal-grid-day-num {
   background: var(--color-primary);
+  color: #fff;
 }
 
-.day-timeline-block-label {
-  color: #fff;
-  font-size: 0.68rem;
-  font-weight: 600;
+.cal-grid-day-head-today .cal-grid-day-name {
+  color: var(--color-primary);
+}
+
+/* Day view already shows the full date in the nav header above — repeating
+   a 3-letter weekday + day number here is redundant, so the row collapses
+   down to a hairline instead of taking up vertical space for nothing. */
+.cal-grid-day .cal-grid-corner,
+.cal-grid-day .cal-grid-day-head {
+  padding: 0;
+  min-height: 0;
+  border-bottom: none;
+}
+
+.cal-grid-gutter {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: var(--color-surface);
+}
+
+.cal-grid-hour-label {
+  position: absolute;
+  left: 0;
+  right: 5px;
+  transform: translateY(-50%);
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  color: var(--color-muted);
+}
+
+/* The first/last hour label sit exactly on the grid's top/bottom edge —
+   centering them (the default, for every label in between) would clip half
+   the text against the scroll container's boundary. */
+.cal-grid-hour-label-first {
+  transform: translateY(0);
+}
+
+.cal-grid-hour-label-last {
+  transform: translateY(-100%);
+}
+
+.cal-grid-day-col {
+  position: relative;
+  border-left: 1px solid var(--color-border);
+  background-image: linear-gradient(to bottom, var(--color-border) 1px, transparent 1px);
+  background-repeat: repeat-y;
+  background-position: top;
+}
+
+.cal-grid-day-col-today {
+  background-color: var(--color-primary-soft);
+}
+
+.cal-grid-closed-day {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-muted);
+  font-size: 0.65rem;
+  background: repeating-linear-gradient(135deg, var(--color-bg), var(--color-bg) 6px, transparent 6px, transparent 12px);
+}
+
+.cal-grid-out-of-hours {
+  position: absolute;
+  left: 0;
+  right: 0;
+  background: var(--color-bg);
+  opacity: 0.65;
+}
+
+.cal-grid-now-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-top: 2px solid var(--color-declined);
+  z-index: 1;
+}
+
+.cal-grid-now-line::before {
+  content: "";
+  position: absolute;
+  left: -3px;
+  top: -3px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-declined);
+}
+
+/* Cards — pastel-tinted body + a solid status-colored spine, like a sticky
+   note pinned to the grid, matching the rest of the app's pending/confirmed
+   color language instead of a solid-fill block. */
+.cal-grid-card {
+  position: absolute;
+  border: none;
+  border-left: 3px solid transparent;
+  border-radius: 6px;
+  padding: 3px 6px;
+  text-align: left;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  cursor: pointer;
+}
+
+.cal-grid-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 3px;
+}
+
+.cal-grid-card-icon {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.cal-grid-card-confirmed {
+  background: var(--color-confirmed-soft);
+  border-left-color: var(--color-confirmed);
+  color: var(--color-confirmed);
+}
+
+.cal-grid-card-highlighted {
+  outline: 2px solid var(--color-ink);
+  outline-offset: 1px;
+}
+
+.cal-grid-card-title {
+  min-width: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--color-ink);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.cal-grid-card-subtitle {
+  font-size: 0.66rem;
+  line-height: 1.25;
+  opacity: 0.9;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Month — compact tap grid; a cell is too small for real event cards, so it
+   only needs to answer "is this day busy" via a few status-colored dots. */
+.cal-month {
+  background: var(--color-surface);
+  border-radius: 0 0 var(--radius-card) var(--radius-card);
+  padding: 0.5rem 0.35rem 0.75rem;
+}
+
+.cal-month-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  text-align: center;
+  font-size: 0.68rem;
+  color: var(--color-muted);
+  padding: 0.3rem 0 0.4rem;
+}
+
+.cal-month-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.cal-month-cell {
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 3px;
+  padding: 0.3rem 0.1rem;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  color: var(--color-ink);
+}
+
+.cal-month-cell:hover {
+  background: var(--color-bg);
+}
+
+.cal-month-cell-outside {
+  color: var(--color-muted);
+  opacity: 0.5;
+}
+
+.cal-month-cell-num {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.cal-month-cell-today .cal-month-cell-num {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.cal-month-cell-badge {
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--color-confirmed);
+  color: #fff;
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: 700;
+  line-height: 1;
 }
 
 /* Ticket-stub cards — a booking read like a torn appointment slip: what's
@@ -2239,17 +2490,6 @@ button:disabled {
   margin-top: 0;
 }
 
-/* Sits between the appointment header and the Confirmar/Recusar bar — not
-   inside the trigger button above (an <a> can't nest inside a <button>), so
-   this sibling row carries its own horizontal padding to line up with the
-   button's edges instead. Communication (WhatsApp) reads as tied to the
-   customer's identity, separate from the status decision below it, and
-   stays available regardless of the booking's current status. */
-.appt-row-contact {
-  padding: 0 0.9rem 0.6rem;
-  margin-top: -0.2rem;
-}
-
 .ticket-row {
   display: flex;
   align-items: center;
@@ -2262,18 +2502,26 @@ button:disabled {
   flex-shrink: 0;
 }
 
-.ticket-customer {
+.ticket-customer-name {
+  text-transform: capitalize;
   font-weight: 600;
 }
 
-.ticket-customer-name {
-  text-transform: capitalize;
+.ticket-meta-price {
+  color: var(--color-ink);
+  font-weight: 700;
 }
 
-.ticket-meta {
-  color: var(--color-muted);
-  font-family: var(--font-mono);
-  font-size: 0.82rem;
+/* Tinted panel around the date/customer/duration/price block — gives the
+   metadata a visible boundary and uniform horizontal padding instead of
+   floating loosely between the stepper and the action buttons. */
+.modal-meta-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  background: var(--color-bg);
+  border-radius: var(--radius-card);
+  padding: 0.75rem 0.9rem;
 }
 
 /* Right-aligned, auto-width buttons — anchored under the price/status
@@ -2284,6 +2532,14 @@ button:disabled {
   justify-content: flex-end;
   gap: 0.6rem;
   margin-top: 0.7rem;
+}
+
+/* Extra room + a divider so the decision buttons read as a distinct footer
+   below the metadata, not crowded right up against it. */
+.modal-sheet > .ticket-actions {
+  margin-top: 1.1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-border);
 }
 
 .ticket-actions button {
@@ -2307,6 +2563,55 @@ button:disabled {
   font-size: 0.78rem;
   font-weight: 600;
   text-decoration: none;
+  flex-shrink: 0;
+}
+
+/* Atualizar cliente — icon-only, in the declined/alert color rather than
+   WhatsApp green: it's a status notification, not a "start chatting" action
+   like Falar com, so it reads as attention-worthy instead of a communication
+   affordance. */
+.ticket-whatsapp-link-alert {
+  color: var(--color-declined);
+}
+
+/* List-row icon links sit inline with running text (the name, the status
+   chip) — slightly larger tap target than their tiny icon alone, so they're
+   still comfortably tappable at this size. */
+.appt-row-icon-link {
+  padding: 2px;
+  margin: -2px;
+}
+
+.appt-row-name-line {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.appt-row-status-line {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/* Bell sits next to whatever is currently showing the booking's status
+   (the stepper, or the declined/cancelled banner) — not next to the
+   client's identity, which is a separate concern. */
+.status-stepper-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0.9rem 0 1.1rem;
+}
+
+.status-stepper-row > .status-stepper {
+  flex: 1;
+  margin: 0;
+}
+
+.status-endstate-notify {
+  margin-left: auto;
 }
 
 
@@ -2317,13 +2622,16 @@ button:disabled {
   background: var(--color-confirmed);
 }
 
-/* Soft tint instead of a thin outline — a 1.5px border at this size reads
-   unpolished and easily loses contrast; a tinted fill keeps Recusar clearly
-   a real action without matching Confirmar's visual weight. */
+/* Outlined, not filled — keeps Recusar a clearly real action without
+   competing with Confirmar's solid green for visual weight. */
 .ticket-decline-btn {
-  background: var(--color-declined-soft);
+  background: var(--color-surface);
   color: var(--color-declined);
-  border: none;
+  border: 1.5px solid var(--color-declined);
+}
+
+.ticket-decline-btn:hover:not(:disabled) {
+  background: var(--color-declined-soft);
 }
 
 .ticket-decline-confirm {
@@ -2360,9 +2668,9 @@ button:disabled {
   background: var(--color-declined);
 }
 
-/* Progression stepper — Solicitado -> Confirmado -> Concluído. Declined and
-   cancelled are terminal branches, rendered as .status-endstate instead of
-   ever appearing on this line (see StatusStepper.tsx). */
+/* Progression stepper — Solicitado -> Confirmado. Declined and cancelled
+   are terminal branches, rendered as .status-endstate instead of ever
+   appearing on this line (see StatusStepper.tsx). */
 .status-stepper {
   display: flex;
   list-style: none;
@@ -2378,16 +2686,23 @@ button:disabled {
   gap: 0.35rem;
   text-align: center;
   position: relative;
-  font-size: 0.76rem;
-  color: var(--color-muted);
+  font-size: 0.78rem;
 }
 
+.status-stepper-label {
+  color: var(--color-ink);
+  opacity: 0.6;
+}
+
+/* Connects this step's dot (centered at top:10px) to the next one's,
+   trimmed on each end by the dot's own radius (10px) so the line meets the
+   ring instead of running underneath it. */
 .status-stepper-step:not(:last-child)::after {
   content: "";
   position: absolute;
   top: 10px;
-  left: 55%;
-  width: 90%;
+  left: calc(50% + 10px);
+  width: calc(100% - 20px);
   height: 2px;
   background: var(--color-border);
   z-index: 0;
@@ -2434,10 +2749,12 @@ button:disabled {
 .status-stepper-current .status-stepper-label {
   color: var(--color-ink);
   font-weight: 600;
+  opacity: 1;
 }
 
 .status-stepper-done .status-stepper-label {
   color: var(--color-confirmed);
+  opacity: 1;
 }
 
 .status-endstate {
@@ -2476,7 +2793,7 @@ button:disabled {
 .modal-sheet {
   background: var(--color-surface);
   border-radius: var(--radius-card) var(--radius-card) 0 0;
-  padding: 1.1rem 1.25rem 1.4rem;
+  padding: 1.35rem 1.5rem 1.6rem;
   width: 100%;
   max-width: 420px;
   max-height: 85vh;
@@ -2497,13 +2814,15 @@ button:disabled {
 }
 
 .modal-sheet-header h2 {
-  font-family: var(--font-display);
   font-size: 1.25rem;
-  font-weight: 600;
+  font-weight: 700;
   margin: 0;
 }
 
 .modal-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: transparent;
   color: var(--color-muted);
   border: none;
@@ -2521,7 +2840,7 @@ button:disabled {
 .modal-sheet-body {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 0.6rem;
   font-size: 0.9rem;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.6rem;
 }
