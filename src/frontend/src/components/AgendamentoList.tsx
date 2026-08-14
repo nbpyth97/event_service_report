@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import { CheckCircle2, MessageCircle, XCircle } from "lucide-react";
+import { BellRing, CheckCircle2, MessageCircle, XCircle } from "lucide-react";
 import type { Agendamento } from "@/api/client";
 import { useCurrentUser } from "@/auth/user";
 import { useUpdateAgendamentoStatus } from "@/hooks/queries";
 import { useToast } from "@/lib/toast";
 import { fmtPrice, fmtTime } from "@/lib/format";
 import { fmtDateHeading, toDateStr } from "@/lib/date";
-import { waLink } from "@/lib/whatsapp";
+import { statusUpdateMessage, waLink } from "@/lib/whatsapp";
 import StatusChip from "@/components/StatusChip";
 import AgendamentoDetailModal from "@/components/AgendamentoDetailModal";
 
@@ -80,7 +80,23 @@ function AppointmentRow({
       ref={rowRef}
       className={`appt-row${agendamento.status === "pending" ? " appt-row-pending" : ""}${highlighted ? " appt-row-highlighted" : ""}`}
     >
-      <button type="button" className="appt-row-trigger" onClick={onOpenDetail}>
+      {/* role="button" div, not a real <button> — the WhatsApp icon links
+          placed contextually inside it (next to the name, next to the
+          status) are interactive elements, and a <button>/<a> can't nest
+          inside a <button>. stopPropagation on those links keeps a click on
+          them from also opening the detail modal. */}
+      <div
+        className="appt-row-trigger"
+        role="button"
+        tabIndex={0}
+        onClick={onOpenDetail}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onOpenDetail();
+          }
+        }}
+      >
         <div className="appt-row-time">
           <span className="appt-row-time-value">{fmtTime(agendamento.start_time)}</span>
           <span className="appt-row-time-duration">{agendamento.service_duration_min} min</span>
@@ -88,7 +104,22 @@ function AppointmentRow({
         <div className="appt-row-identity">
           {isAdmin ? (
             <>
-              <span className="appt-row-primary appt-row-customer-name">{agendamento.customer_name}</span>
+              <span className="appt-row-name-line">
+                <span className="appt-row-primary appt-row-customer-name">{agendamento.customer_name}</span>
+                {agendamento.customer_phone && (
+                  <a
+                    href={waLink(agendamento.customer_phone)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="ticket-whatsapp-link appt-row-icon-link"
+                    aria-label={`Falar com ${agendamento.customer_name} via WhatsApp`}
+                    title="Falar com o cliente"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <MessageCircle size={13} aria-hidden="true" />
+                  </a>
+                )}
+              </span>
               <span className="appt-row-secondary">{agendamento.service_name}</span>
             </>
           ) : (
@@ -97,28 +128,26 @@ function AppointmentRow({
         </div>
         <div className="appt-row-meta">
           <span className="appt-row-price">{fmtPrice(agendamento.service_price)}</span>
-          <StatusChip status={agendamento.status} />
+          <span className="appt-row-status-line">
+            <StatusChip status={agendamento.status} />
+            {isAdmin &&
+              agendamento.customer_phone &&
+              (agendamento.status === "confirmed" || agendamento.status === "declined") && (
+                <a
+                  href={waLink(agendamento.customer_phone, statusUpdateMessage(agendamento))}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="ticket-whatsapp-link ticket-whatsapp-link-alert appt-row-icon-link"
+                  aria-label={`Atualizar ${agendamento.customer_name} sobre o estado da marcação via WhatsApp`}
+                  title="Enviar atualização de estado"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <BellRing size={13} aria-hidden="true" />
+                </a>
+              )}
+          </span>
         </div>
-      </button>
-
-      {isAdmin && agendamento.customer_phone && (
-        // Sibling of the trigger button, not nested inside it — an <a> can't
-        // nest inside a <button>. Communication (WhatsApp) lives with the
-        // customer's identity, separate from the Confirmar/Recusar decision
-        // buttons below, and stays available regardless of status.
-        <div className="appt-row-contact">
-          <a
-            href={waLink(agendamento.customer_phone, `Olá ${agendamento.customer_name}, sobre a sua marcação de ${agendamento.service_name}.`)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="ticket-whatsapp-link"
-            aria-label={`Contactar ${agendamento.customer_name} via WhatsApp`}
-          >
-            <MessageCircle size={13} aria-hidden="true" />
-            WhatsApp
-          </a>
-        </div>
-      )}
+      </div>
 
       {isAdmin && agendamento.status === "pending" && !confirmingDecline && (
         <div className="ticket-actions">

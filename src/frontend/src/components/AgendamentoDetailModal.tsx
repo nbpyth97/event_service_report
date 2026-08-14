@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { CalendarDays, CheckCircle2, MessageCircle, User, X, XCircle } from "lucide-react";
+import { BellRing, CalendarDays, CheckCircle2, Clock, Euro, MessageCircle, User, X, XCircle } from "lucide-react";
 import type { Agendamento } from "@/api/client";
 import { useUpdateAgendamentoStatus } from "@/hooks/queries";
 import { useToast } from "@/lib/toast";
-import { fmtDateTime, fmtPrice } from "@/lib/format";
-import { waLink } from "@/lib/whatsapp";
+import { fmtDateTime, fmtPriceValue, fmtTime } from "@/lib/format";
+import { statusUpdateMessage, waLink } from "@/lib/whatsapp";
 import StatusStepper, { stepIndexOf } from "@/components/StatusStepper";
 
 export default function AgendamentoDetailModal({
@@ -69,45 +69,84 @@ export default function AgendamentoDetailModal({
         <div className="modal-sheet-header">
           <h2 id="agendamento-detail-title">{agendamento.service_name}</h2>
           <button type="button" ref={closeBtnRef} className="modal-close" onClick={onClose} aria-label="Fechar">
-            <X size={18} aria-hidden="true" />
+            <X size={16} aria-hidden="true" />
           </button>
         </div>
 
+        {/* Bell sits inline with whatever's showing the status — the
+            end-state banner or the stepper — since "send a status update"
+            is contextually tied to the status itself, not to the client's
+            identity below. */}
         {isEndedState ? (
           <div className={`status-endstate status-endstate-${agendamento.status}`}>
             <XCircle size={16} aria-hidden="true" />
             {agendamento.status === "declined" ? "Marcação recusada" : "Marcação cancelada"}
+            {isAdmin && agendamento.customer_phone && agendamento.status === "declined" && (
+              <a
+                href={waLink(agendamento.customer_phone, statusUpdateMessage(agendamento))}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="ticket-whatsapp-link ticket-whatsapp-link-alert status-endstate-notify"
+                aria-label={`Atualizar ${agendamento.customer_name} sobre o estado da marcação via WhatsApp`}
+                title="Enviar atualização de estado"
+              >
+                <BellRing size={14} aria-hidden="true" />
+              </a>
+            )}
           </div>
         ) : (
-          <StatusStepper stepIndex={stepIndexOf(agendamento)} />
+          <div className="status-stepper-row">
+            <StatusStepper stepIndex={stepIndexOf(agendamento)} />
+            {isAdmin && agendamento.customer_phone && agendamento.status === "confirmed" && (
+              <a
+                href={waLink(agendamento.customer_phone, statusUpdateMessage(agendamento))}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="ticket-whatsapp-link ticket-whatsapp-link-alert"
+                aria-label={`Atualizar ${agendamento.customer_name} sobre o estado da marcação via WhatsApp`}
+                title="Enviar atualização de estado"
+              >
+                <BellRing size={14} aria-hidden="true" />
+              </a>
+            )}
+          </div>
         )}
 
         <div className="modal-sheet-body">
-          {isAdmin && (
-            <div className="ticket-row ticket-customer">
-              <User size={14} aria-hidden="true" />
-              <span className="ticket-customer-name">{agendamento.customer_name}</span>
+          <div className="modal-meta-card">
+            {isAdmin && (
+              <div className="ticket-row">
+                <User size={14} aria-hidden="true" />
+                <span className="ticket-customer-name">{agendamento.customer_name}</span>
+                {agendamento.customer_phone && (
+                  <a
+                    href={waLink(agendamento.customer_phone)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="ticket-whatsapp-link"
+                    aria-label={`Falar com ${agendamento.customer_name} via WhatsApp`}
+                    title="Falar com o cliente"
+                  >
+                    <MessageCircle size={13} aria-hidden="true" />
+                  </a>
+                )}
+              </div>
+            )}
+            <div className="ticket-row">
+              <CalendarDays size={14} aria-hidden="true" />
+              <span>
+                {fmtDateTime(agendamento.start_time)} – {fmtTime(agendamento.end_time)}
+              </span>
             </div>
-          )}
-          <div className="ticket-row">
-            <CalendarDays size={14} aria-hidden="true" />
-            {fmtDateTime(agendamento.start_time)}
+            <div className="ticket-row">
+              <Clock size={14} aria-hidden="true" />
+              <span>{agendamento.service_duration_min} min</span>
+            </div>
+            <div className="ticket-row">
+              <Euro size={14} aria-hidden="true" />
+              <span className="ticket-meta-price">{fmtPriceValue(agendamento.service_price)}</span>
+            </div>
           </div>
-          <div className="ticket-meta">
-            {agendamento.service_duration_min} min · {fmtPrice(agendamento.service_price)}
-          </div>
-          {isAdmin && agendamento.customer_phone && (
-            <a
-              href={waLink(agendamento.customer_phone, `Olá ${agendamento.customer_name}, sobre a sua marcação de ${agendamento.service_name}.`)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="ticket-whatsapp-link"
-              aria-label={`Contactar ${agendamento.customer_name} via WhatsApp`}
-            >
-              <MessageCircle size={13} aria-hidden="true" />
-              Contactar no WhatsApp
-            </a>
-          )}
         </div>
 
         {isAdmin && agendamento.status === "pending" && !confirmingDecline && (
@@ -118,11 +157,11 @@ export default function AgendamentoDetailModal({
               onClick={() => setConfirmingDecline(true)}
               disabled={updateStatus.isPending}
             >
-              <XCircle size={15} aria-hidden="true" />
+              <XCircle size={16} aria-hidden="true" />
               Recusar
             </button>
             <button type="button" className="ticket-confirm-btn" onClick={handleConfirm} disabled={updateStatus.isPending}>
-              <CheckCircle2 size={15} aria-hidden="true" />
+              <CheckCircle2 size={16} aria-hidden="true" />
               Confirmar
             </button>
           </div>
