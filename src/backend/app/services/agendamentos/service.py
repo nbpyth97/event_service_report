@@ -8,9 +8,9 @@ from sqlalchemy.orm import selectinload
 
 from app.core.models import Agendamento, User
 from app.core.schemas import AgendamentoCreate
-from app.services import notifications_service
-from app.services.agendamentos_policy import InvalidStatusTransition, validate_transition
-from app.services.services_service import get_service
+from app.services.agendamentos.policy import InvalidStatusTransition, validate_transition
+from app.services.notifications import service as notifications_service
+from app.services.services.service import get_service
 
 
 def _with_relations(stmt):

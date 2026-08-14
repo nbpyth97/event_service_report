@@ -7,7 +7,7 @@ from app.core.auth import get_current_user, require_admin
 from app.core.database import get_db
 from app.core.models import User
 from app.core.schemas import AgendamentoCreate, AgendamentoOut, AgendamentoStatusUpdate
-from app.services import agendamentos_service
+from app.services.agendamentos import service as agendamentos_service
 
 router = APIRouter(prefix="/api/agendamentos", tags=["agendamentos"])
 

@@ -1,7 +1,6 @@
 # Pure business rule: which Agendamento.status transitions are allowed.
 # No FastAPI/DB imports on purpose — this is a plain function, not a service;
-# agendamentos_service.py is responsible for turning a rejection into an
-# HTTPException.
+# service.py is responsible for turning a rejection into an HTTPException.
 
 ALLOWED_TRANSITIONS: dict[str, set[str]] = {
     "pending": {"confirmed", "declined"},

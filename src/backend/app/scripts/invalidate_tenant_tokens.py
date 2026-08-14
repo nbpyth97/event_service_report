@@ -18,7 +18,7 @@ from sqlalchemy import select
 
 from app.core.database import AsyncSessionLocal
 from app.core.models import Company
-from app.services.auth_service import revoke_all_tokens_for_tenant
+from app.services.auth.service import revoke_all_tokens_for_tenant
 
 
 async def main(tenant_slug: str) -> None:

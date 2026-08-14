@@ -8,7 +8,8 @@ from app.core.auth import get_current_user, require_admin
 from app.core.database import get_db
 from app.core.models import User
 from app.core.schemas import AvailabilityOut, ServiceCreate, ServiceOut, ServiceUpdate
-from app.services import availability_service, services_service
+from app.services.availability import service as availability_service
+from app.services.services import service as services_service
 
 router = APIRouter(prefix="/api/services", tags=["services"])
 

@@ -119,8 +119,8 @@ class Agendamento(Base):
     creator: Mapped["User"] = relationship()
 
     # Presentation-friendly accessors for the admin detail view — read from
-    # already eager-loaded relationships (see agendamentos_service._with_relations),
-    # never trigger a lazy load.
+    # already eager-loaded relationships (see agendamentos/service.py's
+    # _with_relations), never trigger a lazy load.
     @property
     def customer_name(self) -> str:
         return self.creator.name

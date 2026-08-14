@@ -9,7 +9,7 @@ from app.core.auth import decode_token, get_current_user
 from app.core.database import get_db
 from app.core.models import User
 from app.core.schemas import NotificationOut
-from app.services import notifications_service
+from app.services.notifications import service as notifications_service
 
 router = APIRouter(prefix="/api/notifications", tags=["notifications"])
 

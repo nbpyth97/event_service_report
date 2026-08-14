@@ -20,7 +20,7 @@ from sqlalchemy import delete, select
 from app.core.database import AsyncSessionLocal
 from app.core.models import Agendamento, Company, Notification, Service, User
 from app.core.schemas import AgendamentoCreate
-from app.services import agendamentos_service
+from app.services.agendamentos import service as agendamentos_service
 
 TZ = ZoneInfo("Europe/Lisbon")
 
