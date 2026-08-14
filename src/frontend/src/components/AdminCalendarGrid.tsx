@@ -3,7 +3,6 @@ import { CheckCircle2 } from "lucide-react";
 import type { Agendamento, CompanySettings } from "@/api/client";
 import { dowKeyOf, toDateStr } from "@/lib/date";
 import { layoutDayEvents, toMinutes } from "@/lib/calendarLayout";
-import { fmtTime } from "@/lib/format";
 import { useCurrentUser } from "@/auth/user";
 import AgendamentoDetailModal from "@/components/AgendamentoDetailModal";
 
@@ -20,9 +19,9 @@ const PX_PER_MIN: Record<"day" | "week", number> = { day: 1.35, week: 1.0 };
 const MIN_BLOCK_PX = 24;
 
 // Below this, the card only has room for its title row (padding + one line);
-// a second line for the time range would get clipped by overflow:hidden, so
-// it's better left off entirely — the native `title` tooltip on the card
-// still carries the full "start–end · name" text for short bookings.
+// a second line for the service name would get clipped by overflow:hidden,
+// so it's better left off entirely — the native `title` tooltip on the card
+// still carries the full "name · service" text for short bookings.
 const SUBTITLE_MIN_HEIGHT_PX = 34;
 
 // Admin's day/week grid — hour rows on one axis, day column(s) on the
@@ -186,17 +185,18 @@ export default function AdminCalendarGrid({
                       width: `calc(${100 / colCount}% - 3px)`,
                     }}
                     onClick={() => setSelectedId(agendamento.id)}
-                    title={`${fmtTime(agendamento.start_time)}–${fmtTime(agendamento.end_time)} · ${isAdmin ? agendamento.customer_name : agendamento.service_name}`}
+                    title={
+                      isAdmin
+                        ? `${agendamento.customer_name} · ${agendamento.service_name}`
+                        : agendamento.service_name
+                    }
                   >
                     <span className="cal-grid-card-head">
                       <span className="cal-grid-card-title">{isAdmin ? agendamento.customer_name : agendamento.service_name}</span>
                       <CheckCircle2 className="cal-grid-card-icon" size={11} aria-hidden="true" />
                     </span>
-                    {showDetails && (
-                      <span className="cal-grid-card-subtitle">
-                        {fmtTime(agendamento.start_time)} – {fmtTime(agendamento.end_time)}
-                        {isAdmin ? ` · ${agendamento.service_name}` : ""}
-                      </span>
+                    {showDetails && isAdmin && (
+                      <span className="cal-grid-card-subtitle">{agendamento.service_name}</span>
                     )}
                   </button>
                 );
