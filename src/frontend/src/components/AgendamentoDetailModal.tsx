@@ -19,6 +19,7 @@ export default function AgendamentoDetailModal({
   const updateStatus = useUpdateAgendamentoStatus();
   const { showSuccess } = useToast();
   const [confirmingDecline, setConfirmingDecline] = useState(false);
+  const [confirmingCancel, setConfirmingCancel] = useState(false);
   const closeBtnRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -55,6 +56,19 @@ export default function AgendamentoDetailModal({
       }
     );
     setConfirmingDecline(false);
+  };
+
+  const handleCancel = () => {
+    updateStatus.mutate(
+      { id: agendamento.id, status: "cancelled" },
+      {
+        onSuccess: () => {
+          showSuccess(`Marcação de ${agendamento.customer_name} cancelada.`);
+          onClose();
+        },
+      }
+    );
+    setConfirmingCancel(false);
   };
 
   return (
@@ -180,6 +194,37 @@ export default function AgendamentoDetailModal({
               disabled={updateStatus.isPending}
             >
               {updateStatus.isPending ? "A recusar…" : "Sim, recusar"}
+            </button>
+          </div>
+        )}
+
+        {isAdmin && agendamento.status === "confirmed" && !confirmingCancel && (
+          <div className="ticket-actions">
+            <button
+              type="button"
+              className="ticket-decline-btn"
+              onClick={() => setConfirmingCancel(true)}
+              disabled={updateStatus.isPending}
+            >
+              <XCircle size={16} aria-hidden="true" />
+              Cancelar marcação
+            </button>
+          </div>
+        )}
+
+        {isAdmin && confirmingCancel && (
+          <div className="ticket-decline-confirm">
+            <p>Cancelar a marcação de {agendamento.customer_name}?</p>
+            <button type="button" className="ticket-decline-cancel" onClick={() => setConfirmingCancel(false)}>
+              Voltar
+            </button>
+            <button
+              type="button"
+              className="ticket-decline-submit"
+              onClick={handleCancel}
+              disabled={updateStatus.isPending}
+            >
+              {updateStatus.isPending ? "A cancelar…" : "Sim, cancelar"}
             </button>
           </div>
         )}
