@@ -2,7 +2,7 @@
 # No FastAPI/DB imports on purpose — these are plain functions, not a service;
 # service.py is responsible for turning a rejection into an HTTPException.
 
-from app.core.enums import BookingStatus, UserRole
+from app.core.enums import BookingStatus
 
 ALLOWED_TRANSITIONS: dict[BookingStatus, set[BookingStatus]] = {
     BookingStatus.PENDING: {BookingStatus.CONFIRMED, BookingStatus.DECLINED, BookingStatus.CANCELLED},
@@ -23,13 +23,11 @@ def validate_transition(current: BookingStatus, new: BookingStatus) -> None:
         raise InvalidStatusTransition(current, new)
 
 
-def can_transition(*, role: UserRole, is_owner: bool, current: BookingStatus, new: BookingStatus) -> bool:
-    """Who is allowed to attempt this transition (state legality is validate_transition's job).
-
-    Admins manage all bookings for their company, gated only by ALLOWED_TRANSITIONS.
-    Non-admin owners may additionally cancel their own booking, but only while pending —
-    once an admin confirms or declines it, only the admin can cancel it.
+def can_transition(*, is_owner: bool, new: BookingStatus) -> bool:
+    """Whether a non-admin owner may attempt this transition — they may only ever
+    request cancelling their own booking. Whether that's currently legal (e.g. it
+    isn't already cancelled) is validate_transition's job, not this check's — admins
+    go through that same legality check unconditionally, with no extra restriction
+    here at all.
     """
-    if role == UserRole.ADMIN:
-        return True
-    return is_owner and current == BookingStatus.PENDING and new == BookingStatus.CANCELLED
+    return is_owner and new == BookingStatus.CANCELLED

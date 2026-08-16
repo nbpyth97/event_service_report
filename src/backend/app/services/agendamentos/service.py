@@ -47,14 +47,15 @@ async def list_agendamentos(db: AsyncSession, current_user: User) -> list[Agenda
 async def update_status(
     db: AsyncSession, current_user: User, agendamento_id: uuid.UUID, status: BookingStatus
 ) -> Agendamento:
-    """Admins manage all bookings for their company; owners may additionally cancel
-    their own booking while it's still pending (see agendamentos/policy.py)."""
+    """Admins manage all bookings for their company, gated only by ALLOWED_TRANSITIONS;
+    owners may additionally cancel their own booking regardless of its current status
+    (see agendamentos/policy.py)."""
     tenant_id = current_user.tenant_id
     agendamento = await get_agendamento(db, tenant_id, agendamento_id)
     is_owner = agendamento.created_by == current_user.id
     role = UserRole(current_user.role)
     previous_status = BookingStatus(agendamento.status)
-    if not can_transition(role=role, is_owner=is_owner, current=previous_status, new=status):
+    if role != UserRole.ADMIN and not can_transition(is_owner=is_owner, new=status):
         raise HTTPException(status_code=404, detail="Agendamento not found")
     try:
         validate_transition(previous_status, status)

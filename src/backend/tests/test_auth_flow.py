@@ -105,11 +105,12 @@ async def test_services_rbac_and_tenant_isolation(client, unique_slug):
     assert res.status_code == 200
     assert res.json() == []
 
-    # customer cannot confirm/decline bookings (admin-only)
+    # customer cannot confirm/decline bookings (admin-only) — 404, not 403, matching
+    # the same "pretend it doesn't exist" convention as get_status_history
     res = await client.patch(
         f"/api/agendamentos/{agendamento['id']}/status", json={"status": "declined"}, headers=_auth_headers(customer_token)
     )
-    assert res.status_code == 403
+    assert res.status_code == 404
 
 
 async def test_refresh_and_logout_revokes_token(client, unique_slug):

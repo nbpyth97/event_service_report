@@ -104,6 +104,26 @@ async def test_cancelling_a_cancelled_booking_is_rejected(client, unique_slug):
     assert res.status_code == 409
 
 
+async def test_owner_cancelling_an_already_cancelled_booking_is_rejected(client, unique_slug):
+    await _register_company(client, unique_slug)
+    admin_token, _ = await _login(client, unique_slug, "admin")
+    await _register_customer(client, unique_slug)
+    customer_token, _ = await _login(client, unique_slug, "cliente")
+    service = await _create_service(client, admin_token)
+    agendamento = await _book(client, customer_token, service["id"])
+
+    res = await client.patch(
+        f"/api/agendamentos/{agendamento['id']}/status", json={"status": "cancelled"}, headers=_auth_headers(customer_token)
+    )
+    assert res.status_code == 200
+
+    # cancelled is terminal — same 409 an admin would get, not a 404
+    res = await client.patch(
+        f"/api/agendamentos/{agendamento['id']}/status", json={"status": "cancelled"}, headers=_auth_headers(customer_token)
+    )
+    assert res.status_code == 409
+
+
 async def test_update_status_on_other_tenants_booking_404s(client, unique_slug):
     await _register_company(client, unique_slug)
     admin_token, _ = await _login(client, unique_slug, "admin")
@@ -139,7 +159,27 @@ async def test_owner_can_cancel_own_pending_booking(client, unique_slug):
     assert res.json()["status"] == "cancelled"
 
 
-async def test_owner_cannot_cancel_confirmed_booking(client, unique_slug):
+async def test_owner_can_cancel_own_declined_booking(client, unique_slug):
+    await _register_company(client, unique_slug)
+    admin_token, _ = await _login(client, unique_slug, "admin")
+    await _register_customer(client, unique_slug)
+    customer_token, _ = await _login(client, unique_slug, "cliente")
+    service = await _create_service(client, admin_token)
+    agendamento = await _book(client, customer_token, service["id"])
+
+    res = await client.patch(
+        f"/api/agendamentos/{agendamento['id']}/status", json={"status": "declined"}, headers=_auth_headers(admin_token)
+    )
+    assert res.status_code == 200
+
+    res = await client.patch(
+        f"/api/agendamentos/{agendamento['id']}/status", json={"status": "cancelled"}, headers=_auth_headers(customer_token)
+    )
+    assert res.status_code == 200
+    assert res.json()["status"] == "cancelled"
+
+
+async def test_owner_can_cancel_own_confirmed_booking(client, unique_slug):
     await _register_company(client, unique_slug)
     admin_token, _ = await _login(client, unique_slug, "admin")
     await _register_customer(client, unique_slug)
@@ -155,7 +195,8 @@ async def test_owner_cannot_cancel_confirmed_booking(client, unique_slug):
     res = await client.patch(
         f"/api/agendamentos/{agendamento['id']}/status", json={"status": "cancelled"}, headers=_auth_headers(customer_token)
     )
-    assert res.status_code == 404
+    assert res.status_code == 200
+    assert res.json()["status"] == "cancelled"
 
 
 async def test_non_owner_customer_cannot_change_others_pending_booking(client, unique_slug):

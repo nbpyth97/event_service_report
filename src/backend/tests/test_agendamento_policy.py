@@ -1,6 +1,6 @@
 import pytest
 
-from app.core.enums import BookingStatus, UserRole
+from app.core.enums import BookingStatus
 from app.services.agendamentos.policy import (
     ALLOWED_TRANSITIONS,
     InvalidStatusTransition,
@@ -58,21 +58,18 @@ def test_invalid_status_transition_message_includes_states():
 
 
 @pytest.mark.parametrize(
-    ("role", "is_owner", "current", "new", "expected"),
+    ("is_owner", "new", "expected"),
     [
-        # Admins are only constrained by ALLOWED_TRANSITIONS (checked separately by service.py).
-        (UserRole.ADMIN, False, BookingStatus.PENDING, BookingStatus.CONFIRMED, True),
-        (UserRole.ADMIN, False, BookingStatus.CONFIRMED, BookingStatus.CANCELLED, True),
-        (UserRole.ADMIN, False, BookingStatus.DECLINED, BookingStatus.CANCELLED, True),
-        # Owner may cancel their own booking only while pending.
-        (UserRole.USER, True, BookingStatus.PENDING, BookingStatus.CANCELLED, True),
-        (UserRole.USER, True, BookingStatus.CONFIRMED, BookingStatus.CANCELLED, False),
-        (UserRole.USER, True, BookingStatus.DECLINED, BookingStatus.CANCELLED, False),
-        # Non-owner users may never trigger a transition, regardless of status.
-        (UserRole.USER, False, BookingStatus.PENDING, BookingStatus.CANCELLED, False),
-        # Users can never confirm/decline a booking, even their own.
-        (UserRole.USER, True, BookingStatus.PENDING, BookingStatus.CONFIRMED, False),
+        # Owner may request cancelling their own booking — whether that's
+        # currently legal (e.g. not already cancelled) is validate_transition's
+        # job, not this check's, so `current` isn't even a parameter here.
+        (True, BookingStatus.CANCELLED, True),
+        # Non-owners may never trigger a transition.
+        (False, BookingStatus.CANCELLED, False),
+        # Owners can never confirm/decline a booking, even their own.
+        (True, BookingStatus.CONFIRMED, False),
+        (True, BookingStatus.DECLINED, False),
     ],
 )
-def test_can_transition(role, is_owner, current, new, expected):
-    assert can_transition(role=role, is_owner=is_owner, current=current, new=new) is expected
+def test_can_transition(is_owner, new, expected):
+    assert can_transition(is_owner=is_owner, new=new) is expected
