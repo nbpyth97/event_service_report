@@ -8,8 +8,6 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
 
-ROLES = ("admin", "user")
-AGENDAMENTO_STATUSES = ("pending", "confirmed", "declined", "cancelled")
 NOTIFICATION_TYPES = ("booking_pending", "booking_cancelled")
 
 # Initial value for Company.settings on registration — business_hours keys are

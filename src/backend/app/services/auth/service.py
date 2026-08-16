@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth import create_access_token, create_refresh_token, decode_token, hash_password, verify_and_update_password
 from app.core.config import settings
+from app.core.enums import UserRole
 from app.core.models import DEFAULT_COMPANY_SETTINGS, Company, RefreshToken, User
 from app.core.schemas import LoginPayload, RegisterCompanyPayload, RegisterCustomerPayload
 from app.services.auth import repository
@@ -25,7 +26,7 @@ async def register_company_and_admin(db: AsyncSession, payload: RegisterCompanyP
         tenant_id=company.id,
         name=payload.admin_name,
         password_hash=hash_password(payload.password),
-        role="admin",
+        role=UserRole.ADMIN.value,
     )
     await repository.insert_user(db, admin)
     return admin
@@ -45,7 +46,7 @@ async def register_customer(db: AsyncSession, tenant_slug: str, payload: Registe
         tenant_id=company.id,
         name=payload.name,
         password_hash=hash_password(payload.password),
-        role="user",
+        role=UserRole.USER.value,
         phone=payload.phone,
     )
     if not await repository.try_insert_user(db, user):

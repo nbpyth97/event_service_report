@@ -3,7 +3,7 @@ import uuid
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.auth import get_current_user, require_admin
+from app.core.auth import get_current_user
 from app.core.database import get_db
 from app.core.models import User
 from app.core.schemas import AgendamentoCreate, AgendamentoOut, AgendamentoStatusHistoryOut, AgendamentoStatusUpdate
@@ -26,14 +26,14 @@ async def create_agendamento(
     return await agendamentos_service.create_agendamento(db, current_user.tenant_id, current_user.id, payload)
 
 
-@router.patch("/{agendamento_id}/status", response_model=AgendamentoOut, dependencies=[Depends(require_admin)])
+@router.patch("/{agendamento_id}/status", response_model=AgendamentoOut)
 async def update_status(
     agendamento_id: uuid.UUID,
     payload: AgendamentoStatusUpdate,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    return await agendamentos_service.update_status(db, current_user.tenant_id, agendamento_id, payload.status)
+    return await agendamentos_service.update_status(db, current_user, agendamento_id, payload.status)
 
 
 @router.get("/{agendamento_id}/history", response_model=list[AgendamentoStatusHistoryOut])

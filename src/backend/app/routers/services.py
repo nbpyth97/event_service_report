@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth import get_current_user, require_admin
 from app.core.database import get_db
+from app.core.enums import UserRole
 from app.core.models import User
 from app.core.schemas import AvailabilityOut, ServiceCreate, ServiceOut, ServiceUpdate
 from app.services.availability import service as availability_service
@@ -18,7 +19,9 @@ router = APIRouter(prefix="/api/services", tags=["services"])
 async def list_services(
     current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)
 ):
-    return await services_service.list_services(db, current_user.tenant_id, include_inactive=current_user.role == "admin")
+    return await services_service.list_services(
+        db, current_user.tenant_id, include_inactive=current_user.role == UserRole.ADMIN.value
+    )
 
 
 @router.get("/{service_id}", response_model=ServiceOut)

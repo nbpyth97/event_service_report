@@ -4,13 +4,14 @@ from datetime import datetime
 from sqlalchemy import select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.enums import UserRole
 from app.core.models import Notification, User
 
 NOTIFY_CHANNEL = "notifications_channel"
 
 
 async def list_admin_ids(db: AsyncSession, tenant_id: uuid.UUID) -> list[uuid.UUID]:
-    stmt = select(User.id).where(User.tenant_id == tenant_id, User.role == "admin")
+    stmt = select(User.id).where(User.tenant_id == tenant_id, User.role == UserRole.ADMIN.value)
     return list((await db.execute(stmt)).scalars().all())
 
 

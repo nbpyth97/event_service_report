@@ -18,6 +18,7 @@ from zoneinfo import ZoneInfo
 from sqlalchemy import delete, select
 
 from app.core.database import AsyncSessionLocal
+from app.core.enums import BookingStatus, UserRole
 from app.core.models import Agendamento, Company, Notification, Service, User
 from app.core.schemas import AgendamentoCreate
 from app.services.agendamentos import service as agendamentos_service
@@ -35,8 +36,16 @@ async def seed_calendar_demo() -> None:
         if not company:
             raise SystemExit("Company 'anabela' not found — run `uv run python -m app.scripts.seed` first.")
 
+        admin = (
+            await db.execute(
+                select(User).where(User.tenant_id == company.id, User.role == UserRole.ADMIN.value)
+            )
+        ).scalar_one_or_none()
+        if not admin:
+            raise SystemExit("Expected an admin user — run `app/scripts/seed.py` first.")
+
         users = (
-            await db.execute(select(User).where(User.tenant_id == company.id, User.role == "user"))
+            await db.execute(select(User).where(User.tenant_id == company.id, User.role == UserRole.USER.value))
         ).scalars().all()
         by_name = {u.name: u for u in users}
         if not {"maria", "joana", "ines"} <= by_name.keys():
@@ -68,24 +77,24 @@ async def seed_calendar_demo() -> None:
         # (customer, service, local start time, final status — None stays "pending")
         bookings = [
             # This week — Tue..Sat only (anabela is closed Mon/Sun)
-            (maria, manicure, local_dt(d(0, 1), 9, 0), "confirmed"),
-            (joana, sobrancelha, local_dt(d(0, 1), 9, 15), "confirmed"),  # overlaps maria's manicure
-            (ines, pedicure, local_dt(d(0, 2), 10, 0), "declined"),
-            (maria, massagem, local_dt(d(0, 2), 15, 0), "confirmed"),
-            (joana, depilacao, local_dt(d(0, 3), 11, 0), "cancelled"),
-            (ines, manicure, local_dt(d(0, 3), 16, 30), "confirmed"),
-            (maria, sobrancelha, local_dt(d(0, 4), 10, 0), "confirmed"),
+            (maria, manicure, local_dt(d(0, 1), 9, 0), BookingStatus.CONFIRMED),
+            (joana, sobrancelha, local_dt(d(0, 1), 9, 15), BookingStatus.CONFIRMED),  # overlaps maria's manicure
+            (ines, pedicure, local_dt(d(0, 2), 10, 0), BookingStatus.DECLINED),
+            (maria, massagem, local_dt(d(0, 2), 15, 0), BookingStatus.CONFIRMED),
+            (joana, depilacao, local_dt(d(0, 3), 11, 0), BookingStatus.CANCELLED),
+            (ines, manicure, local_dt(d(0, 3), 16, 30), BookingStatus.CONFIRMED),
+            (maria, sobrancelha, local_dt(d(0, 4), 10, 0), BookingStatus.CONFIRMED),
             (joana, pedicure, local_dt(d(0, 4), 14, 0), None),
             (ines, manicure, local_dt(d(0, 4), 14, 15), None),  # overlaps joana's pedicure
             (maria, massagem, local_dt(d(0, 4), 17, 0), None),
-            (joana, manicure, local_dt(d(0, 5), 9, 30), "confirmed"),
+            (joana, manicure, local_dt(d(0, 5), 9, 30), BookingStatus.CONFIRMED),
             (maria, sobrancelha, local_dt(d(0, 5), 9, 30), None),  # overlaps joana's manicure
             (ines, depilacao, local_dt(d(0, 5), 12, 0), None),
             # Next week
             (maria, pedicure, local_dt(d(1, 1), 9, 0), None),
-            (joana, massagem, local_dt(d(1, 2), 13, 0), "confirmed"),
+            (joana, massagem, local_dt(d(1, 2), 13, 0), BookingStatus.CONFIRMED),
             (ines, sobrancelha, local_dt(d(1, 3), 10, 30), None),
-            (maria, manicure, local_dt(d(1, 4), 16, 0), "confirmed"),
+            (maria, manicure, local_dt(d(1, 4), 16, 0), BookingStatus.CONFIRMED),
             (joana, depilacao, local_dt(d(1, 5), 11, 0), None),
         ]
 
@@ -94,7 +103,7 @@ async def seed_calendar_demo() -> None:
                 db, company.id, customer.id, AgendamentoCreate(service_id=service.id, start_time=start_time)
             )
             if final_status:
-                await agendamentos_service.update_status(db, company.id, agendamento.id, final_status)
+                await agendamentos_service.update_status(db, admin, agendamento.id, final_status)
 
         print(f"Reseeded {len(bookings)} agendamentos for 'anabela' (week of {monday} and the following week).")
 

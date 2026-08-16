@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.database import get_db
+from app.core.enums import UserRole
 from app.core.models import User
 
 ALGORITHM = "HS256"
@@ -81,6 +82,6 @@ async def get_current_user(
 
 
 async def require_admin(user: User = Depends(get_current_user)) -> User:
-    if user.role != "admin":
+    if user.role != UserRole.ADMIN.value:
         raise HTTPException(status_code=403, detail="Admin privileges required")
     return user

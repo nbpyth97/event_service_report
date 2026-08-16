@@ -4,6 +4,8 @@ from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.core.enums import BookingStatus, UserRole
+
 
 class RegisterCompanyPayload(BaseModel):
     company_name: str = Field(min_length=1, max_length=200)
@@ -30,7 +32,7 @@ class UserOut(BaseModel):
     id: uuid.UUID
     tenant_id: uuid.UUID
     name: str
-    role: str
+    role: UserRole
 
 
 class AccessToken(BaseModel):
@@ -72,7 +74,7 @@ class AgendamentoCreate(BaseModel):
 
 
 class AgendamentoStatusUpdate(BaseModel):
-    status: str = Field(pattern="^(confirmed|declined|cancelled)$")
+    status: BookingStatus
 
 
 class AgendamentoOut(BaseModel):
@@ -84,7 +86,7 @@ class AgendamentoOut(BaseModel):
     created_by: uuid.UUID
     start_time: datetime
     end_time: datetime
-    status: str
+    status: BookingStatus
     customer_name: str
     customer_phone: str | None
     service_name: str
@@ -95,8 +97,8 @@ class AgendamentoOut(BaseModel):
 class AgendamentoStatusHistoryOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
-    from_status: str | None
-    to_status: str
+    from_status: BookingStatus | None
+    to_status: BookingStatus
     changed_at: datetime
 
 

@@ -10,6 +10,7 @@ from datetime import datetime, timedelta, timezone
 from sqlalchemy import select
 
 from app.core.database import AsyncSessionLocal
+from app.core.enums import BookingStatus
 from app.core.models import Company
 from app.core.schemas import RegisterCompanyPayload, RegisterCustomerPayload, ServiceCreate, AgendamentoCreate
 from app.services.agendamentos import service as agendamentos_service
@@ -66,18 +67,18 @@ async def seed() -> None:
         now = datetime.now(timezone.utc)
         bookings = [
             (customers[0], services[0], now + timedelta(days=1, hours=2), None),
-            (customers[0], services[2], now + timedelta(days=3), "confirmed"),
+            (customers[0], services[2], now + timedelta(days=3), BookingStatus.CONFIRMED),
             (customers[1], services[1], now + timedelta(days=2, hours=5), None),
-            (customers[1], services[4], now - timedelta(days=5), "confirmed"),
-            (customers[2], services[3], now + timedelta(days=1, hours=6), "declined"),
-            (customers[2], services[0], now - timedelta(days=2), "confirmed"),
+            (customers[1], services[4], now - timedelta(days=5), BookingStatus.CONFIRMED),
+            (customers[2], services[3], now + timedelta(days=1, hours=6), BookingStatus.DECLINED),
+            (customers[2], services[0], now - timedelta(days=2), BookingStatus.CONFIRMED),
         ]
         for customer, service, start_time, final_status in bookings:
             agendamento = await agendamentos_service.create_agendamento(
                 db, admin.tenant_id, customer.id, AgendamentoCreate(service_id=service.id, start_time=start_time)
             )
             if final_status:
-                await agendamentos_service.update_status(db, admin.tenant_id, agendamento.id, final_status)
+                await agendamentos_service.update_status(db, admin, agendamento.id, final_status)
         print(f"Created {len(bookings)} agendamentos")
 
 

@@ -4,6 +4,7 @@ from datetime import datetime
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.enums import BookingStatus
 from app.core.models import Agendamento
 
 
@@ -12,7 +13,7 @@ async def list_busy_intervals(
 ) -> list[tuple[datetime, datetime]]:
     stmt = select(Agendamento).where(
         Agendamento.tenant_id == tenant_id,
-        Agendamento.status.in_(("pending", "confirmed")),
+        Agendamento.status.in_((BookingStatus.PENDING.value, BookingStatus.CONFIRMED.value)),
         Agendamento.start_time < close_dt,
         Agendamento.end_time > open_dt,
     )
