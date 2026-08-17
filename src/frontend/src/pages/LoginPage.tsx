@@ -1,11 +1,14 @@
 import { useState, type FormEvent } from "react";
-import { Navigate, Link } from "react-router-dom";
+import { Navigate, Link, useSearchParams } from "react-router-dom";
 import { Building2, Eye, EyeOff, Lock, User } from "lucide-react";
 import { useCurrentUser } from "@/auth/user";
 
 export default function LoginPage() {
   const { user, login } = useCurrentUser();
-  const [tenantSlug, setTenantSlug] = useState("");
+  const [searchParams] = useSearchParams();
+  const companyFromUrl = searchParams.get("company");
+  const [tenantSlug, setTenantSlug] = useState(companyFromUrl ?? "");
+  const [lockSlug, setLockSlug] = useState(Boolean(companyFromUrl));
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -57,13 +60,25 @@ export default function LoginPage() {
               placeholder="ex: acme"
               type="search"
               value={tenantSlug}
-              autoFocus
+              autoFocus={!lockSlug}
               autoComplete="off"
               autoCorrect="off"
               spellCheck={false}
               onChange={(e) => setTenantSlug(e.target.value)}
+              readOnly={lockSlug}
               required
             />
+            {lockSlug && (
+              <button
+                type="button"
+                className="auth-input-adorn"
+                onClick={() => setLockSlug(false)}
+                aria-label="Trocar empresa"
+                tabIndex={-1}
+              >
+                Trocar
+              </button>
+            )}
           </div>
         </div>
 
