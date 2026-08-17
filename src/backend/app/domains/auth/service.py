@@ -10,7 +10,7 @@ from app.core.config import settings
 from app.core.enums import UserRole
 from app.core.models import DEFAULT_COMPANY_SETTINGS, Company, RefreshToken, User
 from app.core.schemas import LoginPayload, RegisterCompanyPayload, RegisterCustomerPayload
-from app.services.auth import repository
+from app.domains.auth import repository
 
 
 async def register_company_and_admin(db: AsyncSession, payload: RegisterCompanyPayload) -> User:

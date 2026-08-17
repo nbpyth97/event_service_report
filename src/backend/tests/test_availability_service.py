@@ -5,7 +5,7 @@ from sqlalchemy import select
 
 from app.core.database import AsyncSessionLocal
 from app.core.models import Agendamento, Company
-from app.services.availability.service import get_available_slots
+from app.domains.availability.service import get_available_slots
 
 # Default company settings (app/core/models.py DEFAULT_COMPANY_SETTINGS):
 # mon/sun closed, tue-sat 08:00-19:00, 15-min interval, 30-min lead time.

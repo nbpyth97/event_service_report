@@ -7,23 +7,34 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.enums import BookingStatus, UserRole
 from app.core.models import Agendamento, AgendamentoStatusHistory, User
 from app.core.schemas import AgendamentoCreate
-from app.services.agendamentos import repository
-from app.services.agendamentos.policy import InvalidStatusTransition, can_transition, validate_transition
-from app.services.notifications import service as notifications_service
-from app.services.services.service import get_service
+from app.domains.agendamentos import repository
+from app.domains.agendamentos.policy import InvalidStatusTransition, can_transition, validate_transition
+from app.domains.availability import repository as availability_repository
+from app.domains.notifications import service as notifications_service
+from app.domains.services.service import get_service
 
 
 async def create_agendamento(
     db: AsyncSession, tenant_id: uuid.UUID, created_by: uuid.UUID, payload: AgendamentoCreate
 ) -> Agendamento:
     service = await get_service(db, tenant_id, payload.service_id)
+    start_time = payload.start_time
+    end_time = start_time + timedelta(minutes=service.duration_min)
+
+    # Tenant-wide busy check (same PENDING/CONFIRMED definition as
+    # availability_service.get_available_slots) — one business can't run two
+    # services on the same person at once, regardless of which service each
+    # booking is for.
+    busy = await availability_repository.list_busy_intervals(db, tenant_id, start_time, end_time)
+    if any(start_time < b_end and end_time > b_start for b_start, b_end in busy):
+        raise HTTPException(status_code=409, detail="Slot no longer available")
 
     agendamento = Agendamento(
         tenant_id=tenant_id,
         service_id=service.id,
         created_by=created_by,
-        start_time=payload.start_time,
-        end_time=payload.start_time + timedelta(minutes=service.duration_min),
+        start_time=start_time,
+        end_time=end_time,
         status=BookingStatus.PENDING.value,
     )
     await repository.insert(db, agendamento)

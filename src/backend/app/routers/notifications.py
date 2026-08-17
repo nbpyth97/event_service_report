@@ -10,7 +10,7 @@ from app.core.database import get_db
 from app.core.enums import UserRole
 from app.core.models import User
 from app.core.schemas import NotificationOut
-from app.services.notifications import service as notifications_service
+from app.domains.notifications import service as notifications_service
 
 router = APIRouter(prefix="/api/notifications", tags=["notifications"])
 

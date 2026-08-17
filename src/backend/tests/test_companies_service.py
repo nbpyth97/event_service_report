@@ -4,7 +4,7 @@ import pytest
 from fastapi import HTTPException
 
 from app.core.database import AsyncSessionLocal
-from app.services.companies.service import get_company
+from app.domains.companies.service import get_company
 
 
 async def test_get_company_unknown_tenant_raises_404():

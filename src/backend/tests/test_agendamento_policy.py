@@ -1,7 +1,7 @@
 import pytest
 
 from app.core.enums import BookingStatus
-from app.services.agendamentos.policy import (
+from app.domains.agendamentos.policy import (
     ALLOWED_TRANSITIONS,
     InvalidStatusTransition,
     can_transition,

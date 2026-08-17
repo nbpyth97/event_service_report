@@ -9,8 +9,8 @@ from app.core.database import get_db
 from app.core.enums import UserRole
 from app.core.models import User
 from app.core.schemas import AvailabilityOut, ServiceCreate, ServiceOut, ServiceUpdate
-from app.services.availability import service as availability_service
-from app.services.services import service as services_service
+from app.domains.availability import service as availability_service
+from app.domains.services import service as services_service
 
 router = APIRouter(prefix="/api/services", tags=["services"])
 

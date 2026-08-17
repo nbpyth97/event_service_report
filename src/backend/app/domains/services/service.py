@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.models import Service
 from app.core.schemas import ServiceCreate, ServiceUpdate
-from app.services.services import repository
+from app.domains.services import repository
 
 
 async def list_services(db: AsyncSession, tenant_id: uuid.UUID, include_inactive: bool = False) -> list[Service]:

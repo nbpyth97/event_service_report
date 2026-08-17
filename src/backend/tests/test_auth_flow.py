@@ -1,7 +1,7 @@
 import uuid
 
 from app.core.database import AsyncSessionLocal
-from app.services.auth.service import revoke_all_tokens_for_tenant
+from app.domains.auth.service import revoke_all_tokens_for_tenant
 
 
 async def _register_company(client, slug: str):

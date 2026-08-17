@@ -235,6 +235,125 @@ async def test_admin_can_cancel_declined_booking(client, unique_slug):
     assert res.json()["status"] == "cancelled"
 
 
+async def test_booking_overlapping_pending_slot_is_rejected(client, unique_slug):
+    await _register_company(client, unique_slug)
+    admin_token, _ = await _login(client, unique_slug, "admin")
+    await _register_customer(client, unique_slug)
+    customer_token, _ = await _login(client, unique_slug, "cliente")
+    service = await _create_service(client, admin_token)  # 30-min duration
+    await _book(client, customer_token, service["id"], "2026-09-01T10:00:00Z")  # 10:00-10:30, stays pending
+
+    # 10:15-10:45 partially overlaps the 10:00-10:30 pending booking
+    res = await client.post(
+        "/api/agendamentos",
+        json={"service_id": service["id"], "start_time": "2026-09-01T10:15:00Z"},
+        headers=_auth_headers(customer_token),
+    )
+    assert res.status_code == 409
+    assert res.json()["detail"] == "Slot no longer available"
+
+
+async def test_booking_overlapping_confirmed_slot_is_rejected(client, unique_slug):
+    await _register_company(client, unique_slug)
+    admin_token, _ = await _login(client, unique_slug, "admin")
+    await _register_customer(client, unique_slug)
+    customer_token, _ = await _login(client, unique_slug, "cliente")
+    service = await _create_service(client, admin_token)  # 30-min duration
+    agendamento = await _book(client, customer_token, service["id"], "2026-09-01T10:00:00Z")
+    await client.patch(
+        f"/api/agendamentos/{agendamento['id']}/status", json={"status": "confirmed"}, headers=_auth_headers(admin_token)
+    )
+
+    # exact same start/end as the now-confirmed 10:00-10:30 booking
+    res = await client.post(
+        "/api/agendamentos",
+        json={"service_id": service["id"], "start_time": "2026-09-01T10:00:00Z"},
+        headers=_auth_headers(customer_token),
+    )
+    assert res.status_code == 409
+
+
+async def test_booking_back_to_back_slot_is_allowed(client, unique_slug):
+    await _register_company(client, unique_slug)
+    admin_token, _ = await _login(client, unique_slug, "admin")
+    await _register_customer(client, unique_slug)
+    customer_token, _ = await _login(client, unique_slug, "cliente")
+    service = await _create_service(client, admin_token)  # 30-min duration
+    await _book(client, customer_token, service["id"], "2026-09-01T10:00:00Z")  # 10:00-10:30
+
+    # starts exactly when the previous booking ends -> no overlap ([start, end) semantics)
+    res = await client.post(
+        "/api/agendamentos",
+        json={"service_id": service["id"], "start_time": "2026-09-01T10:30:00Z"},
+        headers=_auth_headers(customer_token),
+    )
+    assert res.status_code == 201
+
+
+async def test_booking_overlapping_declined_slot_is_allowed(client, unique_slug):
+    await _register_company(client, unique_slug)
+    admin_token, _ = await _login(client, unique_slug, "admin")
+    await _register_customer(client, unique_slug)
+    customer_token, _ = await _login(client, unique_slug, "cliente")
+    service = await _create_service(client, admin_token)  # 30-min duration
+    agendamento = await _book(client, customer_token, service["id"], "2026-09-01T10:00:00Z")
+    await client.patch(
+        f"/api/agendamentos/{agendamento['id']}/status", json={"status": "declined"}, headers=_auth_headers(admin_token)
+    )
+
+    # declined bookings don't hold the slot
+    res = await client.post(
+        "/api/agendamentos",
+        json={"service_id": service["id"], "start_time": "2026-09-01T10:00:00Z"},
+        headers=_auth_headers(customer_token),
+    )
+    assert res.status_code == 201
+
+
+async def test_booking_overlapping_other_service_is_rejected(client, unique_slug):
+    """Busy time is tenant-wide, not per-service — see availability/repository.py."""
+    await _register_company(client, unique_slug)
+    admin_token, _ = await _login(client, unique_slug, "admin")
+    await _register_customer(client, unique_slug)
+    customer_token, _ = await _login(client, unique_slug, "cliente")
+    service_a = await _create_service(client, admin_token)
+    res = await client.post(
+        "/api/services", json={"name": "Manicure", "price": "20.00", "duration_min": 30}, headers=_auth_headers(admin_token)
+    )
+    service_b = res.json()
+    await _book(client, customer_token, service_a["id"], "2026-09-01T10:00:00Z")  # 10:00-10:30
+
+    res = await client.post(
+        "/api/agendamentos",
+        json={"service_id": service_b["id"], "start_time": "2026-09-01T10:15:00Z"},
+        headers=_auth_headers(customer_token),
+    )
+    assert res.status_code == 409
+
+
+async def test_booking_overlapping_slot_in_another_tenant_is_allowed(client, unique_slug):
+    await _register_company(client, unique_slug)
+    admin_token, _ = await _login(client, unique_slug, "admin")
+    await _register_customer(client, unique_slug)
+    customer_token, _ = await _login(client, unique_slug, "cliente")
+    service = await _create_service(client, admin_token)
+    await _book(client, customer_token, service["id"], "2026-09-01T10:00:00Z")
+
+    other_slug = f"{unique_slug}-other"
+    await _register_company(client, other_slug)
+    other_admin_token, _ = await _login(client, other_slug, "admin")
+    await _register_customer(client, other_slug)
+    other_customer_token, _ = await _login(client, other_slug, "cliente")
+    other_service = await _create_service(client, other_admin_token)
+
+    res = await client.post(
+        "/api/agendamentos",
+        json={"service_id": other_service["id"], "start_time": "2026-09-01T10:00:00Z"},
+        headers=_auth_headers(other_customer_token),
+    )
+    assert res.status_code == 201
+
+
 async def test_book_other_tenants_service_404s(client, unique_slug):
     await _register_company(client, unique_slug)
     admin_token, _ = await _login(client, unique_slug, "admin")

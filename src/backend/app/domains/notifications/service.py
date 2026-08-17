@@ -10,8 +10,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.models import Agendamento, Notification, User
-from app.services.notifications import repository
-from app.services.notifications.repository import NOTIFY_CHANNEL
+from app.domains.notifications import repository
+from app.domains.notifications.repository import NOTIFY_CHANNEL
 
 logger = logging.getLogger(__name__)
 

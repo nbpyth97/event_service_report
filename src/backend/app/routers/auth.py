@@ -11,7 +11,7 @@ from app.core.schemas import (
     RegisterCustomerPayload,
     UserOut,
 )
-from app.services.auth import service as auth_service
+from app.domains.auth import service as auth_service
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 

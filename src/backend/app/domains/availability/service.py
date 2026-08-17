@@ -5,9 +5,9 @@ from zoneinfo import ZoneInfo
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.services.availability import repository
-from app.services.companies import repository as companies_repository
-from app.services.services.service import get_service
+from app.domains.availability import repository
+from app.domains.companies import repository as companies_repository
+from app.domains.services.service import get_service
 
 DOW_KEYS = ("mon", "tue", "wed", "thu", "fri", "sat", "sun")  # date.weekday(): 0=Mon..6=Sun
 

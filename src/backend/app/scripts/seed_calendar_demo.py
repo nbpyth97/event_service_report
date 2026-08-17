@@ -19,9 +19,10 @@ from sqlalchemy import delete, select
 
 from app.core.database import AsyncSessionLocal
 from app.core.enums import BookingStatus, UserRole
-from app.core.models import Agendamento, Company, Notification, Service, User
-from app.core.schemas import AgendamentoCreate
-from app.services.agendamentos import service as agendamentos_service
+from app.core.models import Agendamento, AgendamentoStatusHistory, Company, Notification, Service, User
+from app.domains.agendamentos import repository as agendamentos_repository
+from app.domains.agendamentos import service as agendamentos_service
+from app.domains.notifications import service as notifications_service
 
 TZ = ZoneInfo("Europe/Lisbon")
 
@@ -61,9 +62,10 @@ async def seed_calendar_demo() -> None:
         massagem = by_service["Massagem Relaxante"]
 
         # Wipe this tenant's existing bookings so the script is safe to
-        # re-run. Notifications reference agendamento_id (nullable FK, no
-        # cascade), so they have to go first.
+        # re-run. Notifications and status history both FK to agendamento_id
+        # (no cascade), so they have to go first.
         await db.execute(delete(Notification).where(Notification.tenant_id == company.id))
+        await db.execute(delete(AgendamentoStatusHistory).where(AgendamentoStatusHistory.tenant_id == company.id))
         await db.execute(delete(Agendamento).where(Agendamento.tenant_id == company.id))
         await db.commit()
 
@@ -99,9 +101,21 @@ async def seed_calendar_demo() -> None:
         ]
 
         for customer, service, start_time, final_status in bookings:
-            agendamento = await agendamentos_service.create_agendamento(
-                db, company.id, customer.id, AgendamentoCreate(service_id=service.id, start_time=start_time)
+            # Bypass agendamentos_service.create_agendamento's overlap guard on
+            # purpose here — several of the rows above are deliberately
+            # overlapping fixtures for the calendar UI, so we insert directly
+            # instead of going through the real booking flow.
+            agendamento = Agendamento(
+                tenant_id=company.id,
+                service_id=service.id,
+                created_by=customer.id,
+                start_time=start_time,
+                end_time=start_time + timedelta(minutes=service.duration_min),
+                status=BookingStatus.PENDING.value,
             )
+            await agendamentos_repository.insert(db, agendamento)
+            agendamento = await agendamentos_service.get_agendamento(db, company.id, agendamento.id)
+            await notifications_service.notify_booking_pending(db, company.id, agendamento)
             if final_status:
                 await agendamentos_service.update_status(db, admin, agendamento.id, final_status)
 

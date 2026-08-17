@@ -4,7 +4,7 @@ B2B multi-tenant booking SaaS for service businesses (pilot tenant: a beauty sal
 
 ## Stack
 
-- **Backend**: FastAPI, async SQLAlchemy 2.0 (`asyncpg`), Alembic migrations, `uv` for deps. `src/backend/app/`.
+- **Backend**: FastAPI, async SQLAlchemy 2.0 (`asyncpg`), Alembic migrations, `uv` for deps. `src/backend/app/`. Business logic lives under `app/domains/<name>/` (one subpackage per domain — `agendamentos`, `auth`, `availability`, `companies`, `notifications`, `services`), each with a `repository.py` (DB access) and `service.py` (business rules); routers in `app/routers/` are thin — they just call into the matching domain's `service.py`.
 - **Frontend**: React + TypeScript + Vite + TanStack Query. `src/frontend/src/`.
 - **DB**: Postgres 16 (Docker), one schema, tenant isolation enforced at the **application/service layer** (every query filters `tenant_id` explicitly) — not native RLS.
 - **Dev**: `infra/scripts/start-dev.sh` — brings up `postgres`+`backend` via `docker compose`, runs frontend with plain `npm run dev` (not containerized). Backend on `:8000`, frontend on `:5173`.
@@ -29,11 +29,11 @@ Key relational facts:
 - Every tenant-scoped table (`users`, `services`, `agendamentos`) has its own `tenant_id` FK to `companies` — **never** rely on joining through another table to infer tenant; every service-layer query filters `tenant_id` directly.
 - **`Agendamento.customer_name` is a property that reads `creator.name`** (`creator` = the `User` who made the booking) — there is currently **no separate `Customer` entity**. The person booking *is* a `User` row with `role="user"` in that tenant. This is a known, deliberate simplification (see `REFACTOR_CONTINUATION.md` Phase 6 note) — the app conflates "customer" and "tenant user account," which is fine for now but is the reason phone/SMS-based booking (discussed below, not yet built) needs a real `Customer` model.
 - `Service.created_by` and `Agendamento.created_by` both FK to `User`, not `Company` — audit trail of who created the row.
-- Cross-tenant lookups should 404, not 403 (avoids existence leaks) — established pattern in `services_service.py`.
+- Cross-tenant lookups should 404, not 403 (avoids existence leaks) — established pattern in `app/domains/services/service.py`.
 
 ## Auth / RBAC
 
-Two roles only: `admin` (manages Services CRUD for their company, approves/declines Agendamentos) and `user` (reads their company's services, books/views their own Agendamentos, no service mutation). JWT access token (short-lived, in memory on frontend) + httpOnly-cookie refresh token, real revocation via `RefreshToken` table. `app/core/auth.py` / `app/services/auth_service.py` / `app/routers/auth.py`.
+Two roles only: `admin` (manages Services CRUD for their company, approves/declines Agendamentos) and `user` (reads their company's services, books/views their own Agendamentos, no service mutation). JWT access token (short-lived, in memory on frontend) + httpOnly-cookie refresh token, real revocation via `RefreshToken` table. `app/core/auth.py` / `app/domains/auth/service.py` / `app/routers/auth.py`.
 
 ## Known gaps / open roadmap (not yet implemented — see chat history and `ai_dev.md`/`backlog.md`)
 

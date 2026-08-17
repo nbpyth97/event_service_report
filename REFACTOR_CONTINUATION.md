@@ -46,7 +46,7 @@ Two ways to resolve Phase 6, not yet decided:
   - Since booking now requires an account, existing customers captured only as free-text `clients` rows in Supabase have no password — create placeholder accounts requiring password-reset-on-first-login, or import historical bookings as admin-owned records not tied to a live customer login?
   - Whether `service_costs` data is preserved at all, which depends on the Phase 6 decision above (if the new schema never gets a cost field, this data has nowhere to go and migration should just drop it, documented as an explicit decision, not a silent loss).
 
-**Phase 9 — cutover**. Point DNS/nginx at the new stack, run the Phase 8 migration against production data, verify the pilot tenant (anabela) end to end, decommission `booking-site/`, `dashboard/`, the Vercel deployment, and the old Supabase project after a retention window. `whatsapp-bot/` and the Google Calendar integration (`google_calendar.py`, `googleAuth.js`/`googleCalendar.js`) keep running unmodified throughout every phase — porting them into `app/services/` is separate, later, out-of-scope work per your earlier decision.
+**Phase 9 — cutover**. Point DNS/nginx at the new stack, run the Phase 8 migration against production data, verify the pilot tenant (anabela) end to end, decommission `booking-site/`, `dashboard/`, the Vercel deployment, and the old Supabase project after a retention window. `whatsapp-bot/` and the Google Calendar integration (`google_calendar.py`, `googleAuth.js`/`googleCalendar.js`) keep running unmodified throughout every phase — porting them into `app/domains/` is separate, later, out-of-scope work per your earlier decision.
 
 ## Everything already committed
 

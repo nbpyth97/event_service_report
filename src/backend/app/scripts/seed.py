@@ -13,9 +13,9 @@ from app.core.database import AsyncSessionLocal
 from app.core.enums import BookingStatus
 from app.core.models import Company
 from app.core.schemas import RegisterCompanyPayload, RegisterCustomerPayload, ServiceCreate, AgendamentoCreate
-from app.services.agendamentos import service as agendamentos_service
-from app.services.auth import service as auth_service
-from app.services.services import service as services_service
+from app.domains.agendamentos import service as agendamentos_service
+from app.domains.auth import service as auth_service
+from app.domains.services import service as services_service
 
 SERVICES = [
     ("Manicure", "25.00", 30),

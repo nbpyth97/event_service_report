@@ -4,7 +4,7 @@ from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.models import Company
-from app.services.companies import repository
+from app.domains.companies import repository
 
 
 async def get_company(db: AsyncSession, tenant_id: uuid.UUID) -> Company:

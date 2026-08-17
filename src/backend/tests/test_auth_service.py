@@ -4,7 +4,7 @@ from fastapi import HTTPException
 from app.core.auth import create_access_token
 from app.core.database import AsyncSessionLocal
 from app.core.schemas import RegisterCompanyPayload, RegisterCustomerPayload
-from app.services.auth.service import (
+from app.domains.auth.service import (
     register_company_and_admin,
     register_customer,
     revoke_refresh_token,
