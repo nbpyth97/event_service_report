@@ -1,3 +1,11 @@
+import uuid
+
+from sqlalchemy import select
+
+from app.core.database import AsyncSessionLocal
+from app.core.models import Company
+
+
 async def _register_company(client, slug: str):
     res = await client.post(
         "/api/auth/register-company",
@@ -352,6 +360,78 @@ async def test_booking_overlapping_slot_in_another_tenant_is_allowed(client, uni
         headers=_auth_headers(other_customer_token),
     )
     assert res.status_code == 201
+
+
+async def test_booking_on_closed_day_is_rejected(client, unique_slug):
+    """Write path now reuses availability_service's business-hours check
+    (via is_slot_bookable), not just the busy-overlap check."""
+    await _register_company(client, unique_slug)
+    admin_token, _ = await _login(client, unique_slug, "admin")
+    await _register_customer(client, unique_slug)
+    customer_token, _ = await _login(client, unique_slug, "cliente")
+    service = await _create_service(client, admin_token)
+
+    # 2026-08-31 is a Monday - default business_hours has "mon": None (closed)
+    res = await client.post(
+        "/api/agendamentos",
+        json={"service_id": service["id"], "start_time": "2026-08-31T10:00:00Z"},
+        headers=_auth_headers(customer_token),
+    )
+    assert res.status_code == 409
+    assert res.json()["detail"] == "Slot no longer available"
+
+
+async def test_booking_outside_business_hours_is_rejected(client, unique_slug):
+    await _register_company(client, unique_slug)
+    admin_token, _ = await _login(client, unique_slug, "admin")
+    await _register_customer(client, unique_slug)
+    customer_token, _ = await _login(client, unique_slug, "cliente")
+    service = await _create_service(client, admin_token)
+
+    # 19:00 UTC on 2026-09-01 = 20:00 Europe/Lisbon (DST) - an hour after the 19:00 local close
+    res = await client.post(
+        "/api/agendamentos",
+        json={"service_id": service["id"], "start_time": "2026-09-01T19:00:00Z"},
+        headers=_auth_headers(customer_token),
+    )
+    assert res.status_code == 409
+
+
+async def test_booking_off_the_slot_grid_is_rejected(client, unique_slug):
+    await _register_company(client, unique_slug)
+    admin_token, _ = await _login(client, unique_slug, "admin")
+    await _register_customer(client, unique_slug)
+    customer_token, _ = await _login(client, unique_slug, "cliente")
+    service = await _create_service(client, admin_token)
+
+    # 10:07 UTC = 11:07 Europe/Lisbon local, not aligned to the 15-min slot grid (08:00, 08:15, ...)
+    res = await client.post(
+        "/api/agendamentos",
+        json={"service_id": service["id"], "start_time": "2026-09-01T10:07:00Z"},
+        headers=_auth_headers(customer_token),
+    )
+    assert res.status_code == 409
+
+
+async def test_booking_within_lead_time_is_rejected(client, unique_slug):
+    company = await _register_company(client, unique_slug)
+    admin_token, _ = await _login(client, unique_slug, "admin")
+    await _register_customer(client, unique_slug)
+    customer_token, _ = await _login(client, unique_slug, "cliente")
+    service = await _create_service(client, admin_token)
+
+    # push min_lead_time_min far enough out that no future slot clears it
+    async with AsyncSessionLocal() as db:
+        row = (await db.execute(select(Company).where(Company.id == uuid.UUID(company["tenant_id"])))).scalar_one()
+        row.settings = {**row.settings, "min_lead_time_min": 10 * 365 * 24 * 60}
+        await db.commit()
+
+    res = await client.post(
+        "/api/agendamentos",
+        json={"service_id": service["id"], "start_time": "2026-09-01T10:00:00Z"},
+        headers=_auth_headers(customer_token),
+    )
+    assert res.status_code == 409
 
 
 async def test_book_other_tenants_service_404s(client, unique_slug):

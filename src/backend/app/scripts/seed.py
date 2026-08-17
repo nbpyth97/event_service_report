@@ -11,10 +11,12 @@ from sqlalchemy import select
 
 from app.core.database import AsyncSessionLocal
 from app.core.enums import BookingStatus
-from app.core.models import Company
+from app.core.models import Agendamento, Company
 from app.core.schemas import RegisterCompanyPayload, RegisterCustomerPayload, ServiceCreate, AgendamentoCreate
+from app.domains.agendamentos import repository as agendamentos_repository
 from app.domains.agendamentos import service as agendamentos_service
 from app.domains.auth import service as auth_service
+from app.domains.notifications import service as notifications_service
 from app.domains.services import service as services_service
 
 SERVICES = [
@@ -74,9 +76,22 @@ async def seed() -> None:
             (customers[2], services[0], now - timedelta(days=2), BookingStatus.CONFIRMED),
         ]
         for customer, service, start_time, final_status in bookings:
-            agendamento = await agendamentos_service.create_agendamento(
-                db, admin.tenant_id, customer.id, AgendamentoCreate(service_id=service.id, start_time=start_time)
+            # These fixture times are arbitrary now±offset (two are even in
+            # the past, to simulate booking history) rather than real slots a
+            # customer could pick, so insert directly instead of going
+            # through create_agendamento's business-hours/grid/lead-time
+            # guard (see agendamentos/service.py).
+            agendamento = Agendamento(
+                tenant_id=admin.tenant_id,
+                service_id=service.id,
+                created_by=customer.id,
+                start_time=start_time,
+                end_time=start_time + timedelta(minutes=service.duration_min),
+                status=BookingStatus.PENDING.value,
             )
+            await agendamentos_repository.insert(db, agendamento)
+            agendamento = await agendamentos_service.get_agendamento(db, admin.tenant_id, agendamento.id)
+            await notifications_service.notify_booking_pending(db, admin.tenant_id, agendamento)
             if final_status:
                 await agendamentos_service.update_status(db, admin, agendamento.id, final_status)
         print(f"Created {len(bookings)} agendamentos")

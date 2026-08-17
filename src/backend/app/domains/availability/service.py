@@ -5,6 +5,7 @@ from zoneinfo import ZoneInfo
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.models import Company, Service
 from app.domains.availability import repository
 from app.domains.companies import repository as companies_repository
 from app.domains.services.service import get_service
@@ -21,6 +22,24 @@ async def get_available_slots(
     at once)."""
     service = await get_service(db, tenant_id, service_id)
     company = await companies_repository.fetch_by_id(db, tenant_id)
+    return await _candidate_slots(db, tenant_id, service, company, day)
+
+
+async def is_slot_bookable(db: AsyncSession, tenant_id: uuid.UUID, service: Service, start_time: datetime) -> bool:
+    """The write-path counterpart of get_available_slots: same business-hours,
+    slot-grid, lead-time and tenant-wide busy-overlap rules, applied to one
+    specific start_time rather than enumerated over a whole day. A slot the
+    picker never offered can never be booked either, and vice versa."""
+    company = await companies_repository.fetch_by_id(db, tenant_id)
+    tz = ZoneInfo((company.settings or {}).get("timezone", "UTC"))
+    day = start_time.astimezone(tz).date()
+    slots = await _candidate_slots(db, tenant_id, service, company, day)
+    return start_time in slots
+
+
+async def _candidate_slots(
+    db: AsyncSession, tenant_id: uuid.UUID, service: Service, company: Company, day: date_cls
+) -> list[datetime]:
     company_settings = company.settings or {}
 
     tz = ZoneInfo(company_settings.get("timezone", "UTC"))

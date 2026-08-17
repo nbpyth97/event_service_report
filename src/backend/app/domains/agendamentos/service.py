@@ -9,7 +9,7 @@ from app.core.models import Agendamento, AgendamentoStatusHistory, User
 from app.core.schemas import AgendamentoCreate
 from app.domains.agendamentos import repository
 from app.domains.agendamentos.policy import InvalidStatusTransition, can_transition, validate_transition
-from app.domains.availability import repository as availability_repository
+from app.domains.availability.service import is_slot_bookable
 from app.domains.notifications import service as notifications_service
 from app.domains.services.service import get_service
 
@@ -21,12 +21,11 @@ async def create_agendamento(
     start_time = payload.start_time
     end_time = start_time + timedelta(minutes=service.duration_min)
 
-    # Tenant-wide busy check (same PENDING/CONFIRMED definition as
-    # availability_service.get_available_slots) — one business can't run two
-    # services on the same person at once, regardless of which service each
-    # booking is for.
-    busy = await availability_repository.list_busy_intervals(db, tenant_id, start_time, end_time)
-    if any(start_time < b_end and end_time > b_start for b_start, b_end in busy):
+    # Same rules the availability picker used to offer this slot in the first
+    # place (business hours, slot grid, lead time, tenant-wide busy overlap)
+    # — see availability/service.py::is_slot_bookable. Keeps the write path
+    # from accepting anything the read path wouldn't have shown.
+    if not await is_slot_bookable(db, tenant_id, service, start_time):
         raise HTTPException(status_code=409, detail="Slot no longer available")
 
     agendamento = Agendamento(
