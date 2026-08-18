@@ -82,6 +82,14 @@ export interface Company {
   slug: string;
   name: string;
   settings: CompanySettings;
+  created_at: string;
+}
+
+// Every field optional (the backend patches key-by-key), but business_hours
+// must carry all seven days when sent — a partial map is rejected.
+export interface CompanyUpdate {
+  name?: string;
+  settings?: Partial<CompanySettings>;
 }
 
 export interface PublicCompany {
@@ -164,6 +172,8 @@ export const api = {
     request<Availability>(`/api/services/${serviceId}/availability?date=${date}`),
 
   myCompany: () => request<Company>("/api/companies/me"),
+  updateMyCompany: (payload: CompanyUpdate) =>
+    request<Company>("/api/companies/me", { method: "PATCH", body: JSON.stringify(payload) }),
 
   customers: () => request<Customer[]>("/api/customers"),
   createCustomer: (payload: { name: string; phone: string }) =>

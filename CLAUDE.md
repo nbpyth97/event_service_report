@@ -8,6 +8,12 @@ B2B multi-tenant booking SaaS for service businesses (pilot tenant: a beauty sal
 - **Frontend**: React + TypeScript + Vite + TanStack Query. `src/frontend/src/`.
 - **DB**: Postgres 16 (Docker), one schema, tenant isolation enforced at the **application/service layer** (every query filters `tenant_id` explicitly) — not native RLS.
 - **Dev**: `infra/scripts/start-dev.sh` — brings up `postgres`+`backend` via `docker compose`, runs frontend with plain `npm run dev` (not containerized). Backend on `:8000`, frontend on `:5173`.
+- **Tests**: the suite talks to the real Postgres, so it runs **inside the backend container**, never on the host — the host has no route to `postgres` (it publishes no port) and a host `pytest` just hangs on connect:
+  ```sh
+  docker compose up -d --build backend   # image has no volume mount: rebuild to pick up src changes
+  docker compose exec -T backend uv run --group dev pytest -q
+  ```
+  `--group dev` is required: the image is built with `uv sync --no-dev`, so pytest is not installed until uv resolves the group at run time.
 
 ## Data model (`src/backend/app/core/models.py`)
 
@@ -45,7 +51,7 @@ The core domain logic. `_candidate_slots` is the single source of truth, and `is
 - **A slot must fit whole before `close`**, and **must not have started yet** (`cursor >= now`). The past-time rule is flat, deliberately not the old configurable `min_lead_time_min`, which silently hid the next 30 minutes of the day. `min_lead_time_min` is gone from `src/` entirely; ignore it in the legacy `tenants/`/`booking-site/` configs.
 - **Busy is tenant-wide and status-scoped**: `pending` + `confirmed` block (an unapproved request holds its slot), `declined` + `cancelled` release. Never filtered by `service_id` — see the exclusion constraint note above.
 - **Overlap is half-open** (`cursor < b_end and slot_end > b_start`), matching the constraint's `tstzrange` `[)`. Back-to-back bookings touch without colliding.
-- `slot_interval_min` is **not editable** — there is no company-settings endpoint (`routers/companies.py` has no PATCH/PUT), so it is seeded at registration and unreachable after.
+- `slot_interval_min`, `timezone` and `business_hours` are **editable by staff** via `PATCH /api/companies/me` (`routers/companies.py`, schema `CompanyUpdate`), surfaced at `/definicoes`. The patch **merges into the `settings` JSONB top-level key by key** and must assign a fresh dict — the column has no `MutableDict` tracking, so an in-place mutation emits no `UPDATE` at all. `business_hours` is all-or-nothing (the schema rejects a partial week) since a partial map would look like a full replacement while silently keeping the missing days. `slug` is deliberately **not** patchable: it is baked into every public booking link already shared with customers.
 - **Frontend renders in the company's zone, not the browser's** — `lib/tz.ts` holds one app-wide display zone set from `Company.settings.timezone` (staff, via `AppShell`) or the public `/company` endpoint. Every formatter reads it; anything doing calendar-component math on an instant must go through `zonedParts`/`zonedDateStr`/`zonedMinutesOfDay`, since a `timeZone` format option cannot fix `getHours()`. Booking POSTs echo the slot string verbatim, so the instant is correct even before the zone loads — only a label could ever be wrong.
 
 ## Auth
@@ -56,7 +62,7 @@ The core domain logic. `_candidate_slots` is the single source of truth, and `is
 
 - **Public (no login).** `app/routers/public.py`, prefixed `/api/public/{tenant_slug}` and mounted with no `get_current_user` dependency — company name + business hours, active services, availability, and `POST /book`. On the frontend these are the pages under `src/frontend/src/pages/public/`, routed *outside* `ProtectedRoute`.
 - **Authenticated (staff).** Everything else, behind `ProtectedRoute` → `AppShell`.
-- Frontend route paths are **Portuguese**: `/entrar`, `/registar`, `/marcar-agendamento` (public); `/`, `/agendamentos`, `/servicos`, `/servicos/:serviceId/marcar`, `/clientes` (staff). The tenant is carried as `?company=<slug>` on public links.
+- Frontend route paths are **Portuguese**: `/entrar`, `/registar`, `/marcar-agendamento` (public); `/`, `/agendamentos`, `/servicos`, `/servicos/:serviceId/marcar`, `/clientes`, `/definicoes` (staff). `/definicoes` is reached only from the avatar in the top bar — it is deliberately absent from the bottom nav, which is for the four day-to-day surfaces. The tenant is carried as `?company=<slug>` on public links.
 - Components shared by both surfaces are presentational and never fetch — `components/booking/ServiceBookingFlow.tsx` and `components/booking/TimeSlotList.tsx` take slots as props so the public page can feed them from `usePublicAvailability` and the staff page from `useAvailability`. Keep that shape when adding to either surface rather than forking a `Public*` copy.
 
 ## Known gaps / open roadmap (not yet implemented — see chat history and `ai_dev.md`/`backlog.md`)

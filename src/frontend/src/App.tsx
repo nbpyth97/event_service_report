@@ -16,6 +16,7 @@ import ServicesPage from "@/pages/ServicesPage";
 import BookingPage from "@/pages/BookingPage";
 import AgendamentosPage from "@/pages/AgendamentosPage";
 import CustomersPage from "@/pages/CustomersPage";
+import CompanySettingsPage from "@/pages/CompanySettingsPage";
 
 const NAV_ITEMS = [
   { to: "/", label: "Painel", icon: LayoutGrid, end: true },
@@ -90,9 +91,17 @@ function AppShell() {
             {theme === "dark" ? <Sun size={17} aria-hidden="true" /> : <Moon size={17} aria-hidden="true" />}
           </button>
           {user && (
-            <span className="app-nav-avatar" title={user.name} aria-hidden="true">
+            /* The avatar is the only entry point to company settings — it is
+               deliberately not in NAV_ITEMS, since the bottom nav is for the
+               four day-to-day surfaces and settings is visited rarely. */
+            <NavLink
+              to="/definicoes"
+              className="app-nav-avatar"
+              title={`${user.name} — definições`}
+              aria-label="Definições da empresa"
+            >
               {initialsOf(user.name)}
-            </span>
+            </NavLink>
           )}
           <span className="app-nav-divider app-nav-divider-wide" aria-hidden="true" />
           <button
@@ -140,6 +149,7 @@ export default function App() {
           <Route path="/servicos/:serviceId/marcar" element={<BookingPage />} />
           <Route path="/agendamentos" element={<AgendamentosPage />} />
           <Route path="/clientes" element={<CustomersPage />} />
+          <Route path="/definicoes" element={<CompanySettingsPage />} />
         </Route>
       </Route>
       {/* Catches the pre-rename English paths (/services, /customers, …) and

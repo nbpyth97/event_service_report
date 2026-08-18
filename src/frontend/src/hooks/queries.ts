@@ -19,6 +19,23 @@ export function useMyCompany() {
   return useQuery({ queryKey: queryKeys.company, queryFn: api.myCompany, staleTime: Infinity });
 }
 
+export function useUpdateMyCompany() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: api.updateMyCompany,
+    onSuccess: (company) => {
+      // Written straight into the cache rather than invalidated: useMyCompany
+      // is staleTime: Infinity, so an invalidate would leave AppShell (title,
+      // and lib/tz.ts display zone) on the old values until a remount.
+      qc.setQueryData(queryKeys.company, company);
+      // Business hours and the slot grid both feed _candidate_slots — every
+      // cached day of availability is now potentially wrong.
+      qc.invalidateQueries({ queryKey: ["availability"] });
+      qc.invalidateQueries({ queryKey: ["publicAvailability"] });
+    },
+  });
+}
+
 export function useAvailability(serviceId: string, date: string | null) {
   return useQuery({
     queryKey: queryKeys.availability(serviceId, date ?? ""),

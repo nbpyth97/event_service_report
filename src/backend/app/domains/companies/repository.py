@@ -13,3 +13,8 @@ async def fetch_by_id(db: AsyncSession, tenant_id: uuid.UUID) -> Company | None:
 async def fetch_by_slug(db: AsyncSession, slug: str) -> Company | None:
     stmt = select(Company).where(Company.slug == slug)
     return (await db.execute(stmt)).scalar_one_or_none()
+
+
+async def save(db: AsyncSession, company: Company) -> None:
+    await db.commit()
+    await db.refresh(company)

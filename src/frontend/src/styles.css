@@ -279,6 +279,15 @@ body {
   font-weight: 700;
   letter-spacing: 0.02em;
   flex-shrink: 0;
+  /* It is a NavLink to /definicoes, not decoration — kill the underline and
+     the visited/link colour so it still reads as an avatar. */
+  text-decoration: none;
+}
+
+.app-nav-avatar:hover,
+.app-nav-avatar.active {
+  background: var(--color-primary);
+  color: var(--color-surface);
 }
 
 /* Row 1's icon buttons run a touch under the 44px touch-target guideline on
@@ -3388,4 +3397,245 @@ button:disabled {
 .customers-page-row-new-appt:hover,
 .customers-page-row-new-appt:focus-visible {
   background: var(--color-primary-soft);
+}
+
+
+/* Company settings (/definicoes). One page background with restrained
+   sections rather than cards nested inside cards — the page is a
+   configuration surface, and each section is a domain (public link, company,
+   booking grid, weekly hours) that will grow its own fields later. */
+.settings-page {
+  padding-bottom: 6rem; /* clears the sticky save bar */
+}
+
+.settings-section {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  padding: 1rem 1.1rem 1.1rem;
+  margin-bottom: 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.settings-section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+  margin: 0;
+}
+
+.settings-section-lead {
+  margin-top: -0.35rem;
+}
+
+/* Deliberately --color-primary, not --color-accent: the gold accent reads as
+   "attention needed", and a working public link is not a warning. */
+.settings-link-card {
+  border-left: 3px solid var(--color-primary);
+}
+
+.settings-link-lead {
+  font-size: 0.82rem;
+  margin: 0;
+}
+
+.settings-link-url {
+  font-family: var(--font-mono);
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  overflow-wrap: anywhere;
+}
+
+.settings-link-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.settings-ghost-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.75rem;
+  min-height: 36px;
+  font-size: 0.83rem;
+  font-weight: 600;
+  border-radius: var(--radius-card);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-ink);
+  text-decoration: none;
+}
+
+.settings-ghost-btn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.settings-page select {
+  border: none;
+  background: none;
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  font-size: 1rem;
+  color: inherit;
+}
+
+.settings-page select:focus {
+  outline: none;
+}
+
+.settings-hint {
+  font-size: 0.78rem;
+  line-height: 1.45;
+  margin: 0;
+}
+
+.settings-meta {
+  font-size: 0.75rem;
+  margin: 0.15rem 0 0;
+}
+
+.settings-narrow-field {
+  max-width: 200px;
+}
+
+/* Sits apart from the fields it follows — it navigates away rather than
+   editing anything in this section, so it should not read as another control
+   in the form. */
+.settings-section-link {
+  align-self: flex-start;
+  margin-top: 0.2rem;
+}
+
+/* One row per weekday. The checkbox carries the day name so the whole label
+   is the hit target, and the time pair collapses to plain muted "Encerrado"
+   text (not a badge — nothing there is clickable) when the day is off. */
+.settings-day-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.15rem 0;
+}
+
+.settings-day-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-height: var(--touch-min);
+}
+
+.settings-day-row-closed .settings-day-toggle span {
+  color: var(--color-muted);
+}
+
+.settings-day-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.88rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.settings-day-toggle input {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  accent-color: var(--color-primary);
+  padding: 0;
+}
+
+.settings-day-times {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--color-muted);
+}
+
+.settings-day-times input {
+  padding: 0.35rem 0.45rem;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--color-ink);
+}
+
+.settings-day-times input[aria-invalid="true"] {
+  border-color: var(--color-declined);
+  color: var(--color-declined);
+}
+
+.settings-day-closed {
+  font-size: 0.82rem;
+}
+
+.settings-day-error {
+  margin: 0;
+  font-size: 0.76rem;
+  color: var(--color-declined);
+}
+
+/* .form-error is the app-wide field error (see NewCustomerForm); inside a
+   .service-form-field it only needs the size/spacing to match the label. */
+.settings-field-error {
+  font-size: 0.76rem;
+  margin-top: 0.15rem;
+}
+
+/* Sticky above the bottom nav: the weekday list is long enough that a change
+   made at the top would otherwise scroll its own Save button out of sight,
+   and this bar is also the unsaved-changes warning for in-app navigation. */
+.settings-savebar {
+  position: sticky;
+  bottom: calc(58px + env(safe-area-inset-bottom) + 0.5rem);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+.settings-savebar-dirty {
+  border-color: var(--color-primary);
+}
+
+.settings-savebar span {
+  font-size: 0.8rem;
+}
+
+.settings-savebar-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
+.settings-savebar button[type="submit"] {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-weight: 600;
+  border-radius: var(--radius-card);
+  min-height: 40px;
+}
+
+.settings-savebar button[type="submit"]:disabled {
+  opacity: 0.45;
 }
