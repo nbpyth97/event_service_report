@@ -1,7 +1,5 @@
-# Backlog
-- sESSION_NAME = 'commit-changes'
-
-- `Availiability Slots (Tenant Scoped)`
+# Done
+- `Availiability Slots (Tenant Scoped)` -> Verificar isso
  - start_time fora do intervalo open/close
  - remove from logic of availiabity the "slot_interval_min": 15 but keep as business company settings
   - This will be used to show cards from intervals of 15 minutes, it will be configurable on user profile
@@ -10,23 +8,28 @@
   - `This is the core logic of business, so we need to make sure that the logic is correct and that the slots are generated correctly based on the business settings and the already estimated duration of the services.`
   - See if frontend is using local timezone or UTC, and if the backend is using UTC, we need to make sure that the frontend is sending the correct timezone to the backend, and that the backend is returning the correct timezone to the frontend and for slot creation is doing correctly?
 
-- Rever isso
-  fix(availability): generate slots back-to-back by service duration
+- `Calendar view`
+ - When clicking on day on weekly and month view, it should change tab to daily and go to selected day view
 
-  Candidate slots now advance by the service's own duration instead of a
-  fixed 15-min grid, and min_lead_time_min is gone entirely (it silently
-  hid every slot within 30 minutes of "now"). slot_interval_min stays in
-  company settings as a future display/grouping knob only.
+- ` Frontend routes`
+ - All frontend routes on path parameters should be portuguese, for example /marcar-agendamento instead of /book-appointment
+
+- `Remove registrar page since` 
+ - There i no there is no email link confirmation for signup
+ - This makes more sense when being an app maybe
+ - Changed Slug da empresa for nome da empresa
+
+- `Frontend conditional rendering`
+ - Removed isAdmin conditional rendering and split the routes into 2 different routes, one for public and another for admin only
+- verificar se user.role === 'admin' no frontend faz sentido, pq agora são tabelas diferentes
+ - Remover 
+  - For simplicy, new foled called public and that will be on scope of not ProtectedRoute
+  - Another routes with with ProtectedRoute and that will be on scope of admin only 
 
 
-- O que caracteriza um cliente?
- - ver esse codigo ainda
+# To implement
 
-- `Manual Appointment`
- - Besides the user do appointment, the admin should be possible to create appointments too 
-   - It will query users table from non admin roles, drop down list or search bar with live query from db with debouncing
-    - Or just fetch all non admin users and use frontend filter instead for simplicity
-    - Since its frontend filter, we register of user should invalidate cache on tan stack query
+# To Share
 
 - `Appointment`
   - On list of appointments we need another field on database called alias name or something like that
@@ -34,14 +37,34 @@
     - So we should have for the user on frontend a edit lucide icon maybe to edit or some way showing both with best ux (use frontend-design skill)
      to maybe show.
     - We need that to calenda view too
-   - This have to query the user tables
-    - `Isso aqui não tá tão claro da forma que foi implementada` e nem a questão do alias e alias_name e nem não ter auth pra não cadastrados
 
-- `Calendar view`
- - When clicking on day on weekly and month view, it should change tab to daily and go to selected day view
 
-- `Register Page`
- - Change Slug da empresa for something like nome da empresa or something like that
+## To Do/Align
+
+
+ - How slots should be generated on frontend?
+  - Candidate slots now advance by the service's own duration instead of a
+  fixed 15-min grid, and min_lead_time_min is gone entirely (it silently
+  hid every slot within 30 minutes of "now"). slot_interval_min stays in
+  company settings as a future display/grouping knob only.
+
+- What should be the primary key of customer? (Need to think since its not autehtnticated)
+ -`Isso aqui não tá tão claro da forma que foi implementada` e nem a questão do alias e alias_name e nem não ter auth pra não cadastrados
+
+- Add notes maybe for agendamentos or customer
+
+
+
+
+
+
+- web push
+- repositoryclass typing error for not passed tenant_id on 
+
+# To Confirm
+- `User View`
+ - Confirm if frontend validates and format on typing the phone number, and if the backend validates the phone number format. 
+  - See if phone number is formatted and validated with some backend logic.
 
 
 - `User View`
@@ -95,61 +118,60 @@
  existing    create
  customer    customer
 
-# To Think
-
-- URL Link for customer
- - On success generate url link, showing , "Sucess here is link" kind
- - It should be possible to share this link with the admin of the company, so that the admin can confirm or refuse the appointment without needing to login, and the link should be valid for a limited time (ex: 24h + end_time) and it should be possible to invalidate the link if the appointment is cancelled or refused.
- - With that link, it should be able to cancel the appointment
- - Revoked
- - User with link can see status and cancel the appointment, but not edit the appointment
-  - Now cancelado status makes sense, but for customer. For admin, it will be recusado, and for customer it will be cancelado. So we need to make sure that the status is consistent across the system and that the user with the link can see the status of the appointment and can cancel the appointment if needed.
- - Copiar part do prompt do chatgpt que fala sobre isso.
- - Quando agendamento for feito com sucesso, o cliente consegue ter um link de confirmação do agendamento, que ele pode compartilhar com o admin da empresa, para que o admin possa ver o agendamento e confirmar ou recusar o agendamento. (isso é importante para b2b, pois o cliente pode não ter acesso ao sistema, mas o admin da empresa tem acesso ao sistema e pode confirmar ou recusar o agendamento). O usuário deveria de alguma forma com esse ou outro link ver o status do agendamento.
-
- - Entender como gerar link seguro e com idepotency para o agendamento, para que o admin possa confirmar ou recusar o agendamento sem precisar de login, e que o link seja válido por um tempo limitado (ex: 24h) e que seja possível invalidar o link caso o agendamento seja cancelado ou recusado.
-- https://chatgpt.com/c/6a837228-b04c-83eb-9e8a-f14dbc8ba1de
- -Interessante no final falar sobre urls e links de confirmacao
-- Status Simplification
-
-# UX
 
 
 
-# Frontend
-- All frontend routes on path parameters should be portuguese, for example /marcar-agendamento instead of /book-appointment
-- verificar se user.role === 'admin' no frontend faz sentido, pq agora são tabelas diferentes
- - Remover isAdmin conditional rendering
-  - For simplicy, new foled called public and that will be on scope of not ProtectedRoute
-  - Another routes with with ProtectedRoute and that will be on scope of admin only 
+# To IMplement
 
-# Fix
-- Size of icon and ux of it related to creation of appointment on clients page
+## Small
+- Didnt change the ballon icon to use whatsapp green font color with phone number on agendamentos page
 
-# Dead Code
+## Feature
+
+- Profile Page
+- Company Setting
+- The list is
+  - Open Time
+  - Close Time
+  - Slot Interval (in minutes)
+  - This will be on profile settings for each company, and will be used to show cards from intervals of 15 minutes, it will be configurable on user profile
+
+  - Nome da empresa
+  - Data de criaçaõ
+  - Fez o que tem mais no modelo company
+
+- The bell pressing of notification once clicked should update the customer table or something
+to remove that and invalidate cache on frontend to remove the bell icon
+ - Should on confirm always already open the wpp? seems noisy
+
+
+
+
+# Verify
 - Consolidate migrations or just delete all revisions and use auto generate if possible
-- Remove DEFAULT_COMPANY_SETTINGS
- - This will be on profile settings for each company, and will be used to show cards from intervals of 15 minutes, it will be configurable on user profile
-
-# Fast Verify
 - Confirm if AI for frontend used a wrapper class for api.ts to on not sucess, show .detail.message kind
-- Acho que a IA T gerando links de booking de confirmacao 
+- Acho que a IA tá gerando links de booking de confirmacao 
  - Interessante para passar para o admin
+- Reminders
+  - Pooling every 5 minutes?
+   - Verify that. is that SSE? 
+    - What is currently SSE?
+- I think for unatehticated users, it always show active services
 
+# Nice to have
 - missing toast notifications for sucess/failed operations
  - all must have
   - use ux guidelines for toast notifications
+
+
+
+
 
 # Missing
 - The manual appointment creation for admin users should have a way to select the customer from a list of existing customers, or create a new customer if they don't exist and there he can create a new customer with name and phone number, and then create the appointment for that customer. it should be possible from agendaments page
 for already existeant customers with + icon on top right to create a new appointment for that customer,
 
-- Didnt change the ballon icon to use whatsapp green font color with phone number on agendamentos page
 
-
-
-# Notes
-- The flow already create a manual apppointment but after creation is default it needs to be approved (can be himseilf ) or maybe another person
 
 # Features
 - Profile Page
@@ -165,9 +187,11 @@ for already existeant customers with + icon on top right to create a new appoint
  - Ele ta gerando butões com cores diferentes, e isso não é bom para a consistência do projeto, então criar um design system com cores, tipografia, espaçamento, etc, para que o projeto fique mais consistente e fácil de manter.
  - Adicionar serviço, adicionar cliente, nova marcacao - butoes diferentes
   - ← Escolher outro serviço button ta com cores boas
+  
+# To Think
+ - Interessante no final falar sobre urls e links de confirmacao
+  - Status Simplification
 
-- The bell pressing of notification once clicked should update the customer table or something
-to remove that and invalidate cache on frontend to remove the bell icon
 - Tests
  - Unit Tests -> Pure busines logic (policy, mocked services, etc)
  - Integration Tests -> API and DB
@@ -220,3 +244,34 @@ to remove that and invalidate cache on frontend to remove the bell icon
 - Are phone numbers nullable on customer table?
 - Ver como tá todo o app no mobile...
 
+
+
+
+- Ambientes fisicos e workspaces
+ - CI/CD features
+ - Explicar no codigo yaml onde mapear
+ - Explicar que é comportamento dos ambientes baseado no mapping da branch
+ - Mostrar regra da branch 
+
+- HR and WSE
+
+- Jobs
+ - Asset Bundle
+  - Resources/jobs
+   - Additional config mapping for UNPAUSED on production and PAUSED on integration
+- Alembic
+ - ALEMBIC_SERVICE
+
+- Masking Functions
+ - HR (Only training)
+
+ - WSE
+  - One by layer and by environment (dev, int, prd) -> raw, stage, bus, serv
+
+- Cloudsmith
+
+
+- Ida toolkit
+ - Customer library
+  - Depencency hell transitive dependencies
+  - External. feature delayed based on boa vontade dos developers do cliente

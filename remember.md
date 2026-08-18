@@ -1,19 +1,9 @@
-# Features
-- Company Settings 
-    - Business hours for each day of the week
-    - Available time slots for each day of the week
 
-- Reminders
-  - Pooling every 5 minutes?
-   - Verify that. is that SSE? 
-    - What is currently SSE?
-
-
-  #### Notifications
-  - Customer:
-     - When booking is confirmed, the customer should receive a notification
-     - When booking is refused,   the customer should receive a notification
-     - Customer should receive a notification 1 day before the booking, reminding him of the booking
+#### Notifications
+- Customer:
+    - When booking is confirmed, the customer should receive a notification
+    - When booking is refused,   the customer should receive a notification
+    - Customer should receive a notification 1 day before the booking, reminding him of the booking
 
 
 
@@ -23,26 +13,12 @@
      - B2C:
         - Reminder of appointment on whatsapp (1 day before)
         - Se for recusado, confirmado ou cancelado
-
+    
 - Web push
  - B2B
 
 - Reminder
  - B2C -> Metacloud API 
-
-# Pedir pra ia cechar se ta tudo em UTC e frontend ta usando local timezone - simple as that
-
-- Doisc canais de comuniccao PARA confirnmar recysar
- - SMS
- - Portal WEB
- - Invalidate cache no frontend
-  - Regra de negócio travar alteração de status de agendamento ja alterado 
-   - Testes unitarios e regras de negocio no codigo em pytho puro
-
-# To Implement
-- Business rules
- - Verificar se IA não está criando agendamentos em horários que não estão disponíveis
-
 
 # Backlog
 - Web push
@@ -116,11 +92,6 @@ O seu agendamento foi {{appointment_status}}. Obrigado. Isso seria o botão de "
   nome
   nome alias
 
-
-# Nice to have
-- Tenant id:
- - Cada funcionário ver seus agendamentos
- - Talvez ter tenaind_id=uuid.v4()
 
 
 - Notifications (Server Sent Events)

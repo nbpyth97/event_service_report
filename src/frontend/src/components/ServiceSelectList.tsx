@@ -22,7 +22,7 @@ export default function ServiceSelectList({
     return (
       <div className="empty-state">
         <p>Ainda não há serviços disponíveis para marcação.</p>
-        <p>Volte mais tarde ou contacte o salão diretamente.</p>
+        <p>Volte mais tarde ou contacte a empresa diretamente.</p>
       </div>
     );
   }
