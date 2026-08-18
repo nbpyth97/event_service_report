@@ -8,6 +8,7 @@ export const queryKeys = {
   availability: (serviceId: string, date: string) => ["availability", serviceId, date] as const,
   notifications: ["notifications"] as const,
   agendamentoHistory: (agendamentoId: string) => ["agendamentoHistory", agendamentoId] as const,
+  customers: ["customers"] as const,
 };
 
 export function useMyCompany() {
@@ -62,6 +63,32 @@ export function useCreateAgendamento() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.agendamentos });
       qc.invalidateQueries({ queryKey: ["availability"] });
+    },
+  });
+}
+
+export function useCustomers() {
+  return useQuery({ queryKey: queryKeys.customers, queryFn: api.customers });
+}
+
+export function useCreateCustomer() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: api.createCustomer,
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.customers }),
+  });
+}
+
+export function useSetCustomerAlias() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, alias }: { id: string; alias: string | null }) => api.setCustomerAlias(id, alias),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.customers });
+      // The alias also shows up denormalized on every Agendamento row
+      // (customer_alias) — refetch those too so list/calendar views pick it
+      // up without waiting on their own unrelated invalidation.
+      qc.invalidateQueries({ queryKey: queryKeys.agendamentos });
     },
   });
 }

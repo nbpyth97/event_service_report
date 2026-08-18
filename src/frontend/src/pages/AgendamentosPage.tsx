@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import AgendamentoList from "@/components/AgendamentoList";
 import CalendarView from "@/components/CalendarView";
 import AgendamentoDateRangePicker, { computePresetRange } from "@/components/AgendamentoDateRangePicker";
@@ -51,6 +51,7 @@ export default function AgendamentosPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [highlightedId, setHighlightedId] = useState<string | null>(null);
   const highlightRequest = searchParams.get("highlight");
+  const personRequest = searchParams.get("person");
 
   const pendingCount = agendamentos?.filter((a) => a.status === "pending").length ?? 0;
 
@@ -85,6 +86,31 @@ export default function AgendamentosPage() {
     );
   }, [highlightRequest, agendamentos, setSearchParams]);
 
+  // Deep link from CustomersPage's "N marcações" — show that customer's
+  // bookings across every status (no smart-default narrowing), pre-filled
+  // into the same person search used for manual typing, scoped to "esta
+  // semana" by default like any other fresh visit to this page. Doesn't
+  // need to wait on `agendamentos` (unlike the highlight effect above) since
+  // it's just seeding text-filter state, not looking up a specific booking.
+  useEffect(() => {
+    if (!personRequest) return;
+    setMode("overview");
+    setPersonQuery(personRequest);
+    setSelectedStatuses([]);
+    setDatePreset("week");
+    setDateRange(computePresetRange("week"));
+    defaultsApplied.current = true;
+    setDefaultsReady(true);
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete("person");
+        return next;
+      },
+      { replace: true }
+    );
+  }, [personRequest, setSearchParams]);
+
   // Smart first-load default: open straight to what needs a decision. If
   // there's nothing pending, "esta semana" of confirmed bookings is the more
   // useful starting point than an unfiltered "Todos". Only ever runs once —
@@ -116,7 +142,9 @@ export default function AgendamentosPage() {
     let list = agendamentos ?? [];
     if (isAdmin && personQuery.trim()) {
       const q = personQuery.trim().toLowerCase();
-      list = list.filter((a) => a.customer_name.toLowerCase().includes(q));
+      list = list.filter(
+        (a) => a.customer_name.toLowerCase().includes(q) || (a.customer_alias?.toLowerCase().includes(q) ?? false)
+      );
     }
     if (dateRange.start) {
       list = list.filter((a) => toDateStr(new Date(a.start_time)) >= dateRange.start);
@@ -137,14 +165,6 @@ export default function AgendamentosPage() {
 
   return (
     <div className="page">
-      <div className="page-header-row">
-        {!isAdmin && (
-          <Link to="/services" className="agendamentos-new-link">
-            + Nova marcação
-          </Link>
-        )}
-      </div>
-
       {isAdmin && (
         <div className="agendamento-mode-switch" role="tablist" aria-label="Modo de visualização">
           <button

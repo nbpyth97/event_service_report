@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { NavLink, Outlet, Route, Routes } from "react-router-dom";
-import { Briefcase, CalendarCheck, LayoutGrid, LogOut, Moon, Sun } from "lucide-react";
+import { Briefcase, CalendarCheck, LayoutGrid, LogOut, Moon, Sun, Users } from "lucide-react";
 import ProtectedRoute from "@/router/ProtectedRoute";
 import { useCurrentUser } from "@/auth/user";
 import { useMyCompany } from "@/hooks/queries";
@@ -13,11 +13,13 @@ import DashboardPage from "@/pages/DashboardPage";
 import ServicesPage from "@/pages/ServicesPage";
 import BookingPage from "@/pages/BookingPage";
 import AgendamentosPage from "@/pages/AgendamentosPage";
+import CustomersPage from "@/pages/CustomersPage";
 
 const NAV_ITEMS = [
-  { to: "/", label: "Painel", icon: LayoutGrid, end: true },
-  { to: "/agendamentos", label: "Agendamentos", icon: CalendarCheck, end: false },
-  { to: "/services", label: "Serviços", icon: Briefcase, end: false },
+  { to: "/", label: "Painel", icon: LayoutGrid, end: true, adminOnly: false },
+  { to: "/agendamentos", label: "Agendamentos", icon: CalendarCheck, end: false, adminOnly: false },
+  { to: "/services", label: "Serviços", icon: Briefcase, end: false, adminOnly: false },
+  { to: "/customers", label: "Clientes", icon: Users, end: false, adminOnly: true },
 ];
 
 type Theme = "light" | "dark";
@@ -105,7 +107,7 @@ function AppShell() {
       </main>
 
       <nav className="bottom-nav">
-        {NAV_ITEMS.map(({ to, label, icon: Icon, end }) => (
+        {NAV_ITEMS.filter((item) => !item.adminOnly || user?.role === "admin").map(({ to, label, icon: Icon, end }) => (
           <NavLink key={to} to={to} end={end} className={({ isActive }) => (isActive ? "active" : "")}>
             <Icon className="nav-icon" aria-hidden="true" />
             <span>{label}</span>
@@ -127,6 +129,7 @@ export default function App() {
           <Route path="/services" element={<ServicesPage />} />
           <Route path="/book/:serviceId" element={<BookingPage />} />
           <Route path="/agendamentos" element={<AgendamentosPage />} />
+          <Route path="/customers" element={<CustomersPage />} />
         </Route>
       </Route>
     </Routes>

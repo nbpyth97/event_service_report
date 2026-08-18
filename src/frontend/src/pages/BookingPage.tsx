@@ -1,13 +1,12 @@
-import { useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import type { Customer } from "@/api/client";
 import CalendarGrid from "@/components/CalendarGrid";
+import CustomerPicker from "@/components/CustomerPicker";
 import TimeSlotList from "@/components/TimeSlotList";
-import { useCreateAgendamento, useMyCompany, useServices } from "@/hooks/queries";
+import { useCreateAgendamento, useCustomers, useMyCompany, useServices } from "@/hooks/queries";
 import { useToast } from "@/lib/toast";
-
-function fmtPrice(price: string): string {
-  return new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" }).format(Number(price));
-}
+import { fmtPrice } from "@/lib/format";
 
 function fmtSlot(iso: string): string {
   return new Date(iso).toLocaleString("pt-PT", {
@@ -22,31 +21,48 @@ function fmtSlot(iso: string): string {
 export default function BookingPage() {
   const { serviceId } = useParams<{ serviceId: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { data: services } = useServices();
   const { data: company } = useMyCompany();
+  const { data: customers } = useCustomers();
   const createAgendamento = useCreateAgendamento();
   const { showSuccess } = useToast();
 
+  const [customer, setCustomer] = useState<Customer | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
 
+  // Arrived from CustomersPage's per-row "nova marcação" (or any link that
+  // already knows the customer) — pre-select them once the list loads, so
+  // CustomerPicker opens straight into its "selected" state instead of
+  // making the admin search for the same person again. Only runs once: if
+  // the admin then hits "Trocar", their choice should stick even though
+  // customerId is still sitting in the URL.
+  const customerId = searchParams.get("customerId");
+  useEffect(() => {
+    if (!customerId || customer) return;
+    const match = customers?.find((c) => c.id === customerId);
+    if (match) setCustomer(match);
+  }, [customerId, customers]);
+
   const service = services?.find((s) => s.id === serviceId);
+  const backHref = `/services?book=1${customerId ? `&customerId=${customerId}` : ""}`;
 
   if (services && !service) {
     return (
       <div className="page">
-        <p>Serviço não encontrado. <Link to="/services">Voltar</Link></p>
+        <p>Serviço não encontrado. <Link to={backHref}>Voltar</Link></p>
       </div>
     );
   }
 
   const handleConfirm = () => {
-    if (!serviceId || !selectedSlot) return;
+    if (!serviceId || !selectedSlot || !customer) return;
     createAgendamento.mutate(
-      { service_id: serviceId, start_time: selectedSlot },
+      { service_id: serviceId, start_time: selectedSlot, customer_id: customer.id },
       {
         onSuccess: () => {
-          showSuccess("Marcação enviada — aguarde a confirmação do salão.");
+          showSuccess(`Marcação de ${customer.alias ?? customer.name} enviada — aguarde a confirmação.`);
           navigate("/agendamentos");
         },
       }
@@ -55,7 +71,9 @@ export default function BookingPage() {
 
   return (
     <div className="page">
-      <Link to="/services" className="back-link">&larr; Todos os serviços</Link>
+      <div className="public-booking-topbar">
+        <Link to={backHref} className="public-back-pill">&larr; Todos os serviços</Link>
+      </div>
       {service && (
         <header className="booking-header">
           <h1>{service.name}</h1>
@@ -63,7 +81,9 @@ export default function BookingPage() {
         </header>
       )}
 
-      {company && (
+      <CustomerPicker value={customer} onChange={setCustomer} />
+
+      {company && customer && (
         <div className="booking-layout">
           <CalendarGrid
             businessHours={company.settings.business_hours}
@@ -81,10 +101,11 @@ export default function BookingPage() {
         </div>
       )}
 
-      {selectedSlot && (
+      {selectedSlot && customer && (
         <div className="booking-confirm-card">
           <p>
-            Confirmar <strong>{service?.name}</strong> em <strong>{fmtSlot(selectedSlot)}</strong>?
+            Marcar <strong>{service?.name}</strong> para <strong>{customer.alias ?? customer.name}</strong> em{" "}
+            <strong>{fmtSlot(selectedSlot)}</strong>?
           </p>
           <button type="button" onClick={handleConfirm} disabled={createAgendamento.isPending}>
             {createAgendamento.isPending ? "Agendando…" : "Confirmar marcação"}

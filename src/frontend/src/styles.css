@@ -1388,6 +1388,9 @@ button:disabled {
   color: var(--color-primary);
   font-weight: 600;
   text-decoration: none;
+  /* Right-aligned even when it's the only child of .page-header-row (no
+     title sibling to space-between against, as on AgendamentosPage). */
+  margin-left: auto;
 }
 
 .pending-badge {
@@ -1404,54 +1407,135 @@ button:disabled {
 
 .back-link {
   display: inline-block;
+  background: none;
+  border: none;
+  padding: 0;
   color: var(--color-muted);
   text-decoration: none;
   margin-bottom: 0.5rem;
   font-size: 0.9rem;
+  cursor: pointer;
 }
 
-/* Customer-facing service picker — mobile-first single column, promoted to a
-   2-up grid from tablet width up, matching the booking flow's calendar step. */
-.service-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 0.75rem;
+/* PublicBookingPage's storefront — the salon's own name is the hero (not a
+   generic "Marcar horário" label), and the service list is a single-column
+   scan (matches every other card-list in the app — agendamento-cards,
+   service-card-list, customers-page-list — rather than a desktop-oriented
+   grid) with an explicit tap affordance (price + "Selecionar" + chevron),
+   since a plain card gave no hint it was clickable. */
+.public-hero {
+  margin-bottom: 1.5rem;
 }
 
-@media (min-width: 480px) {
-  .service-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
+.public-hero-title {
+  font-family: var(--font-display);
+  font-size: clamp(1.6rem, 5vw, 2.2rem);
+  font-weight: 600;
+  line-height: 1.15;
+  margin: 0.35rem 0 0.4rem;
+  color: var(--color-ink);
 }
 
-.service-grid-card {
+.public-hero-subtitle {
+  color: var(--color-muted);
+  margin: 0;
+  font-size: 0.92rem;
+}
+
+/* Service-picking step (ServiceSelectList.tsx) — shared by the public
+   anonymous booking page and the admin's manual-appointment flow, so the
+   card and the search-to-filter behavior above it read the same either
+   way. */
+.service-select {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.6rem;
+}
+
+.service-select-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.service-select-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  width: 100%;
   background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-card);
-  padding: 1rem;
+  padding: 1rem 1.1rem;
+  text-align: left;
   min-height: var(--touch-min);
-  text-decoration: none;
-  color: inherit;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
-  transition: box-shadow 0.15s ease-out, transform 0.15s ease-out;
+  transition: transform 0.15s ease-out, box-shadow 0.15s ease-out, border-color 0.15s ease-out;
 }
 
-.service-grid-card:hover {
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
-  transform: translateY(-1px);
+.service-select-card:hover,
+.service-select-card:focus-visible {
+  border-color: var(--color-primary);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
 }
 
-.service-grid-name {
+.service-select-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.service-select-card-name {
   font-weight: 600;
+  font-size: 1rem;
+  color: var(--color-ink);
   overflow-wrap: break-word;
 }
 
-.service-grid-meta {
+.service-select-card-duration {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
   color: var(--color-muted);
-  font-size: 0.85rem;
   font-family: var(--font-mono);
+  font-size: 0.78rem;
+}
+
+.service-select-card-action {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+
+.service-select-card-price {
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--color-ink);
+}
+
+.service-select-card-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  color: var(--color-primary);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.service-select-card-cta svg {
+  transition: transform 0.15s ease-out;
+}
+
+.service-select-card:hover .service-select-card-cta svg,
+.service-select-card:focus-visible .service-select-card-cta svg {
+  transform: translateX(3px);
 }
 
 .booking-header h1 {
@@ -1461,6 +1545,47 @@ button:disabled {
 .booking-header .sub {
   color: var(--color-muted);
   margin-top: 0;
+}
+
+/* Public storefront's service-step header: salon name stays left where the
+   eye lands first, the way back to the service list sits right as a
+   secondary, low-commitment action — not stacked above the name where it'd
+   compete with it for the first read. */
+.public-booking-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.public-booking-topbar .sub {
+  margin: 0;
+}
+
+.public-back-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex-shrink: 0;
+  /* Right-aligned even with no sibling to space-between against (e.g.
+     BookingPage's topbar, which has no company-name label on the left). */
+  margin-left: auto;
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  border: 1px solid transparent;
+  padding: 0.4rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color 0.15s ease-out, box-shadow 0.15s ease-out;
+}
+
+.public-back-pill:hover,
+.public-back-pill:focus-visible {
+  border-color: var(--color-primary);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 /* Booking flow: calendar stacked above the time slots on mobile, side by
@@ -2611,6 +2736,72 @@ button:disabled {
   min-width: 0;
 }
 
+/* The customer's real registered name, shown alongside an admin-set alias
+   so both stay visible — the alias is a label this business uses, not a
+   replacement for who actually booked. */
+.appt-row-real-name {
+  color: var(--color-muted);
+  font-size: 0.8em;
+  font-weight: 400;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.alias-editor-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  margin: -2px;
+  color: var(--color-muted);
+  background: transparent;
+  border: none;
+  flex-shrink: 0;
+}
+
+.alias-editor-trigger:hover {
+  color: var(--color-primary);
+}
+
+.alias-editor {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.alias-editor-input {
+  min-width: 0;
+  width: 11rem;
+  max-width: 40vw;
+  font-size: 0.85rem;
+  padding: 0.2rem 0.4rem;
+  border: 1px solid var(--color-primary);
+  border-radius: 6px;
+  background: var(--color-surface);
+  color: var(--color-ink);
+}
+
+.alias-editor-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  padding: 0;
+  color: var(--color-muted);
+  background: transparent;
+  border: none;
+}
+
+.alias-editor-btn:hover {
+  color: var(--color-ink);
+  background: var(--color-bg);
+  border-radius: 6px;
+}
+
 .appt-row-status-line {
   display: flex;
   align-items: center;
@@ -2877,4 +3068,240 @@ button:disabled {
   gap: 0.6rem;
   font-size: 0.9rem;
   margin-bottom: 0.6rem;
+}
+
+/* Admin manual-appointment customer picker (CustomerPicker.tsx) — search +
+   pick, or add a new customer inline. Same card/input language as the
+   auth screens (.service-form-input-wrap) so it doesn't read as a
+   different sub-app bolted onto the booking flow. */
+.customer-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  padding: 0.9rem;
+}
+
+.customer-picker-hint {
+  color: var(--color-muted);
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+.customer-picker-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 14rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.customer-picker-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.55rem 0.7rem;
+  background: var(--color-bg);
+  border: 1px solid transparent;
+  border-radius: 8px;
+  text-align: left;
+}
+
+.customer-picker-row:hover {
+  border-color: var(--color-primary);
+}
+
+.customer-picker-row-name {
+  /* .customer-picker-row is a <button> — without this it inherits the
+     global button's white text, unreadable against this row's light
+     background (the actual "can't read the customer name" bug). */
+  color: var(--color-ink);
+  font-weight: 600;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.customer-picker-row-phone {
+  color: var(--color-muted);
+  font-size: 0.82rem;
+  font-family: var(--font-mono);
+  flex-shrink: 0;
+}
+
+.customer-picker-add-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  align-self: flex-start;
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  padding: 0.45rem 0.8rem;
+}
+
+.customer-picker-add-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.customer-picker-add-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.customer-picker-add-cancel {
+  background: var(--color-bg);
+  color: var(--color-ink);
+}
+
+.customer-picker-add-submit {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.customer-picker-selected {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  border-radius: var(--radius-card);
+  padding: 0.75rem 0.9rem;
+}
+
+.customer-picker-selected-name {
+  font-weight: 700;
+  color: var(--color-ink);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.customer-picker-selected-phone {
+  color: var(--color-muted);
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+}
+
+.customer-picker-change {
+  margin-left: auto;
+  background: transparent;
+  color: var(--color-primary);
+  font-weight: 600;
+  padding: 0.3rem 0.5rem;
+}
+
+/* CustomersPage — the admin's customer directory. */
+.customers-page-list {
+  list-style: none;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.customers-page-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: var(--color-surface);
+  border-radius: var(--radius-card);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  padding: 0.75rem 0.9rem;
+}
+
+.customers-page-row-identity {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.customers-page-row-name {
+  font-weight: 600;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.customers-page-row-phone {
+  color: var(--color-muted);
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  flex-shrink: 0;
+}
+
+.customers-page-row-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: var(--color-muted);
+  font-size: 0.78rem;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* Only bookings-count links to Agendamentos (empty "Sem marcações" stays
+   plain text — nothing useful to jump to) — primary color + hover fill
+   signal it's a real navigation control, not just a stat label. */
+.customers-page-row-count-link {
+  color: var(--color-primary);
+  font-weight: 600;
+  padding: 0.25rem 0.5rem;
+  margin: -0.25rem -0.5rem;
+  border-radius: 6px;
+}
+
+.customers-page-row-count-link:hover,
+.customers-page-row-count-link:focus-visible {
+  background: var(--color-primary-soft);
+}
+
+/* .agendamentos-new-link is normally a <Link> (no default chrome to
+   fight) — here it's a real <button>, which the global button rule paints
+   with a solid primary background, so it needs its own reset (same trap as
+   .back-link had before it got one). */
+.customers-page-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+}
+
+/* Icon-only "nova marcação for this customer" — same circular hover
+   treatment as .alias-editor-trigger, but primary-colored since it's a
+   create action rather than an edit affordance. */
+.customers-page-row-new-appt {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  color: var(--color-primary);
+  background: none;
+}
+
+.customers-page-row-new-appt:hover,
+.customers-page-row-new-appt:focus-visible {
+  background: var(--color-primary-soft);
 }

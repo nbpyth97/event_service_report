@@ -187,12 +187,14 @@ export default function AdminCalendarGrid({
                     onClick={() => setSelectedId(agendamento.id)}
                     title={
                       isAdmin
-                        ? `${agendamento.customer_name} · ${agendamento.service_name}`
+                        ? `${agendamento.customer_alias ?? agendamento.customer_name} · ${agendamento.service_name}`
                         : agendamento.service_name
                     }
                   >
                     <span className="cal-grid-card-head">
-                      <span className="cal-grid-card-title">{isAdmin ? agendamento.customer_name : agendamento.service_name}</span>
+                      <span className="cal-grid-card-title">
+                        {isAdmin ? agendamento.customer_alias ?? agendamento.customer_name : agendamento.service_name}
+                      </span>
                       <CheckCircle2 className="cal-grid-card-icon" size={11} aria-hidden="true" />
                     </span>
                     {showDetails && isAdmin && (

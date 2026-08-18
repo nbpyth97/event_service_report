@@ -21,15 +21,24 @@ export interface Agendamento {
   id: string;
   tenant_id: string;
   service_id: string;
-  created_by: string;
+  customer_id: string;
+  created_by: string | null;
   start_time: string;
   end_time: string;
   status: "pending" | "confirmed" | "declined" | "cancelled";
   customer_name: string;
+  customer_alias: string | null;
   customer_phone: string | null;
   service_name: string;
   service_price: string;
   service_duration_min: number;
+}
+
+export interface Customer {
+  id: string;
+  name: string;
+  phone: string;
+  alias: string | null;
 }
 
 export interface AgendamentoStatusHistoryEntry {
@@ -145,8 +154,14 @@ export const api = {
 
   myCompany: () => request<Company>("/api/companies/me"),
 
+  customers: () => request<Customer[]>("/api/customers"),
+  createCustomer: (payload: { name: string; phone: string }) =>
+    request<Customer>("/api/customers", { method: "POST", body: JSON.stringify(payload) }),
+  setCustomerAlias: (id: string, alias: string | null) =>
+    request<Customer>(`/api/customers/${id}`, { method: "PATCH", body: JSON.stringify({ alias }) }),
+
   agendamentos: () => request<Agendamento[]>("/api/agendamentos"),
-  createAgendamento: (payload: { service_id: string; start_time: string }) =>
+  createAgendamento: (payload: { service_id: string; start_time: string; customer_id: string }) =>
     request<Agendamento>("/api/agendamentos", { method: "POST", body: JSON.stringify(payload) }),
   updateAgendamentoStatus: (id: string, status: "confirmed" | "declined" | "cancelled") =>
     request<Agendamento>(`/api/agendamentos/${id}/status`, { method: "PATCH", body: JSON.stringify({ status }) }),
