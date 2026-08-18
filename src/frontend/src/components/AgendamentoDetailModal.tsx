@@ -3,9 +3,10 @@ import { BellRing, CalendarDays, CheckCircle2, Clock, Euro, MessageCircle, User,
 import type { Agendamento } from "@/api/client";
 import { useAgendamentoHistory, useUpdateAgendamentoStatus } from "@/hooks/queries";
 import { useToast } from "@/lib/toast";
-import { fmtDateTime, fmtPriceValue, fmtShortDateTime, fmtTime } from "@/lib/format";
+import { fmtDateTime, fmtPriceValue, fmtTime } from "@/lib/format";
 import { statusUpdateMessage, waLink } from "@/lib/whatsapp";
 import StatusStepper, { stepIndexOf } from "@/components/StatusStepper";
+import StatusHistoryStepper from "@/components/StatusHistoryStepper";
 
 export default function AgendamentoDetailModal({
   agendamento,
@@ -92,22 +93,18 @@ export default function AgendamentoDetailModal({
         </div>
 
         {/* Bell sits inline with whatever's showing the status — the
-            end-state banner or the stepper — since "send a status update"
+            history stepper, active or ended — since "send a status update"
             is contextually tied to the status itself, not to the client's
             identity below. */}
         {isEndedState ? (
-          <div className={`status-endstate status-endstate-${agendamento.status}`}>
-            <XCircle size={16} aria-hidden="true" />
-            {agendamento.status === "declined" ? "Marcação recusada" : "Marcação cancelada"}
-            {historyTimes[agendamento.status] && (
-              <span className="status-endstate-time">{fmtShortDateTime(historyTimes[agendamento.status]!)}</span>
-            )}
+          <div className="status-stepper-row">
+            <StatusHistoryStepper history={history ?? []} />
             {isAdmin && agendamento.customer_phone && agendamento.status === "declined" && (
               <a
                 href={waLink(agendamento.customer_phone, statusUpdateMessage(agendamento))}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="ticket-whatsapp-link ticket-whatsapp-link-alert status-endstate-notify"
+                className="ticket-whatsapp-link ticket-whatsapp-link-alert"
                 aria-label={`Atualizar ${agendamento.customer_name} sobre o estado da marcação via WhatsApp`}
                 title="Enviar atualização de estado"
               >

@@ -2914,17 +2914,6 @@ button:disabled {
   margin: 0;
 }
 
-.status-endstate-notify {
-  margin-left: auto;
-}
-
-.status-endstate-time {
-  font-family: var(--font-mono);
-  font-weight: 400;
-  opacity: 0.8;
-}
-
-
 /* Confirmar reads as positive (green), matching --color-confirmed
    everywhere else in the app — not the generic primary blue, which has no
    "approve" meaning here and clashed with the pending accent. */
@@ -3073,17 +3062,21 @@ button:disabled {
   opacity: 1;
 }
 
-.status-endstate {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
+/* Terminal step of StatusHistoryStepper (declined/cancelled) — same shape as
+   .status-stepper-done but in the declined red instead of confirmed green,
+   since it's a stop rather than progress. Always the last step, so its own
+   ::after connector (done's green line-in) is irrelevant, but the *previous*
+   step's line-out still needs to reach it in green — see
+   .status-stepper-done:not(:last-child)::after above. */
+.status-stepper-terminal .status-stepper-dot {
+  border-color: var(--color-declined);
   background: var(--color-declined-soft);
   color: var(--color-declined);
-  font-weight: 600;
-  font-size: 0.85rem;
-  padding: 0.5rem 0.8rem;
-  border-radius: 8px;
-  margin: 0.9rem 0 1.1rem;
+}
+
+.status-stepper-terminal .status-stepper-label {
+  color: var(--color-declined);
+  opacity: 1;
 }
 
 /* Agendamento detail modal — centered sheet on desktop, same card language
