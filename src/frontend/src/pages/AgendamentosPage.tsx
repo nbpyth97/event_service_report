@@ -4,7 +4,7 @@ import AgendamentoList from "@/components/AgendamentoList";
 import CalendarView from "@/components/CalendarView";
 import AgendamentoDateRangePicker, { computePresetRange } from "@/components/AgendamentoDateRangePicker";
 import type { DatePreset, DateRange } from "@/components/AgendamentoDateRangePicker";
-import AgendamentoSearch from "@/components/AgendamentoSearch";
+import SearchFilterInput from "@/components/SearchFilterInput";
 import AgendamentoStatusTabs, { matchesStatusFilter } from "@/components/AgendamentoStatusTabs";
 import type { StatusFilterKey } from "@/components/AgendamentoStatusTabs";
 import { useCurrentUser } from "@/auth/user";
@@ -184,7 +184,14 @@ export default function AgendamentosPage() {
             onPresetChange={setDatePreset}
             onRangeChange={setDateRange}
           />
-          {isAdmin && <AgendamentoSearch value={personQuery} onChange={setPersonQuery} />}
+          {isAdmin && (
+            <SearchFilterInput
+              value={personQuery}
+              onChange={setPersonQuery}
+              placeholder="Filtrar por cliente…"
+              ariaLabel="Filtrar por cliente"
+            />
+          )}
           <AgendamentoStatusTabs agendamentos={dateAndPersonFiltered} selected={selectedStatuses} onToggle={toggleStatus} />
           <p className="agendamento-overview-summary">{summaryText}</p>
           <AgendamentoList

@@ -740,7 +740,7 @@ body {
   gap: 0.6rem;
 }
 
-/* Same bordered-pill-with-icon treatment as .agendamento-filter-search, so
+/* Same bordered-pill-with-icon treatment as .search-filter-input, so
    every text input with a leading icon in the app looks the same. */
 .service-form-input-wrap {
   display: flex;
@@ -1789,7 +1789,9 @@ button:disabled {
   margin: 0 0 0.6rem;
 }
 
-.agendamento-filter-search {
+/* Same bordered-pill-with-icon treatment as .service-form-input-wrap, plus
+   a trailing clear button — see SearchFilterInput.tsx. */
+.search-filter-input {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -1801,14 +1803,16 @@ button:disabled {
   margin-bottom: 0.9rem;
 }
 
-.agendamento-filter-search svg {
+.search-filter-input:focus-within {
+  border-color: var(--color-primary);
+}
+
+.search-filter-input > svg {
   color: var(--color-muted);
   flex-shrink: 0;
 }
 
-.agendamento-filter-search input {
-  -webkit-appearance: none;
-  appearance: none;
+.search-filter-input input {
   border: none;
   background: none;
   flex: 1;
@@ -1818,8 +1822,26 @@ button:disabled {
   padding: 0;
 }
 
-.agendamento-filter-search input:focus {
+.search-filter-input input:focus {
   outline: none;
+}
+
+.search-filter-input-clear {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--color-muted);
+}
+
+.search-filter-input-clear:hover {
+  background: var(--color-bg);
+  color: var(--color-ink);
 }
 
 .agendamento-filter-dates {
