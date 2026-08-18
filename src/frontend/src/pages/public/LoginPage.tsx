@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
-import { Navigate, Link, useSearchParams } from "react-router-dom";
+// `Link` drops out with the signup link below; restore it when that returns.
+import { Navigate, useSearchParams } from "react-router-dom";
 import { Building2, Eye, EyeOff, Lock, User } from "lucide-react";
 import { useCurrentUser } from "@/auth/user";
 
@@ -137,9 +138,11 @@ export default function LoginPage() {
         </button>
       </form>
 
-      <p className="auth-hint">
+      {/* Hidden while self-service signup is off (see App.tsx) — the route
+          no longer exists, so this link would fall through to "*". */}
+      {/* <p className="auth-hint">
         Não tem conta? <Link to="/registar">Cadastre-se</Link>
-      </p>
+      </p> */}
     </div>
   );
 }

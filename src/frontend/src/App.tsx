@@ -9,7 +9,8 @@ import { useNotificationStream } from "@/hooks/useNotificationStream";
 import NotificationBell from "@/components/NotificationBell";
 import StartingSoonIndicator from "@/components/StartingSoonIndicator";
 import LoginPage from "@/pages/public/LoginPage";
-import RegisterPage from "@/pages/public/RegisterPage";
+// Self-service signup is switched off — see the route below.
+// import RegisterPage from "@/pages/public/RegisterPage";
 import PublicBookingPage from "@/pages/public/PublicBookingPage";
 import DashboardPage from "@/pages/DashboardPage";
 import ServicesPage from "@/pages/ServicesPage";
@@ -140,7 +141,13 @@ export default function App() {
   return (
     <Routes>
       <Route path="/entrar" element={<LoginPage />} />
-      <Route path="/registar" element={<RegisterPage />} />
+      {/* Self-service company signup is disabled on purpose: there are no
+          email notifications yet, so nothing can send a confirmation link to
+          verify a new company. New tenants are onboarded manually until that
+          exists (few B2B customers, so this is cheap). RegisterPage.tsx is
+          kept intact — re-enable by uncommenting this route and its import.
+          Note POST /api/auth/register is still open on the backend. */}
+      {/* <Route path="/registar" element={<RegisterPage />} /> */}
       <Route path="/marcar-agendamento" element={<PublicBookingPage />} />
       <Route element={<ProtectedRoute />}>
         <Route element={<AppShell />}>
