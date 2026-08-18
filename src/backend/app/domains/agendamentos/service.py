@@ -2,6 +2,7 @@ import uuid
 from datetime import datetime, timedelta
 
 from fastapi import HTTPException
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.enums import BookingStatus
@@ -44,7 +45,17 @@ async def create_agendamento(
         end_time=end_time,
         status=BookingStatus.PENDING.value,
     )
-    await repository.insert(db, agendamento)
+    try:
+        await repository.insert(db, agendamento)
+    except IntegrityError as exc:
+        await db.rollback()  # the failed commit leaves the session unusable otherwise
+        # ex_agendamentos_no_overlap fired (see models.py / the b7c4f19a2e30
+        # migration): another transaction committed an overlapping booking
+        # between our is_slot_bookable check above and this insert. The check
+        # is the gate that gives everyone else a good error; this is the
+        # backstop for the window it cannot cover. Same 409 either way — from
+        # the caller's side it is the identical situation, just lost later.
+        raise HTTPException(status_code=409, detail="Horário não está mais disponível") from exc
     result = await get_agendamento(db, tenant_id, agendamento.id)
     await notifications_service.notify_booking_pending(db, tenant_id, result)
     return result

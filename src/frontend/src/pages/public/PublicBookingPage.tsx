@@ -7,6 +7,7 @@ import ServiceSelectList from "@/components/ServiceSelectList";
 import { usePublicAvailability, usePublicBook, usePublicCompany, usePublicServices } from "@/hooks/queries";
 import { useToast } from "@/lib/toast";
 import { fmtSlot } from "@/lib/date";
+import { setDisplayTimeZone } from "@/lib/tz";
 import { formatPhonePT, validatePhoneDigits } from "@/lib/format";
 
 interface BookingFormValues {
@@ -32,6 +33,11 @@ export default function PublicBookingPage() {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+
+  // Slot buttons must read in the salon's local time, not the visitor's — see
+  // lib/tz.ts. AppShell does the same for the staff surface, which this page
+  // deliberately sits outside of.
+  setDisplayTimeZone(company?.timezone);
 
   const service = services?.find((s) => s.id === serviceId) ?? null;
   const { data: availability, isLoading: slotsLoading } = usePublicAvailability(

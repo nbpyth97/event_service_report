@@ -13,7 +13,7 @@ B2B multi-tenant booking SaaS for service businesses (pilot tenant: a beauty sal
 
 ```
 Company (tenant)
-  id, slug (unique, public), name, settings (JSONB: timezone, business_hours, slot_interval_min, min_lead_time_min)
+  id, slug (unique, public), name, settings (JSONB: timezone, business_hours, slot_interval_min)
    │
    ├─< User            (tenant_id FK, name unique per-tenant, password_hash, phone)  — staff, no role column
    │     │
@@ -34,6 +34,19 @@ Key relational facts:
 - **`Customer ≠ User`.** `User` is staff who can log in; `Customer` is a booking identity with no account. A booking belongs to a `Customer` (`customer_id`), while `Agendamento.created_by` is a nullable audit trail of *which staff member typed it in* — `NULL` when the customer booked themselves through the public page. `Customer` is resolved find-or-create by `(tenant_id, phone)`, so the same number always lands on one row whether it arrives from staff or from the public page (`domains/customers/service.py::find_or_create_customer`).
 - `Service.created_by` and `Agendamento.created_by` both FK to `User`, not `Company` — audit trail of who created the row.
 - Cross-tenant lookups should 404, not 403 (avoids existence leaks) — established pattern in `app/domains/services/service.py`.
+- **`agendamentos` carries a Postgres exclusion constraint, `ex_agendamentos_no_overlap`** (migration `b7c4f19a2e30`, mirrored in `models.py.__table_args__`): within one `tenant_id`, no two `pending`/`confirmed` bookings may have overlapping `[start_time, end_time)` ranges. This is the schema-level statement of **one company = one bookable resource** — the same assumption `list_busy_intervals` encodes by not filtering on `service_id`. The service layer's `is_slot_bookable` is a `SELECT` before an `INSERT` and so cannot be atomic; two concurrent requests can both read a slot as free. The constraint is the only check that runs inside the writing transaction, so it is what actually holds under concurrency — `create_agendamento` catches the resulting `IntegrityError` and returns the same `409 "Horário não está mais disponível"`. Needs the `btree_gist` extension. **When staff/resources are introduced, `tenant_id WITH =` becomes `resource_id WITH =`** — until then the constraint will correctly refuse to let one tenant run two appointments at once.
+
+## Availability & booking rules (`app/domains/availability/service.py`)
+
+The core domain logic. `_candidate_slots` is the single source of truth, and `is_slot_bookable` reuses it so the read path (what the picker offers) and the write path (what `POST` accepts) can never disagree.
+
+- **Business hours are wall-clock, slots are instants.** `open`/`close` are `"HH:MM"` strings meaningless without a zone; they're combined with `ZoneInfo(settings["timezone"])` into aware datetimes. Generating from the wall clock (not a stored offset) is what keeps `08:00` at `08:00` across DST while the offset moves.
+- **The grid steps by `slot_interval_min` (15), not by service duration.** Candidates land on `:00/:15/:30/:45`; `duration_min` only decides how much free time a candidate needs. These were the same number once, which anchored every candidate to opening time and made the free window after an off-grid booking unreachable — not busy, just never generated. Keep the two separate.
+- **A slot must fit whole before `close`**, and **must not have started yet** (`cursor >= now`). The past-time rule is flat, deliberately not the old configurable `min_lead_time_min`, which silently hid the next 30 minutes of the day. `min_lead_time_min` is gone from `src/` entirely; ignore it in the legacy `tenants/`/`booking-site/` configs.
+- **Busy is tenant-wide and status-scoped**: `pending` + `confirmed` block (an unapproved request holds its slot), `declined` + `cancelled` release. Never filtered by `service_id` — see the exclusion constraint note above.
+- **Overlap is half-open** (`cursor < b_end and slot_end > b_start`), matching the constraint's `tstzrange` `[)`. Back-to-back bookings touch without colliding.
+- `slot_interval_min` is **not editable** — there is no company-settings endpoint (`routers/companies.py` has no PATCH/PUT), so it is seeded at registration and unreachable after.
+- **Frontend renders in the company's zone, not the browser's** — `lib/tz.ts` holds one app-wide display zone set from `Company.settings.timezone` (staff, via `AppShell`) or the public `/company` endpoint. Every formatter reads it; anything doing calendar-component math on an instant must go through `zonedParts`/`zonedDateStr`/`zonedMinutesOfDay`, since a `timeZone` format option cannot fix `getHours()`. Booking POSTs echo the slot string verbatim, so the instant is correct even before the zone loads — only a label could ever be wrong.
 
 ## Auth
 

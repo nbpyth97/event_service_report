@@ -8,7 +8,7 @@ import SearchFilterInput from "@/components/SearchFilterInput";
 import AgendamentoStatusTabs, { matchesStatusFilter } from "@/components/AgendamentoStatusTabs";
 import type { StatusFilterKey } from "@/components/AgendamentoStatusTabs";
 import { useAgendamentos, useMyCompany } from "@/hooks/queries";
-import { toDateStr } from "@/lib/date";
+import { zonedDateStr } from "@/lib/tz";
 
 type Mode = "overview" | "calendar";
 
@@ -144,10 +144,10 @@ export default function AgendamentosPage() {
       );
     }
     if (dateRange.start) {
-      list = list.filter((a) => toDateStr(new Date(a.start_time)) >= dateRange.start);
+      list = list.filter((a) => zonedDateStr(a.start_time) >= dateRange.start);
     }
     if (dateRange.end) {
-      list = list.filter((a) => toDateStr(new Date(a.start_time)) <= dateRange.end);
+      list = list.filter((a) => zonedDateStr(a.start_time) <= dateRange.end);
     }
     return list;
   }, [agendamentos, personQuery, dateRange]);

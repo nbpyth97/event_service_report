@@ -66,9 +66,13 @@ export interface AccessTokenWithUser {
 export type DayHours = { open: string; close: string } | null;
 
 export interface CompanySettings {
+  // The zone slot times are generated and displayed in — fed to
+  // lib/tz.ts::setDisplayTimeZone so labels read in the salon's local time
+  // rather than the viewer's.
   timezone: string;
-  // Not consumed by availability logic (slots are back-to-back by service
-  // duration) — kept only as a future frontend display/grouping knob.
+  // Step the availability picker walks a day by (candidates land on
+  // :00/:15/:30/:45); a candidate is offered only if the service's full
+  // duration_min fits free from there.
   slot_interval_min: number;
   business_hours: Record<"mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun", DayHours>;
 }
@@ -83,6 +87,7 @@ export interface Company {
 export interface PublicCompany {
   name: string;
   business_hours: CompanySettings["business_hours"];
+  timezone: string;
 }
 
 export interface RegisterCompanyResult extends User {

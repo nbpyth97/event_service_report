@@ -1,4 +1,5 @@
 import type { Agendamento } from "@/api/client";
+import { zonedMinutesOfDay } from "@/lib/tz";
 
 export interface PositionedEvent {
   agendamento: Agendamento;
@@ -29,10 +30,10 @@ export function layoutDayEvents(
 ): PositionedEvent[] {
   const sorted = [...items].sort((a, b) => a.start_time.localeCompare(b.start_time));
   const spans = sorted.map((a) => {
-    const start = new Date(a.start_time);
-    const end = new Date(a.end_time);
-    const startMin = Math.max(dayOpenMin, start.getHours() * 60 + start.getMinutes());
-    const endMin = Math.max(startMin + 1, Math.min(dayCloseMin, end.getHours() * 60 + end.getMinutes()));
+    // Minutes-of-day in the company's zone, not the viewer's — the grid rows
+    // these are positioned against are the company's business hours.
+    const startMin = Math.max(dayOpenMin, zonedMinutesOfDay(a.start_time));
+    const endMin = Math.max(startMin + 1, Math.min(dayCloseMin, zonedMinutesOfDay(a.end_time)));
     return { agendamento: a, startMin, endMin };
   });
 

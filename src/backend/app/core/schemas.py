@@ -136,9 +136,12 @@ class PublicCompanyOut(BaseModel):
     # (JSONB), not as a plain attribute, so routers/public.py builds this
     # explicitly. Deliberately narrower than CompanyOut (no id/slug/full
     # settings) but still needs business_hours: the public booking page's
-    # date picker greys out closed days the same way the authenticated one does.
+    # date picker greys out closed days the same way the authenticated one does,
+    # and timezone so slot times render in the salon's local frame rather than
+    # whatever zone the visitor's browser happens to be in.
     name: str
     business_hours: dict
+    timezone: str
 
 
 class PublicBookingCreate(BaseModel):

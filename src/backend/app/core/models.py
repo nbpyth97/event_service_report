@@ -2,8 +2,8 @@ import uuid
 from datetime import datetime, timezone
 from decimal import Decimal
 
-from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Index, Numeric, String, UniqueConstraint
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Index, Numeric, String, UniqueConstraint, text
+from sqlalchemy.dialects.postgresql import JSONB, UUID, ExcludeConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -16,8 +16,9 @@ NOTIFICATION_TYPES = ("booking_pending", "booking_cancelled")
 # real hours (tenants/anabela/config.json) as a sane default for any new company.
 DEFAULT_COMPANY_SETTINGS = {
     "timezone": "Europe/Lisbon",
-    # Not read by availability logic (slots are generated back-to-back by
-    # service duration) — kept only as a future frontend display/grouping knob.
+    # The step the availability picker walks a day by — candidates land on
+    # :00/:15/:30/:45, and each is offered only if the service's full
+    # duration_min fits free from there (availability/service.py).
     "slot_interval_min": 15,
     "business_hours": {
         "mon": None,
@@ -126,6 +127,33 @@ class Agendamento(Base):
     __table_args__ = (
         CheckConstraint("status IN ('pending', 'confirmed', 'declined', 'cancelled')", name="ck_agendamentos_status"),
         Index("ix_agendamentos_tenant_id_start_time", "tenant_id", "start_time"),
+        # The one invariant that must hold no matter which code path writes:
+        # within a tenant, no two *active* bookings may overlap in time. The
+        # service layer already refuses to create one (availability/service.py
+        # ::is_slot_bookable), but that is a SELECT followed by an INSERT and
+        # therefore not atomic — under concurrency two requests can both read
+        # a free slot and both write it. Only a check inside the transaction
+        # closes that, and this is it.
+        #
+        # tstzrange defaults to '[)', matching _candidate_slots' half-open
+        # overlap test, so bookings that merely touch (09:00-09:30 and
+        # 09:30-10:00) do not conflict here either.
+        #
+        # `tenant_id WITH =` is where "one company = one bookable resource"
+        # stops being a convention and becomes schema. When staff/resources
+        # arrive this becomes resource_id, and until then the constraint will
+        # correctly refuse to let one tenant run two appointments at once.
+        ExcludeConstraint(
+            ("tenant_id", "="),
+            (text("tstzrange(start_time, end_time)"), "&&"),
+            name="ex_agendamentos_no_overlap",
+            using="gist",
+            # declined/cancelled release their time, so they leave the index.
+            # policy.py has no transition back into pending/confirmed, so a
+            # row never re-enters it and this never re-validates on a status
+            # change — cancelling can only ever free capacity.
+            where=text("status IN ('pending', 'confirmed')"),
+        ),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)

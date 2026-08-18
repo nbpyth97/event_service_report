@@ -1,3 +1,5 @@
+import { getDisplayTimeZone, zonedParts } from "@/lib/tz";
+
 export function fmtPrice(price: string | number): string {
   return new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" }).format(Number(price));
 }
@@ -10,6 +12,7 @@ export function fmtPriceValue(price: string | number): string {
 
 export function fmtDateTime(iso: string): string {
   const formatted = new Date(iso).toLocaleString("pt-PT", {
+    timeZone: getDisplayTimeZone(),
     weekday: "short",
     day: "2-digit",
     month: "short",
@@ -22,18 +25,19 @@ export function fmtDateTime(iso: string): string {
 }
 
 export function fmtTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit" });
+  return new Date(iso).toLocaleTimeString("pt-PT", {
+    timeZone: getDisplayTimeZone(),
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 // "28/05 14:32" — for status-history timestamps, where a bare HH:MM would be
 // ambiguous once an appointment's transitions span more than one day.
 export function fmtShortDateTime(iso: string): string {
-  const d = new Date(iso);
-  const day = String(d.getDate()).padStart(2, "0");
-  const month = String(d.getMonth() + 1).padStart(2, "0");
-  const hours = String(d.getHours()).padStart(2, "0");
-  const minutes = String(d.getMinutes()).padStart(2, "0");
-  return `${day}/${month} ${hours}:${minutes}`;
+  const { day, month, hour, minute } = zonedParts(iso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${pad(day)}/${pad(month)} ${pad(hour)}:${pad(minute)}`;
 }
 
 // This app is Portugal-only (single pilot tenant, every placeholder already

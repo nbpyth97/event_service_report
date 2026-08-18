@@ -4,7 +4,8 @@ import type { Agendamento } from "@/api/client";
 import { useUpdateAgendamentoStatus } from "@/hooks/queries";
 import { useToast } from "@/lib/toast";
 import { fmtPrice, fmtTime } from "@/lib/format";
-import { fmtDateHeading, toDateStr } from "@/lib/date";
+import { fmtDateHeading } from "@/lib/date";
+import { zonedDateStr } from "@/lib/tz";
 import { statusUpdateMessage, waLink } from "@/lib/whatsapp";
 import StatusChip from "@/components/StatusChip";
 import AgendamentoDetailModal from "@/components/AgendamentoDetailModal";
@@ -24,7 +25,7 @@ function groupByDate(agendamentos: Agendamento[]): DateGroup[] {
   const sorted = [...agendamentos].sort((a, b) => a.start_time.localeCompare(b.start_time));
   const groups = new Map<string, Agendamento[]>();
   for (const a of sorted) {
-    const key = toDateStr(new Date(a.start_time));
+    const key = zonedDateStr(a.start_time);
     const bucket = groups.get(key);
     if (bucket) bucket.push(a);
     else groups.set(key, [a]);

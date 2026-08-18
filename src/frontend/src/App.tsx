@@ -4,6 +4,7 @@ import { Briefcase, CalendarCheck, LayoutGrid, LogOut, Moon, Sun, Users } from "
 import ProtectedRoute from "@/router/ProtectedRoute";
 import { useCurrentUser } from "@/auth/user";
 import { useMyCompany } from "@/hooks/queries";
+import { setDisplayTimeZone } from "@/lib/tz";
 import { useNotificationStream } from "@/hooks/useNotificationStream";
 import NotificationBell from "@/components/NotificationBell";
 import StartingSoonIndicator from "@/components/StartingSoonIndicator";
@@ -49,6 +50,12 @@ function AppShell() {
   const { user, logout } = useCurrentUser();
   const { data: company } = useMyCompany();
   const [theme, setTheme] = useState<Theme>(initialTheme);
+
+  // Set during render, not in an effect: every formatter reads this at call
+  // time, so an effect would let the first paint after login print times in
+  // the viewer's zone before correcting itself. Idempotent, so React's
+  // double-render in StrictMode is harmless.
+  setDisplayTimeZone(company?.settings.timezone);
 
   useNotificationStream(Boolean(user));
 

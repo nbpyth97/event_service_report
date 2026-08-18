@@ -1,3 +1,5 @@
+import { getDisplayTimeZone } from "@/lib/tz";
+
 export const DOW_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
 export type DowKey = (typeof DOW_KEYS)[number];
 
@@ -27,6 +29,7 @@ export function startOfWeek(d: Date): Date {
 // month rather than leaning on a numeric dd/mm.
 export function fmtSlot(iso: string): string {
   return new Date(iso).toLocaleString("pt-PT", {
+    timeZone: getDisplayTimeZone(),
     weekday: "long",
     day: "2-digit",
     month: "long",

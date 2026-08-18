@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { CheckCircle2 } from "lucide-react";
 import type { Agendamento, CompanySettings } from "@/api/client";
 import { dowKeyOf, toDateStr } from "@/lib/date";
+import { zonedDateStr } from "@/lib/tz";
 import { layoutDayEvents, toMinutes } from "@/lib/calendarLayout";
 import AgendamentoDetailModal from "@/components/AgendamentoDetailModal";
 
@@ -91,7 +92,7 @@ export default function AdminCalendarGrid({
       const dateStr = toDateStr(d);
       const hours = businessHours[dowKeyOf(d)];
       if (!hours) return [];
-      const dayItems = agendamentos.filter((a) => a.status === "confirmed" && toDateStr(new Date(a.start_time)) === dateStr);
+      const dayItems = agendamentos.filter((a) => a.status === "confirmed" && zonedDateStr(a.start_time) === dateStr);
       return layoutDayEvents(dayItems, gridStartMin, toMinutes(hours.open), toMinutes(hours.close), pxPerMin, MIN_BLOCK_PX);
     });
   }, [days, agendamentos, businessHours, gridStartMin, pxPerMin]);

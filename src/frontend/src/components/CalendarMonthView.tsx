@@ -1,5 +1,6 @@
 import type { Agendamento } from "@/api/client";
 import { addDays, toDateStr } from "@/lib/date";
+import { zonedDateStr } from "@/lib/tz";
 
 const MONTHS_PT = [
   "janeiro", "fevereiro", "março", "abril", "maio", "junho",
@@ -40,7 +41,7 @@ export default function CalendarMonthView({
   const confirmedCountByDate = new Map<string, number>();
   for (const a of agendamentos) {
     if (a.status !== "confirmed") continue;
-    const key = toDateStr(new Date(a.start_time));
+    const key = zonedDateStr(a.start_time);
     confirmedCountByDate.set(key, (confirmedCountByDate.get(key) ?? 0) + 1);
   }
 

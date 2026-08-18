@@ -21,7 +21,12 @@ router = APIRouter(prefix="/api/public/{tenant_slug}", tags=["public"])
 @router.get("/company", response_model=PublicCompanyOut)
 async def get_public_company(tenant_slug: str, db: AsyncSession = Depends(get_db)):
     company = await companies_service.get_company_by_slug(db, tenant_slug)
-    return PublicCompanyOut(name=company.name, business_hours=(company.settings or {}).get("business_hours", {}))
+    settings = company.settings or {}
+    return PublicCompanyOut(
+        name=company.name,
+        business_hours=settings.get("business_hours", {}),
+        timezone=settings.get("timezone", "UTC"),
+    )
 
 
 @router.get("/services", response_model=list[ServiceOut])
