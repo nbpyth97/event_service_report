@@ -75,6 +75,34 @@ class User(Base):
     refresh_tokens: Mapped[list["RefreshToken"]] = relationship(back_populates="user")
 
 
+class Customer(Base):
+    """A booking identity with no login — phone is the business key (see
+    uq_customers_tenant_id_phone): a booking from a known phone number always
+    resolves to the same Customer row regardless of whether it came from the
+    public anonymous booking page or an admin's manual appointment (see
+    domains/customers/service.py::find_or_create_customer). Deliberately
+    separate from User, which stays "staff who can log in" — see CLAUDE.md's
+    Customer != User note."""
+
+    __tablename__ = "customers"
+    __table_args__ = (UniqueConstraint("tenant_id", "phone", name="uq_customers_tenant_id_phone"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("companies.id"), nullable=False, index=True
+    )
+    # 50, not 30: real phone numbers never need more than ~20, but the
+    # migration backfill's fallback key for phone-less legacy users
+    # ("legacy-" + a UUID) is 43 chars — see 0005_add_customers.py.
+    phone: Mapped[str] = mapped_column(String(50), nullable=False)
+    name: Mapped[str] = mapped_column(String(150), nullable=False)
+    # Admin-set label for a customer they know by another name — independent
+    # of, and never auto-overwritten by, the name the customer books under.
+    alias: Mapped[str | None] = mapped_column(String(150), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
+
+
 class Service(Base):
     __tablename__ = "services"
 
@@ -106,7 +134,11 @@ class Agendamento(Base):
         UUID(as_uuid=True), ForeignKey("companies.id"), nullable=False, index=True
     )
     service_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("services.id"), nullable=False)
-    created_by: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    customer_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("customers.id"), nullable=False)
+    # Staff member who created this row via the admin manual-appointment flow
+    # — NULL when the customer booked themselves through the public page.
+    # Not the booking's identity (customer_id is) — purely an audit trail.
+    created_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     end_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending")
@@ -115,18 +147,22 @@ class Agendamento(Base):
 
     company: Mapped["Company"] = relationship(back_populates="agendamentos")
     service: Mapped["Service"] = relationship(back_populates="agendamentos")
-    creator: Mapped["User"] = relationship()
+    customer: Mapped["Customer"] = relationship()
 
     # Presentation-friendly accessors for the admin detail view — read from
     # already eager-loaded relationships (see agendamentos/repository.py's
     # _with_relations), never trigger a lazy load.
     @property
     def customer_name(self) -> str:
-        return self.creator.name
+        return self.customer.name
+
+    @property
+    def customer_alias(self) -> str | None:
+        return self.customer.alias
 
     @property
     def customer_phone(self) -> str | None:
-        return self.creator.phone
+        return self.customer.phone
 
     @property
     def service_name(self) -> str:

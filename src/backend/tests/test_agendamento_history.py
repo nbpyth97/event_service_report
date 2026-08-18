@@ -1,14 +1,8 @@
 async def _register_company(client, slug: str):
     res = await client.post(
         "/api/auth/register-company",
-        json={"company_name": "Acme", "company_slug": slug, "admin_name": "admin", "password": "supersecret1"},
+        json={"company_name": f"Acme {slug}", "admin_name": "admin", "password": "supersecret1"},
     )
-    assert res.status_code == 201, res.text
-    return res.json()
-
-
-async def _register_customer(client, slug: str, name: str = "cliente"):
-    res = await client.post(f"/api/auth/{slug}/register", json={"name": name, "password": "supersecret1"})
     assert res.status_code == 201, res.text
     return res.json()
 
@@ -31,19 +25,31 @@ async def _create_service(client, admin_token: str) -> dict:
     return res.json()
 
 
-async def test_history_records_pending_then_confirmed(client, unique_slug):
-    await _register_company(client, unique_slug)
-    admin_token, _ = await _login(client, unique_slug, "admin")
-    await _register_customer(client, unique_slug)
-    customer_token, _ = await _login(client, unique_slug, "cliente")
-    service = await _create_service(client, admin_token)
+async def _create_customer(client, admin_token: str, name: str = "Cliente", phone: str = "+351911111111") -> dict:
+    res = await client.post(
+        "/api/customers", json={"name": name, "phone": phone}, headers=_auth_headers(admin_token)
+    )
+    assert res.status_code == 201, res.text
+    return res.json()
 
+
+async def _book(client, admin_token: str, service_id: str, start_time: str, customer_id: str) -> dict:
     res = await client.post(
         "/api/agendamentos",
-        json={"service_id": service["id"], "start_time": "2026-09-01T10:00:00Z"},
-        headers=_auth_headers(customer_token),
+        json={"service_id": service_id, "start_time": start_time, "customer_id": customer_id},
+        headers=_auth_headers(admin_token),
     )
-    agendamento = res.json()
+    assert res.status_code == 201, res.text
+    return res.json()
+
+
+async def test_history_records_pending_then_confirmed(client, unique_slug):
+    company = await _register_company(client, unique_slug)
+    slug = company["tenant_slug"]
+    admin_token, _ = await _login(client, slug, "admin")
+    service = await _create_service(client, admin_token)
+    customer = await _create_customer(client, admin_token)
+    agendamento = await _book(client, admin_token, service["id"], "2026-09-01T10:00:00Z", customer["id"])
 
     res = await client.patch(
         f"/api/agendamentos/{agendamento['id']}/status", json={"status": "confirmed"}, headers=_auth_headers(admin_token)
@@ -62,18 +68,12 @@ async def test_history_records_pending_then_confirmed(client, unique_slug):
 
 
 async def test_history_records_every_transition_in_order(client, unique_slug):
-    await _register_company(client, unique_slug)
-    admin_token, _ = await _login(client, unique_slug, "admin")
-    await _register_customer(client, unique_slug)
-    customer_token, _ = await _login(client, unique_slug, "cliente")
+    company = await _register_company(client, unique_slug)
+    slug = company["tenant_slug"]
+    admin_token, _ = await _login(client, slug, "admin")
     service = await _create_service(client, admin_token)
-
-    res = await client.post(
-        "/api/agendamentos",
-        json={"service_id": service["id"], "start_time": "2026-09-01T10:00:00Z"},
-        headers=_auth_headers(customer_token),
-    )
-    agendamento = res.json()
+    customer = await _create_customer(client, admin_token)
+    agendamento = await _book(client, admin_token, service["id"], "2026-09-01T10:00:00Z", customer["id"])
 
     await client.patch(
         f"/api/agendamentos/{agendamento['id']}/status", json={"status": "confirmed"}, headers=_auth_headers(admin_token)
@@ -89,42 +89,3 @@ async def test_history_records_every_transition_in_order(client, unique_slug):
         ("pending", "confirmed"),
         ("confirmed", "cancelled"),
     ]
-
-
-async def test_customer_can_view_own_booking_history(client, unique_slug):
-    await _register_company(client, unique_slug)
-    admin_token, _ = await _login(client, unique_slug, "admin")
-    await _register_customer(client, unique_slug)
-    customer_token, _ = await _login(client, unique_slug, "cliente")
-    service = await _create_service(client, admin_token)
-
-    res = await client.post(
-        "/api/agendamentos",
-        json={"service_id": service["id"], "start_time": "2026-09-01T10:00:00Z"},
-        headers=_auth_headers(customer_token),
-    )
-    agendamento = res.json()
-
-    res = await client.get(f"/api/agendamentos/{agendamento['id']}/history", headers=_auth_headers(customer_token))
-    assert res.status_code == 200
-    assert [h["to_status"] for h in res.json()] == ["pending"]
-
-
-async def test_customer_cannot_view_another_customers_booking_history(client, unique_slug):
-    await _register_company(client, unique_slug)
-    admin_token, _ = await _login(client, unique_slug, "admin")
-    await _register_customer(client, unique_slug, "cliente-a")
-    customer_a_token, _ = await _login(client, unique_slug, "cliente-a")
-    await _register_customer(client, unique_slug, "cliente-b")
-    customer_b_token, _ = await _login(client, unique_slug, "cliente-b")
-    service = await _create_service(client, admin_token)
-
-    res = await client.post(
-        "/api/agendamentos",
-        json={"service_id": service["id"], "start_time": "2026-09-01T10:00:00Z"},
-        headers=_auth_headers(customer_a_token),
-    )
-    agendamento = res.json()
-
-    res = await client.get(f"/api/agendamentos/{agendamento['id']}/history", headers=_auth_headers(customer_b_token))
-    assert res.status_code == 404

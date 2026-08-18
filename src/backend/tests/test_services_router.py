@@ -1,14 +1,15 @@
+import uuid
+
+from app.core.auth import hash_password
+from app.core.database import AsyncSessionLocal
+from app.core.models import User
+
+
 async def _register_company(client, slug: str):
     res = await client.post(
         "/api/auth/register-company",
-        json={"company_name": "Acme", "company_slug": slug, "admin_name": "admin", "password": "supersecret1"},
+        json={"company_name": f"Acme {slug}", "admin_name": "admin", "password": "supersecret1"},
     )
-    assert res.status_code == 201, res.text
-    return res.json()
-
-
-async def _register_customer(client, slug: str, name: str = "cliente"):
-    res = await client.post(f"/api/auth/{slug}/register", json={"name": name, "password": "supersecret1"})
     assert res.status_code == 201, res.text
     return res.json()
 
@@ -31,9 +32,19 @@ async def _create_service(client, admin_token: str, **overrides) -> dict:
     return res.json()
 
 
+async def _create_raw_staff_user(tenant_id: str, name: str, password: str = "supersecret1", role: str = "user") -> None:
+    """Customers no longer self-register (that endpoint is gone) — this
+    keeps the require_admin regression coverage below by constructing a
+    non-admin login directly, mirroring test_auth_service.py's raw-session
+    style."""
+    async with AsyncSessionLocal() as db:
+        db.add(User(tenant_id=uuid.UUID(tenant_id), name=name, password_hash=hash_password(password), role=role))
+        await db.commit()
+
+
 async def test_admin_updates_service(client, unique_slug):
-    await _register_company(client, unique_slug)
-    admin_token, _ = await _login(client, unique_slug, "admin")
+    company = await _register_company(client, unique_slug)
+    admin_token, _ = await _login(client, company["tenant_slug"], "admin")
     service = await _create_service(client, admin_token)
 
     res = await client.patch(
@@ -46,10 +57,11 @@ async def test_admin_updates_service(client, unique_slug):
 
 
 async def test_customer_cannot_update_service(client, unique_slug):
-    await _register_company(client, unique_slug)
-    admin_token, _ = await _login(client, unique_slug, "admin")
-    await _register_customer(client, unique_slug)
-    customer_token, _ = await _login(client, unique_slug, "cliente")
+    company = await _register_company(client, unique_slug)
+    slug = company["tenant_slug"]
+    admin_token, _ = await _login(client, slug, "admin")
+    await _create_raw_staff_user(company["tenant_id"], "cliente")
+    customer_token, _ = await _login(client, slug, "cliente")
     service = await _create_service(client, admin_token)
 
     res = await client.patch(
@@ -59,10 +71,11 @@ async def test_customer_cannot_update_service(client, unique_slug):
 
 
 async def test_admin_deletes_service_soft_deactivates(client, unique_slug):
-    await _register_company(client, unique_slug)
-    admin_token, _ = await _login(client, unique_slug, "admin")
-    await _register_customer(client, unique_slug)
-    customer_token, _ = await _login(client, unique_slug, "cliente")
+    company = await _register_company(client, unique_slug)
+    slug = company["tenant_slug"]
+    admin_token, _ = await _login(client, slug, "admin")
+    await _create_raw_staff_user(company["tenant_id"], "cliente")
+    customer_token, _ = await _login(client, slug, "cliente")
     service = await _create_service(client, admin_token)
 
     res = await client.delete(f"/api/services/{service['id']}", headers=_auth_headers(admin_token))
@@ -87,10 +100,11 @@ async def test_admin_deletes_service_soft_deactivates(client, unique_slug):
 
 
 async def test_customer_cannot_delete_service(client, unique_slug):
-    await _register_company(client, unique_slug)
-    admin_token, _ = await _login(client, unique_slug, "admin")
-    await _register_customer(client, unique_slug)
-    customer_token, _ = await _login(client, unique_slug, "cliente")
+    company = await _register_company(client, unique_slug)
+    slug = company["tenant_slug"]
+    admin_token, _ = await _login(client, slug, "admin")
+    await _create_raw_staff_user(company["tenant_id"], "cliente")
+    customer_token, _ = await _login(client, slug, "cliente")
     service = await _create_service(client, admin_token)
 
     res = await client.delete(f"/api/services/{service['id']}", headers=_auth_headers(customer_token))
@@ -98,13 +112,12 @@ async def test_customer_cannot_delete_service(client, unique_slug):
 
 
 async def test_update_other_tenants_service_404s(client, unique_slug):
-    await _register_company(client, unique_slug)
-    admin_token, _ = await _login(client, unique_slug, "admin")
+    company = await _register_company(client, unique_slug)
+    admin_token, _ = await _login(client, company["tenant_slug"], "admin")
     service = await _create_service(client, admin_token)
 
-    other_slug = f"{unique_slug}-other"
-    await _register_company(client, other_slug)
-    other_admin_token, _ = await _login(client, other_slug, "admin")
+    other_company = await _register_company(client, f"{unique_slug}-other")
+    other_admin_token, _ = await _login(client, other_company["tenant_slug"], "admin")
 
     res = await client.patch(
         f"/api/services/{service['id']}", json={"price": "1.00"}, headers=_auth_headers(other_admin_token)
@@ -113,8 +126,8 @@ async def test_update_other_tenants_service_404s(client, unique_slug):
 
 
 async def test_get_availability_returns_slots_within_business_hours(client, unique_slug):
-    await _register_company(client, unique_slug)
-    admin_token, _ = await _login(client, unique_slug, "admin")
+    company = await _register_company(client, unique_slug)
+    admin_token, _ = await _login(client, company["tenant_slug"], "admin")
     service = await _create_service(client, admin_token, duration_min=30)
 
     res = await client.get(

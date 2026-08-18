@@ -1,14 +1,8 @@
 async def _register_company(client, slug: str):
     res = await client.post(
         "/api/auth/register-company",
-        json={"company_name": "Acme", "company_slug": slug, "admin_name": "admin", "password": "supersecret1"},
+        json={"company_name": f"Acme {slug}", "admin_name": "admin", "password": "supersecret1"},
     )
-    assert res.status_code == 201, res.text
-    return res.json()
-
-
-async def _register_customer(client, slug: str, name: str = "cliente"):
-    res = await client.post(f"/api/auth/{slug}/register", json={"name": name, "password": "supersecret1"})
     assert res.status_code == 201, res.text
     return res.json()
 
@@ -31,21 +25,38 @@ async def _create_service(client, admin_token: str) -> dict:
     return res.json()
 
 
-async def test_new_booking_notifies_all_tenant_admins_and_not_other_tenants(client, unique_slug):
-    await _register_company(client, unique_slug)
-    admin_token, admin = await _login(client, unique_slug, "admin")
-    await _register_customer(client, unique_slug)
-    customer_token, _ = await _login(client, unique_slug, "cliente")
-    service = await _create_service(client, admin_token)
+async def _create_customer(client, admin_token: str, name: str = "Cliente", phone: str = "+351911111111") -> dict:
+    res = await client.post(
+        "/api/customers", json={"name": name, "phone": phone}, headers=_auth_headers(admin_token)
+    )
+    assert res.status_code == 201, res.text
+    return res.json()
 
-    other_slug = f"{unique_slug}-other"
-    await _register_company(client, other_slug)
-    other_admin_token, _ = await _login(client, other_slug, "admin")
+
+async def _book(client, admin_token: str, service_id: str, start_time: str, customer_id: str) -> dict:
+    res = await client.post(
+        "/api/agendamentos",
+        json={"service_id": service_id, "start_time": start_time, "customer_id": customer_id},
+        headers=_auth_headers(admin_token),
+    )
+    assert res.status_code == 201, res.text
+    return res.json()
+
+
+async def test_new_booking_notifies_all_tenant_admins_and_not_other_tenants(client, unique_slug):
+    company = await _register_company(client, unique_slug)
+    slug = company["tenant_slug"]
+    admin_token, admin = await _login(client, slug, "admin")
+    service = await _create_service(client, admin_token)
+    customer = await _create_customer(client, admin_token)
+
+    other_company = await _register_company(client, f"{unique_slug}-other")
+    other_admin_token, _ = await _login(client, other_company["tenant_slug"], "admin")
 
     res = await client.post(
         "/api/agendamentos",
-        json={"service_id": service["id"], "start_time": "2026-09-01T10:00:00Z"},
-        headers=_auth_headers(customer_token),
+        json={"service_id": service["id"], "start_time": "2026-09-01T10:00:00Z", "customer_id": customer["id"]},
+        headers=_auth_headers(admin_token),
     )
     assert res.status_code == 201, res.text
 
@@ -63,18 +74,13 @@ async def test_new_booking_notifies_all_tenant_admins_and_not_other_tenants(clie
 
 
 async def test_confirmed_booking_cancelled_notifies_admin_but_declining_a_pending_one_does_not(client, unique_slug):
-    await _register_company(client, unique_slug)
-    admin_token, _ = await _login(client, unique_slug, "admin")
-    await _register_customer(client, unique_slug)
-    customer_token, _ = await _login(client, unique_slug, "cliente")
+    company = await _register_company(client, unique_slug)
+    slug = company["tenant_slug"]
+    admin_token, _ = await _login(client, slug, "admin")
     service = await _create_service(client, admin_token)
+    customer = await _create_customer(client, admin_token)
 
-    res = await client.post(
-        "/api/agendamentos",
-        json={"service_id": service["id"], "start_time": "2026-09-01T10:00:00Z"},
-        headers=_auth_headers(customer_token),
-    )
-    agendamento = res.json()
+    agendamento = await _book(client, admin_token, service["id"], "2026-09-01T10:00:00Z", customer["id"])
 
     # declining a still-pending booking must not fire a "cancelled"
     # notification, and resolves (marks read) the "booking_pending" alert
@@ -88,12 +94,7 @@ async def test_confirmed_booking_cancelled_notifies_admin_but_declining_a_pendin
     assert res.json() == []
 
     # now confirm a second booking, then cancel it — this one should notify
-    res = await client.post(
-        "/api/agendamentos",
-        json={"service_id": service["id"], "start_time": "2026-09-02T10:00:00Z"},
-        headers=_auth_headers(customer_token),
-    )
-    agendamento2 = res.json()
+    agendamento2 = await _book(client, admin_token, service["id"], "2026-09-02T10:00:00Z", customer["id"])
     res = await client.patch(
         f"/api/agendamentos/{agendamento2['id']}/status", json={"status": "confirmed"}, headers=_auth_headers(admin_token)
     )
@@ -114,18 +115,13 @@ async def test_confirmed_booking_cancelled_notifies_admin_but_declining_a_pendin
 
 
 async def test_mark_notification_read(client, unique_slug):
-    await _register_company(client, unique_slug)
-    admin_token, _ = await _login(client, unique_slug, "admin")
-    await _register_customer(client, unique_slug)
-    customer_token, _ = await _login(client, unique_slug, "cliente")
+    company = await _register_company(client, unique_slug)
+    slug = company["tenant_slug"]
+    admin_token, _ = await _login(client, slug, "admin")
     service = await _create_service(client, admin_token)
+    customer = await _create_customer(client, admin_token)
 
-    res = await client.post(
-        "/api/agendamentos",
-        json={"service_id": service["id"], "start_time": "2026-09-01T10:00:00Z"},
-        headers=_auth_headers(customer_token),
-    )
-    assert res.status_code == 201
+    await _book(client, admin_token, service["id"], "2026-09-01T10:00:00Z", customer["id"])
 
     res = await client.get("/api/notifications", headers=_auth_headers(admin_token))
     notification_id = res.json()[0]["id"]
@@ -140,35 +136,18 @@ async def test_mark_notification_read(client, unique_slug):
 
 
 async def test_mark_other_tenants_notification_read_404s(client, unique_slug):
-    await _register_company(client, unique_slug)
-    admin_token, _ = await _login(client, unique_slug, "admin")
-    await _register_customer(client, unique_slug)
-    customer_token, _ = await _login(client, unique_slug, "cliente")
+    company = await _register_company(client, unique_slug)
+    slug = company["tenant_slug"]
+    admin_token, _ = await _login(client, slug, "admin")
     service = await _create_service(client, admin_token)
+    customer = await _create_customer(client, admin_token)
 
-    res = await client.post(
-        "/api/agendamentos",
-        json={"service_id": service["id"], "start_time": "2026-09-01T10:00:00Z"},
-        headers=_auth_headers(customer_token),
-    )
+    await _book(client, admin_token, service["id"], "2026-09-01T10:00:00Z", customer["id"])
     res = await client.get("/api/notifications", headers=_auth_headers(admin_token))
     notification_id = res.json()[0]["id"]
 
-    other_slug = f"{unique_slug}-other"
-    await _register_company(client, other_slug)
-    other_admin_token, _ = await _login(client, other_slug, "admin")
+    other_company = await _register_company(client, f"{unique_slug}-other")
+    other_admin_token, _ = await _login(client, other_company["tenant_slug"], "admin")
 
     res = await client.post(f"/api/notifications/{notification_id}/read", headers=_auth_headers(other_admin_token))
     assert res.status_code == 404
-
-
-async def test_customer_cannot_read_admin_notifications(client, unique_slug):
-    await _register_company(client, unique_slug)
-    admin_token, _ = await _login(client, unique_slug, "admin")
-    await _register_customer(client, unique_slug)
-    customer_token, _ = await _login(client, unique_slug, "cliente")
-
-    # customer's own /api/notifications is just always empty (never a recipient)
-    res = await client.get("/api/notifications", headers=_auth_headers(customer_token))
-    assert res.status_code == 200
-    assert res.json() == []

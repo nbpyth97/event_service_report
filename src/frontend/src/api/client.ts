@@ -130,8 +130,6 @@ async function request<T>(path: string, options?: RequestInit, _retried = false)
 export const api = {
   registerCompany: (payload: { company_name: string; admin_name: string; password: string }) =>
     request<RegisterCompanyResult>("/api/auth/register-company", { method: "POST", body: JSON.stringify(payload) }),
-  registerCustomer: (tenantSlug: string, payload: { name: string; password: string; phone?: string }) =>
-    request<User>(`/api/auth/${tenantSlug}/register`, { method: "POST", body: JSON.stringify(payload) }),
   login: (payload: { tenant_slug: string; name: string; password: string }) =>
     request<AccessTokenWithUser>("/api/auth/login", { method: "POST", body: JSON.stringify(payload) }),
   logout: () => request<void>("/api/auth/logout", { method: "POST" }),

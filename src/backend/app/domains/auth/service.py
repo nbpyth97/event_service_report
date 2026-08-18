@@ -9,7 +9,7 @@ from app.core.auth import create_access_token, create_refresh_token, decode_toke
 from app.core.config import settings
 from app.core.enums import UserRole
 from app.core.models import DEFAULT_COMPANY_SETTINGS, Company, RefreshToken, User
-from app.core.schemas import LoginPayload, RegisterCompanyPayload, RegisterCustomerPayload
+from app.core.schemas import LoginPayload, RegisterCompanyPayload
 from app.domains.auth import repository
 from app.domains.companies.service import slugify
 
@@ -47,21 +47,6 @@ async def _get_company_by_slug(db: AsyncSession, tenant_slug: str) -> Company:
     if not company:
         raise HTTPException(status_code=404, detail="Empresa não encontrada")
     return company
-
-
-async def register_customer(db: AsyncSession, tenant_slug: str, payload: RegisterCustomerPayload) -> User:
-    company = await _get_company_by_slug(db, tenant_slug)
-
-    user = User(
-        tenant_id=company.id,
-        name=payload.name,
-        password_hash=hash_password(payload.password),
-        role=UserRole.USER.value,
-        phone=payload.phone,
-    )
-    if not await repository.try_insert_user(db, user):
-        raise HTTPException(status_code=409, detail="Já existe um utilizador com este nome nesta empresa")
-    return user
 
 
 async def authenticate(db: AsyncSession, payload: LoginPayload) -> User:

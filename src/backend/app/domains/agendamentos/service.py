@@ -1,36 +1,44 @@
 import uuid
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.enums import BookingStatus, UserRole
 from app.core.models import Agendamento, AgendamentoStatusHistory, User
-from app.core.schemas import AgendamentoCreate
 from app.domains.agendamentos import repository
-from app.domains.agendamentos.policy import InvalidStatusTransition, can_transition, validate_transition
+from app.domains.agendamentos.policy import InvalidStatusTransition, validate_transition
 from app.domains.availability.service import is_slot_bookable
 from app.domains.notifications import service as notifications_service
 from app.domains.services.service import get_service
 
 
 async def create_agendamento(
-    db: AsyncSession, tenant_id: uuid.UUID, created_by: uuid.UUID, payload: AgendamentoCreate
+    db: AsyncSession,
+    tenant_id: uuid.UUID,
+    customer_id: uuid.UUID,
+    service_id: uuid.UUID,
+    start_time: datetime,
+    created_by: uuid.UUID | None = None,
 ) -> Agendamento:
-    service = await get_service(db, tenant_id, payload.service_id)
-    start_time = payload.start_time
+    """created_by is the staff member creating this on the admin manual-
+    appointment path, or None for a customer's own anonymous booking (see
+    routers/public.py) — it's an audit trail, not the booking's identity
+    (customer_id is)."""
+    service = await get_service(db, tenant_id, service_id)
     end_time = start_time + timedelta(minutes=service.duration_min)
 
     # Same rules the availability picker used to offer this slot in the first
-    # place (business hours, slot grid, lead time, tenant-wide busy overlap)
-    # — see availability/service.py::is_slot_bookable. Keeps the write path
-    # from accepting anything the read path wouldn't have shown.
+    # place (business hours, slot grid, tenant-wide busy overlap) — see
+    # availability/service.py::is_slot_bookable. Keeps the write path from
+    # accepting anything the read path wouldn't have shown.
     if not await is_slot_bookable(db, tenant_id, service, start_time):
         raise HTTPException(status_code=409, detail="Horário não está mais disponível")
 
     agendamento = Agendamento(
         tenant_id=tenant_id,
         service_id=service.id,
+        customer_id=customer_id,
         created_by=created_by,
         start_time=start_time,
         end_time=end_time,
@@ -57,16 +65,12 @@ async def list_agendamentos(db: AsyncSession, current_user: User) -> list[Agenda
 async def update_status(
     db: AsyncSession, current_user: User, agendamento_id: uuid.UUID, status: BookingStatus
 ) -> Agendamento:
-    """Admins manage all bookings for their company, gated only by ALLOWED_TRANSITIONS;
-    owners may additionally cancel their own booking regardless of its current status
-    (see agendamentos/policy.py)."""
+    """Admin-only (gated at the router level — customers have no login to
+    manage their own bookings; see routers/agendamentos.py), restricted only
+    by ALLOWED_TRANSITIONS (see agendamentos/policy.py)."""
     tenant_id = current_user.tenant_id
     agendamento = await get_agendamento(db, tenant_id, agendamento_id)
-    is_owner = agendamento.created_by == current_user.id
-    role = UserRole(current_user.role)
     previous_status = BookingStatus(agendamento.status)
-    if role != UserRole.ADMIN and not can_transition(is_owner=is_owner, new=status):
-        raise HTTPException(status_code=404, detail="Agendamento não encontrado")
     try:
         validate_transition(previous_status, status)
     except InvalidStatusTransition as exc:

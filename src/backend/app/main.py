@@ -4,7 +4,7 @@ from fastapi import Depends, FastAPI
 
 from app.core.auth import get_current_user
 from app.middleware import setup_middleware
-from app.routers import agendamentos, auth, companies, health, notifications, services
+from app.routers import agendamentos, auth, companies, customers, health, notifications, services
 from app.domains.notifications.service import listen_for_notifications
 
 
@@ -27,4 +27,5 @@ app.include_router(auth.router)
 app.include_router(services.router, dependencies=[Depends(get_current_user)])
 app.include_router(agendamentos.router, dependencies=[Depends(get_current_user)])
 app.include_router(companies.router, dependencies=[Depends(get_current_user)])
+app.include_router(customers.router, dependencies=[Depends(get_current_user)])
 app.include_router(notifications.router)

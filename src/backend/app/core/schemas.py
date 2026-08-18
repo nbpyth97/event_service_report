@@ -1,22 +1,32 @@
+import re
 import uuid
 from datetime import datetime
 from decimal import Decimal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.core.enums import BookingStatus, UserRole
+
+# Portugal-only (single pilot tenant): 351 country code + 9-digit mobile =
+# 12 digits, not E.164's generic 15. Frontend-only validation doesn't mean
+# anything on the public booking endpoint — it's unauthenticated, so this is
+# the actual enforcement, not just UX polish (see lib/format.ts::
+# validatePhoneDigits for the matching frontend rule).
+_MIN_PHONE_DIGITS = 9
+_MAX_PHONE_DIGITS = 12
+
+
+def _validate_phone_digits(value: str) -> str:
+    digits = re.sub(r"\D", "", value)
+    if not (_MIN_PHONE_DIGITS <= len(digits) <= _MAX_PHONE_DIGITS):
+        raise ValueError(f"Phone number must have between {_MIN_PHONE_DIGITS} and {_MAX_PHONE_DIGITS} digits")
+    return value
 
 
 class RegisterCompanyPayload(BaseModel):
     company_name: str = Field(min_length=1, max_length=200)
     admin_name: str = Field(min_length=1, max_length=150)
     password: str = Field(min_length=8, max_length=200)
-
-
-class RegisterCustomerPayload(BaseModel):
-    name: str = Field(min_length=1, max_length=150)
-    password: str = Field(min_length=8, max_length=200)
-    phone: str | None = Field(default=None, max_length=30)
 
 
 class LoginPayload(BaseModel):
@@ -76,6 +86,7 @@ class ServiceOut(BaseModel):
 class AgendamentoCreate(BaseModel):
     service_id: uuid.UUID
     start_time: datetime
+    customer_id: uuid.UUID
 
 
 class AgendamentoStatusUpdate(BaseModel):
@@ -88,15 +99,37 @@ class AgendamentoOut(BaseModel):
     id: uuid.UUID
     tenant_id: uuid.UUID
     service_id: uuid.UUID
-    created_by: uuid.UUID
+    customer_id: uuid.UUID
+    created_by: uuid.UUID | None
     start_time: datetime
     end_time: datetime
     status: BookingStatus
     customer_name: str
+    customer_alias: str | None
     customer_phone: str | None
     service_name: str
     service_price: Decimal
     service_duration_min: int
+
+
+class CustomerOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    name: str
+    phone: str
+    alias: str | None
+
+
+class CustomerCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=150)
+    phone: str = Field(min_length=1, max_length=30)
+
+    _validate_phone = field_validator("phone")(_validate_phone_digits)
+
+
+class CustomerAliasUpdate(BaseModel):
+    alias: str | None = Field(default=None, max_length=150)
 
 
 class AgendamentoStatusHistoryOut(BaseModel):

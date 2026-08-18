@@ -1,7 +1,7 @@
 async def _register_company(client, slug: str):
     res = await client.post(
         "/api/auth/register-company",
-        json={"company_name": "Acme", "company_slug": slug, "admin_name": "admin", "password": "supersecret1"},
+        json={"company_name": f"Acme {slug}", "admin_name": "admin", "password": "supersecret1"},
     )
     assert res.status_code == 201, res.text
     return res.json()
@@ -19,13 +19,13 @@ def _auth_headers(token: str) -> dict:
 
 async def test_get_my_company_returns_own_tenant(client, unique_slug):
     company = await _register_company(client, unique_slug)
-    admin_token, _ = await _login(client, unique_slug, "admin")
+    admin_token, _ = await _login(client, company["tenant_slug"], "admin")
 
     res = await client.get("/api/companies/me", headers=_auth_headers(admin_token))
     assert res.status_code == 200, res.text
     body = res.json()
     assert body["id"] == company["tenant_id"]
-    assert body["slug"] == unique_slug
+    assert body["slug"] == company["tenant_slug"]
 
 
 async def test_get_my_company_requires_auth(client):

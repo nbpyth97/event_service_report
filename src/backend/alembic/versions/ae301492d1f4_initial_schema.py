@@ -1,8 +1,8 @@
 """initial schema
 
-Revision ID: 0001_initial
-Revises:
-Create Date: 2026-08-11 21:45:47.121574
+Revision ID: ae301492d1f4
+Revises: 
+Create Date: 2026-08-17 21:31:53.982096
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision: str = '0001_initial'
+revision: str = 'ae301492d1f4'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -30,12 +30,26 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_companies_slug'), 'companies', ['slug'], unique=True)
+    op.create_table('customers',
+    sa.Column('id', sa.UUID(), nullable=False),
+    sa.Column('tenant_id', sa.UUID(), nullable=False),
+    sa.Column('phone', sa.String(length=50), nullable=False),
+    sa.Column('name', sa.String(length=150), nullable=False),
+    sa.Column('alias', sa.String(length=150), nullable=True),
+    sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
+    sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False),
+    sa.ForeignKeyConstraint(['tenant_id'], ['companies.id'], ),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('tenant_id', 'phone', name='uq_customers_tenant_id_phone')
+    )
+    op.create_index(op.f('ix_customers_tenant_id'), 'customers', ['tenant_id'], unique=False)
     op.create_table('users',
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('tenant_id', sa.UUID(), nullable=False),
     sa.Column('name', sa.String(length=150), nullable=False),
     sa.Column('password_hash', sa.String(length=255), nullable=False),
     sa.Column('role', sa.String(length=20), nullable=False),
+    sa.Column('phone', sa.String(length=30), nullable=True),
     sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
     sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False),
     sa.CheckConstraint("role IN ('admin', 'user')", name='ck_users_role'),
@@ -75,7 +89,8 @@ def upgrade() -> None:
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('tenant_id', sa.UUID(), nullable=False),
     sa.Column('service_id', sa.UUID(), nullable=False),
-    sa.Column('created_by', sa.UUID(), nullable=False),
+    sa.Column('customer_id', sa.UUID(), nullable=False),
+    sa.Column('created_by', sa.UUID(), nullable=True),
     sa.Column('start_time', sa.DateTime(timezone=True), nullable=False),
     sa.Column('end_time', sa.DateTime(timezone=True), nullable=False),
     sa.Column('status', sa.String(length=20), nullable=False),
@@ -83,17 +98,56 @@ def upgrade() -> None:
     sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False),
     sa.CheckConstraint("status IN ('pending', 'confirmed', 'declined', 'cancelled')", name='ck_agendamentos_status'),
     sa.ForeignKeyConstraint(['created_by'], ['users.id'], ),
+    sa.ForeignKeyConstraint(['customer_id'], ['customers.id'], ),
     sa.ForeignKeyConstraint(['service_id'], ['services.id'], ),
     sa.ForeignKeyConstraint(['tenant_id'], ['companies.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_agendamentos_tenant_id'), 'agendamentos', ['tenant_id'], unique=False)
     op.create_index('ix_agendamentos_tenant_id_start_time', 'agendamentos', ['tenant_id', 'start_time'], unique=False)
+    op.create_table('agendamento_status_history',
+    sa.Column('id', sa.UUID(), nullable=False),
+    sa.Column('tenant_id', sa.UUID(), nullable=False),
+    sa.Column('agendamento_id', sa.UUID(), nullable=False),
+    sa.Column('from_status', sa.String(length=20), nullable=False),
+    sa.Column('to_status', sa.String(length=20), nullable=False),
+    sa.Column('changed_at', sa.DateTime(timezone=True), nullable=False),
+    sa.ForeignKeyConstraint(['agendamento_id'], ['agendamentos.id'], ),
+    sa.ForeignKeyConstraint(['tenant_id'], ['companies.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index('ix_agendamento_status_history_agendamento_id_changed_at', 'agendamento_status_history', ['agendamento_id', 'changed_at'], unique=False)
+    op.create_index(op.f('ix_agendamento_status_history_tenant_id'), 'agendamento_status_history', ['tenant_id'], unique=False)
+    op.create_table('notifications',
+    sa.Column('id', sa.UUID(), nullable=False),
+    sa.Column('tenant_id', sa.UUID(), nullable=False),
+    sa.Column('recipient_id', sa.UUID(), nullable=False),
+    sa.Column('type', sa.String(length=30), nullable=False),
+    sa.Column('agendamento_id', sa.UUID(), nullable=True),
+    sa.Column('message', sa.String(length=500), nullable=False),
+    sa.Column('read_at', sa.DateTime(timezone=True), nullable=True),
+    sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
+    sa.CheckConstraint("type IN ('booking_pending', 'booking_cancelled')", name='ck_notifications_type'),
+    sa.ForeignKeyConstraint(['agendamento_id'], ['agendamentos.id'], ),
+    sa.ForeignKeyConstraint(['recipient_id'], ['users.id'], ),
+    sa.ForeignKeyConstraint(['tenant_id'], ['companies.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index(op.f('ix_notifications_recipient_id'), 'notifications', ['recipient_id'], unique=False)
+    op.create_index(op.f('ix_notifications_tenant_id'), 'notifications', ['tenant_id'], unique=False)
+    op.create_index('ix_notifications_tenant_id_recipient_id_created_at', 'notifications', ['tenant_id', 'recipient_id', 'created_at'], unique=False)
     # ### end Alembic commands ###
 
 
 def downgrade() -> None:
     # ### commands auto generated by Alembic - please adjust! ###
+    op.drop_index('ix_notifications_tenant_id_recipient_id_created_at', table_name='notifications')
+    op.drop_index(op.f('ix_notifications_tenant_id'), table_name='notifications')
+    op.drop_index(op.f('ix_notifications_recipient_id'), table_name='notifications')
+    op.drop_table('notifications')
+    op.drop_index(op.f('ix_agendamento_status_history_tenant_id'), table_name='agendamento_status_history')
+    op.drop_index('ix_agendamento_status_history_agendamento_id_changed_at', table_name='agendamento_status_history')
+    op.drop_table('agendamento_status_history')
     op.drop_index('ix_agendamentos_tenant_id_start_time', table_name='agendamentos')
     op.drop_index(op.f('ix_agendamentos_tenant_id'), table_name='agendamentos')
     op.drop_table('agendamentos')
@@ -104,6 +158,8 @@ def downgrade() -> None:
     op.drop_table('refresh_tokens')
     op.drop_index(op.f('ix_users_tenant_id'), table_name='users')
     op.drop_table('users')
+    op.drop_index(op.f('ix_customers_tenant_id'), table_name='customers')
+    op.drop_table('customers')
     op.drop_index(op.f('ix_companies_slug'), table_name='companies')
     op.drop_table('companies')
     # ### end Alembic commands ###

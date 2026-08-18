@@ -4,7 +4,6 @@ from app.core.enums import BookingStatus
 from app.domains.agendamentos.policy import (
     ALLOWED_TRANSITIONS,
     InvalidStatusTransition,
-    can_transition,
     validate_transition,
 )
 
@@ -55,21 +54,3 @@ def test_invalid_status_transition_message_includes_states():
     exc = InvalidStatusTransition(BookingStatus.DECLINED, BookingStatus.CONFIRMED)
     assert "declined" in str(exc)
     assert "confirmed" in str(exc)
-
-
-@pytest.mark.parametrize(
-    ("is_owner", "new", "expected"),
-    [
-        # Owner may request cancelling their own booking — whether that's
-        # currently legal (e.g. not already cancelled) is validate_transition's
-        # job, not this check's, so `current` isn't even a parameter here.
-        (True, BookingStatus.CANCELLED, True),
-        # Non-owners may never trigger a transition.
-        (False, BookingStatus.CANCELLED, False),
-        # Owners can never confirm/decline a booking, even their own.
-        (True, BookingStatus.CONFIRMED, False),
-        (True, BookingStatus.DECLINED, False),
-    ],
-)
-def test_can_transition(is_owner, new, expected):
-    assert can_transition(is_owner=is_owner, new=new) is expected

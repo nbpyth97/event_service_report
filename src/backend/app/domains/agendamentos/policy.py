@@ -21,13 +21,3 @@ class InvalidStatusTransition(Exception):
 def validate_transition(current: BookingStatus, new: BookingStatus) -> None:
     if new not in ALLOWED_TRANSITIONS.get(current, set()):
         raise InvalidStatusTransition(current, new)
-
-
-def can_transition(*, is_owner: bool, new: BookingStatus) -> bool:
-    """Whether a non-admin owner may attempt this transition — they may only ever
-    request cancelling their own booking. Whether that's currently legal (e.g. it
-    isn't already cancelled) is validate_transition's job, not this check's — admins
-    go through that same legality check unconditionally, with no extra restriction
-    here at all.
-    """
-    return is_owner and new == BookingStatus.CANCELLED

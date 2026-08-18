@@ -10,7 +10,7 @@ from app.core.models import Agendamento, AgendamentoStatusHistory
 def _with_relations(stmt):
     # AgendamentoOut.customer_name/service_name/etc read these off the ORM
     # object — eager-load so they never trigger a lazy load on an async session.
-    return stmt.options(selectinload(Agendamento.service), selectinload(Agendamento.creator))
+    return stmt.options(selectinload(Agendamento.service), selectinload(Agendamento.customer))
 
 
 async def fetch_by_id(db: AsyncSession, tenant_id: uuid.UUID, agendamento_id: uuid.UUID) -> Agendamento | None:
