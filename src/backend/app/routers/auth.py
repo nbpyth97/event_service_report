@@ -7,6 +7,7 @@ from app.core.schemas import (
     AccessToken,
     AccessTokenWithUser,
     LoginPayload,
+    RegisterCompanyOut,
     RegisterCompanyPayload,
     RegisterCustomerPayload,
     UserOut,
@@ -16,9 +17,10 @@ from app.domains.auth import service as auth_service
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 
-@router.post("/register-company", response_model=UserOut, status_code=201)
+@router.post("/register-company", response_model=RegisterCompanyOut, status_code=201)
 async def register_company(payload: RegisterCompanyPayload, db: AsyncSession = Depends(get_db)):
-    return await auth_service.register_company_and_admin(db, payload)
+    admin, company = await auth_service.register_company_and_admin(db, payload)
+    return RegisterCompanyOut(id=admin.id, tenant_id=admin.tenant_id, name=admin.name, role=admin.role, tenant_slug=company.slug)
 
 
 @router.post("/{tenant_slug}/register", response_model=UserOut, status_code=201)

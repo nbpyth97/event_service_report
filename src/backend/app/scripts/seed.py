@@ -1,7 +1,10 @@
 """Populate the database with fake data for local development.
 
 Usage: uv run python -m app.scripts.seed
-Idempotent — skips seeding if the "anabela" company already exists.
+Idempotent — skips seeding if the pilot company already exists (matched by
+name, not slug: registration now auto-generates the slug from company_name
+— see companies/service.py::slugify — so it's not guaranteed to be exactly
+"anabela" anymore, e.g. "Salão Anabela" becomes "salao-anabela").
 """
 
 import asyncio
@@ -29,31 +32,32 @@ SERVICES = [
 
 CUSTOMERS = ["maria", "joana", "ines"]
 
+COMPANY_NAME = "Salão Anabela"
+
 DEFAULT_PASSWORD = "changeme123"
 
 
 async def seed() -> None:
     async with AsyncSessionLocal() as db:
-        existing = (await db.execute(select(Company).where(Company.slug == "anabela"))).scalar_one_or_none()
+        existing = (await db.execute(select(Company).where(Company.name == COMPANY_NAME))).scalar_one_or_none()
         if existing:
-            print("Seed data already present (company 'anabela' exists) — skipping.")
+            print(f"Seed data already present ('{COMPANY_NAME}', slug '{existing.slug}') — skipping.")
             return
 
-        admin = await auth_service.register_company_and_admin(
+        admin, company = await auth_service.register_company_and_admin(
             db,
             RegisterCompanyPayload(
-                company_name="Salão Anabela",
-                company_slug="anabela",
+                company_name=COMPANY_NAME,
                 admin_name="admin",
                 password=DEFAULT_PASSWORD,
             ),
         )
-        print(f"Created company 'anabela' with admin user (password: {DEFAULT_PASSWORD})")
+        print(f"Created company '{COMPANY_NAME}' (slug: {company.slug}) with admin user (password: {DEFAULT_PASSWORD})")
 
         customers = []
         for name in CUSTOMERS:
             customer = await auth_service.register_customer(
-                db, "anabela", RegisterCustomerPayload(name=name, password=DEFAULT_PASSWORD)
+                db, company.slug, RegisterCustomerPayload(name=name, password=DEFAULT_PASSWORD)
             )
             customers.append(customer)
         print(f"Created {len(customers)} customer users (password: {DEFAULT_PASSWORD})")

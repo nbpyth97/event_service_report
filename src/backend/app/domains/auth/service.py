@@ -11,16 +11,26 @@ from app.core.enums import UserRole
 from app.core.models import DEFAULT_COMPANY_SETTINGS, Company, RefreshToken, User
 from app.core.schemas import LoginPayload, RegisterCompanyPayload, RegisterCustomerPayload
 from app.domains.auth import repository
+from app.domains.companies.service import slugify
+
+MAX_SLUG_ATTEMPTS = 50
 
 
-async def register_company_and_admin(db: AsyncSession, payload: RegisterCompanyPayload) -> User:
-    company = Company(
-        slug=payload.company_slug,
-        name=payload.company_name,
-        settings=copy.deepcopy(DEFAULT_COMPANY_SETTINGS),
-    )
-    if not await repository.try_insert_company(db, company):
-        raise HTTPException(status_code=409, detail="Já existe uma empresa com este identificador")
+async def register_company_and_admin(db: AsyncSession, payload: RegisterCompanyPayload) -> tuple[User, Company]:
+    """Returns (admin, company) — the caller needs company.slug to hand back
+    to the client, since nothing else lets an admin discover the
+    auto-generated slug they'll need for future logins (see
+    routers/auth.py::RegisterCompanyOut)."""
+    base_slug = slugify(payload.company_name)
+    company: Company | None = None
+    for attempt in range(1, MAX_SLUG_ATTEMPTS + 1):
+        slug = base_slug if attempt == 1 else f"{base_slug}-{attempt}"
+        candidate = Company(slug=slug, name=payload.company_name, settings=copy.deepcopy(DEFAULT_COMPANY_SETTINGS))
+        if await repository.try_insert_company(db, candidate):
+            company = candidate
+            break
+    if company is None:
+        raise HTTPException(status_code=409, detail="Não foi possível gerar um identificador único para a empresa")
 
     admin = User(
         tenant_id=company.id,
@@ -29,7 +39,7 @@ async def register_company_and_admin(db: AsyncSession, payload: RegisterCompanyP
         role=UserRole.ADMIN.value,
     )
     await repository.insert_user(db, admin)
-    return admin
+    return admin, company
 
 
 async def _get_company_by_slug(db: AsyncSession, tenant_slug: str) -> Company:

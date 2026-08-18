@@ -1,24 +1,26 @@
 import { useState, type FormEvent } from "react";
-import { Link, Navigate, useNavigate } from "react-router-dom";
-import { Building2, Eye, EyeOff, Lock, Phone, Tag, User } from "lucide-react";
+import { Navigate, Link, useNavigate } from "react-router-dom";
+import { Building2, Copy, Eye, EyeOff, Lock, User } from "lucide-react";
 import { api } from "@/api/client";
 import { useCurrentUser } from "@/auth/user";
+import { useToast } from "@/lib/toast";
 
-type Mode = "customer" | "company";
-
+// Customers never had a "register" flow of their own on this page anymore —
+// they book from the public /marcar-agendamento link with just name+phone,
+// no account (see PublicBookingPage.tsx). This page only creates a new
+// company + its first admin login.
 export default function RegisterPage() {
   const { user } = useCurrentUser();
   const navigate = useNavigate();
-  const [mode, setMode] = useState<Mode>("customer");
-  const [tenantSlug, setTenantSlug] = useState("");
-  const [companyName, setCompanySlug] = useState("");
+  const { showSuccess } = useToast();
+  const [companyName, setCompanyName] = useState("");
   const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [shake, setShake] = useState(false);
+  const [tenantSlug, setTenantSlug] = useState<string | null>(null);
 
   if (user) return <Navigate to="/" replace />;
 
@@ -27,17 +29,8 @@ export default function RegisterPage() {
     setError(null);
     setSubmitting(true);
     try {
-      if (mode === "customer") {
-        await api.registerCustomer(tenantSlug, { name, password, phone: phone.trim() || undefined });
-      } else {
-        await api.registerCompany({
-          company_name: companyName,
-          company_slug: tenantSlug,
-          admin_name: name,
-          password,
-        });
-      }
-      navigate("/login");
+      const result = await api.registerCompany({ company_name: companyName, admin_name: name, password });
+      setTenantSlug(result.tenant_slug);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Não foi possível cadastrar.");
       setShake(true);
@@ -46,6 +39,42 @@ export default function RegisterPage() {
       setSubmitting(false);
     }
   };
+
+  if (tenantSlug) {
+    const bookingLink = `${window.location.origin}/marcar-agendamento?company=${tenantSlug}`;
+    const copyLink = () => {
+      navigator.clipboard.writeText(bookingLink);
+      showSuccess("Link copiado.");
+    };
+
+    return (
+      <div className="auth-screen">
+        <div className="auth-eyebrow">
+          <span className="auth-status-dot" aria-hidden="true" />
+          MEETING SCHEDULER · EMPRESA CRIADA
+        </div>
+        <div className="auth-card">
+          <h1 className="auth-title">Empresa criada!</h1>
+          <p className="auth-subtitle">
+            O endereço da sua empresa é <strong>{tenantSlug}</strong>. Guarde o link abaixo — é o que os seus
+            clientes vão usar para marcar horário, sem precisar de conta.
+          </p>
+          <div className="auth-field">
+            <label className="auth-label">Link para os clientes marcarem</label>
+            <div className="service-form-input-wrap">
+              <input value={bookingLink} readOnly onFocus={(e) => e.target.select()} />
+              <button type="button" className="auth-input-adorn" onClick={copyLink} aria-label="Copiar link">
+                <Copy size={16} />
+              </button>
+            </div>
+          </div>
+          <button type="button" className="auth-submit" onClick={() => navigate(`/login?company=${tenantSlug}`)}>
+            Ir para o login
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="auth-screen">
@@ -60,53 +89,21 @@ export default function RegisterPage() {
         <span className="auth-corner auth-corner-bl" aria-hidden="true" />
         <span className="auth-corner auth-corner-br" aria-hidden="true" />
 
-        <h1 className="auth-title">Cadastrar</h1>
-        <p className="auth-subtitle">Crie sua conta para começar a agendar.</p>
-
-        <div className="register-mode-toggle">
-          <button type="button" className={mode === "customer" ? "active" : ""} onClick={() => setMode("customer")}>
-            Sou cliente
-          </button>
-          <button type="button" className={mode === "company" ? "active" : ""} onClick={() => setMode("company")}>
-            Sou uma empresa
-          </button>
-        </div>
-
-        {mode === "company" && (
-          <div className="auth-field">
-            <label className="auth-label" htmlFor="company-name">
-              Nome da empresa
-            </label>
-            <div className="service-form-input-wrap">
-              <Building2 size={16} aria-hidden="true" />
-              <input
-                id="company-name"
-                placeholder="Nome da empresa"
-                value={companyName}
-                autoComplete="organization"
-                onChange={(e) => setCompanySlug(e.target.value)}
-                required
-              />
-            </div>
-          </div>
-        )}
+        <h1 className="auth-title">Cadastrar empresa</h1>
+        <p className="auth-subtitle">Crie a conta da sua empresa para começar a gerir marcações.</p>
 
         <div className="auth-field">
-          <label className="auth-label" htmlFor="register-slug">
-            Slug da empresa
+          <label className="auth-label" htmlFor="company-name">
+            Nome da empresa
           </label>
           <div className="service-form-input-wrap">
-            <Tag size={16} aria-hidden="true" />
+            <Building2 size={16} aria-hidden="true" />
             <input
-              id="register-slug"
-              placeholder="ex: acme"
-              type="search"
-              value={tenantSlug}
-              autoComplete="off"
-              autoCorrect="off"
-              spellCheck={false}
-              onChange={(e) => setTenantSlug(e.target.value)}
-              pattern="^[a-z0-9-]+$"
+              id="company-name"
+              placeholder="Nome da empresa"
+              value={companyName}
+              autoComplete="organization"
+              onChange={(e) => setCompanyName(e.target.value)}
               required
             />
           </div>
@@ -114,7 +111,7 @@ export default function RegisterPage() {
 
         <div className="auth-field">
           <label className="auth-label" htmlFor="register-name">
-            {mode === "company" ? "Seu nome (administrador)" : "Seu nome"}
+            Seu nome (administrador)
           </label>
           <div className="service-form-input-wrap">
             <User size={16} aria-hidden="true" />
@@ -128,26 +125,6 @@ export default function RegisterPage() {
             />
           </div>
         </div>
-
-        {mode === "customer" && (
-          <div className="auth-field">
-            <label className="auth-label" htmlFor="register-phone">
-              Telemóvel (opcional)
-            </label>
-            <div className="service-form-input-wrap">
-              <Phone size={16} aria-hidden="true" />
-              <input
-                id="register-phone"
-                placeholder="+351 912 345 678"
-                type="tel"
-                value={phone}
-                autoComplete="tel"
-                onChange={(e) => setPhone(e.target.value)}
-              />
-            </div>
-            <p className="auth-field-hint">Usado apenas para contacto via WhatsApp sobre as suas marcações.</p>
-          </div>
-        )}
 
         <div className="auth-field">
           <label className="auth-label" htmlFor="register-password">

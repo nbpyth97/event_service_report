@@ -9,7 +9,6 @@ from app.core.enums import BookingStatus, UserRole
 
 class RegisterCompanyPayload(BaseModel):
     company_name: str = Field(min_length=1, max_length=200)
-    company_slug: str = Field(min_length=1, max_length=100, pattern=r"^[a-z0-9-]+$")
     admin_name: str = Field(min_length=1, max_length=150)
     password: str = Field(min_length=8, max_length=200)
 
@@ -33,6 +32,12 @@ class UserOut(BaseModel):
     tenant_id: uuid.UUID
     name: str
     role: UserRole
+
+
+class RegisterCompanyOut(UserOut):
+    # The only way an admin (or a test) learns the auto-generated slug they'll
+    # need to log in — see auth/service.py::register_company_and_admin.
+    tenant_slug: str
 
 
 class AccessToken(BaseModel):

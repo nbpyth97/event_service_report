@@ -70,6 +70,10 @@ export interface Company {
   settings: CompanySettings;
 }
 
+export interface RegisterCompanyResult extends User {
+  tenant_slug: string;
+}
+
 export interface Availability {
   slots: string[];
 }
@@ -124,8 +128,8 @@ async function request<T>(path: string, options?: RequestInit, _retried = false)
 }
 
 export const api = {
-  registerCompany: (payload: { company_name: string; company_slug: string; admin_name: string; password: string }) =>
-    request<User>("/api/auth/register-company", { method: "POST", body: JSON.stringify(payload) }),
+  registerCompany: (payload: { company_name: string; admin_name: string; password: string }) =>
+    request<RegisterCompanyResult>("/api/auth/register-company", { method: "POST", body: JSON.stringify(payload) }),
   registerCustomer: (tenantSlug: string, payload: { name: string; password: string; phone?: string }) =>
     request<User>(`/api/auth/${tenantSlug}/register`, { method: "POST", body: JSON.stringify(payload) }),
   login: (payload: { tenant_slug: string; name: string; password: string }) =>
