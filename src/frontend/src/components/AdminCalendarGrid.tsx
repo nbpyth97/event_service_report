@@ -36,12 +36,14 @@ export default function AdminCalendarGrid({
   businessHours,
   agendamentos,
   highlightedId,
+  onSelectDay,
 }: {
   variant: "day" | "week";
   days: Date[];
   businessHours: CompanySettings["business_hours"];
   agendamentos: Agendamento[];
   highlightedId?: string | null;
+  onSelectDay?: (d: Date) => void;
 }) {
   const { user } = useCurrentUser();
   const isAdmin = user?.role === "admin";
@@ -109,8 +111,25 @@ export default function AdminCalendarGrid({
         {days.map((d) => {
           const dateStr = toDateStr(d);
           const isToday = dateStr === todayStr;
+          const clickable = variant === "week" && Boolean(onSelectDay);
           return (
-            <div key={dateStr} className={`cal-grid-day-head${isToday ? " cal-grid-day-head-today" : ""}`}>
+            <div
+              key={dateStr}
+              className={`cal-grid-day-head${isToday ? " cal-grid-day-head-today" : ""}${clickable ? " cal-grid-day-head-clickable" : ""}`}
+              role={clickable ? "button" : undefined}
+              tabIndex={clickable ? 0 : undefined}
+              onClick={clickable ? () => onSelectDay!(d) : undefined}
+              onKeyDown={
+                clickable
+                  ? (e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        onSelectDay!(d);
+                      }
+                    }
+                  : undefined
+              }
+            >
               {variant === "week" && (
                 <>
                   <span className="cal-grid-day-name">{WEEKDAY_SHORT_PT[d.getDay()]}</span>

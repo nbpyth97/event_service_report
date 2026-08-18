@@ -107,6 +107,7 @@ export default function CalendarView({
           businessHours={businessHours}
           agendamentos={agendamentos}
           highlightedId={highlightedId}
+          onSelectDay={selectDay}
         />
       )}
     </div>

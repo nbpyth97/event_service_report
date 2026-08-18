@@ -2223,6 +2223,19 @@ button:disabled {
   color: var(--color-primary);
 }
 
+/* Week view's day header doubles as a "jump to that day" control (mirrors
+   the month view's cell click) — the day view header has nothing to jump
+   to, so it never gets this affordance (see .cal-grid-day above). */
+.cal-grid-day-head-clickable {
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.cal-grid-day-head-clickable:hover,
+.cal-grid-day-head-clickable:focus-visible {
+  background: var(--color-primary-soft);
+}
+
 /* Day view already shows the full date in the nav header above — repeating
    a 3-letter weekday + day number here is redundant, so the row collapses
    down to a hairline instead of taking up vertical space for nothing. */
