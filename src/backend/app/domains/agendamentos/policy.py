@@ -15,7 +15,7 @@ class InvalidStatusTransition(Exception):
     def __init__(self, current: BookingStatus, new: BookingStatus) -> None:
         self.current = current
         self.new = new
-        super().__init__(f"Cannot change agendamento status from '{current.value}' to '{new.value}'")
+        super().__init__(f"Não é possível alterar o status do agendamento de '{current.value}' para '{new.value}'")
 
 
 def validate_transition(current: BookingStatus, new: BookingStatus) -> None:

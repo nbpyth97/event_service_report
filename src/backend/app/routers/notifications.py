@@ -40,7 +40,7 @@ async def _get_sse_user(token: str, db: AsyncSession) -> User:
     payload = decode_token(token, "access")
     user = await db.get(User, uuid.UUID(payload["sub"]))
     if not user:
-        raise HTTPException(status_code=401, detail="User not found")
+        raise HTTPException(status_code=401, detail="Usuário não encontrado")
     return user
 
 
@@ -48,7 +48,7 @@ async def _get_sse_user(token: str, db: AsyncSession) -> User:
 async def stream_notifications(request: Request, token: str, db: AsyncSession = Depends(get_db)):
     user = await _get_sse_user(token, db)
     if user.role != UserRole.ADMIN.value:
-        raise HTTPException(status_code=403, detail="Admin privileges required")
+        raise HTTPException(status_code=403, detail="Privilégios de administrador necessários")
 
     tenant_id = user.tenant_id
 

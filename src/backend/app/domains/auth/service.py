@@ -20,7 +20,7 @@ async def register_company_and_admin(db: AsyncSession, payload: RegisterCompanyP
         settings=copy.deepcopy(DEFAULT_COMPANY_SETTINGS),
     )
     if not await repository.try_insert_company(db, company):
-        raise HTTPException(status_code=409, detail="A company with this slug already exists")
+        raise HTTPException(status_code=409, detail="Já existe uma empresa com este identificador")
 
     admin = User(
         tenant_id=company.id,
@@ -35,7 +35,7 @@ async def register_company_and_admin(db: AsyncSession, payload: RegisterCompanyP
 async def _get_company_by_slug(db: AsyncSession, tenant_slug: str) -> Company:
     company = await repository.fetch_company_by_slug(db, tenant_slug)
     if not company:
-        raise HTTPException(status_code=404, detail="Company not found")
+        raise HTTPException(status_code=404, detail="Empresa não encontrada")
     return company
 
 
@@ -50,7 +50,7 @@ async def register_customer(db: AsyncSession, tenant_slug: str, payload: Registe
         phone=payload.phone,
     )
     if not await repository.try_insert_user(db, user):
-        raise HTTPException(status_code=409, detail="A user with this name already exists in this company")
+        raise HTTPException(status_code=409, detail="Já existe um utilizador com este nome nesta empresa")
     return user
 
 
@@ -59,11 +59,11 @@ async def authenticate(db: AsyncSession, payload: LoginPayload) -> User:
 
     user = await repository.fetch_user_by_name(db, company.id, payload.name)
     if not user:
-        raise HTTPException(status_code=401, detail="Invalid name or password")
+        raise HTTPException(status_code=401, detail="Nome ou senha inválidos")
 
     valid, new_hash = verify_and_update_password(payload.password, user.password_hash)
     if not valid:
-        raise HTTPException(status_code=401, detail="Invalid name or password")
+        raise HTTPException(status_code=401, detail="Nome ou senha inválidos")
     if new_hash:
         user.password_hash = new_hash
         await repository.save(db)
@@ -88,11 +88,11 @@ async def rotate_refresh_token(db: AsyncSession, refresh_token: str) -> tuple[st
 
     token_row = await repository.fetch_refresh_token_by_jti(db, jti)
     if not token_row or token_row.revoked_at is not None or token_row.expires_at < datetime.now(timezone.utc):
-        raise HTTPException(status_code=401, detail="Not authenticated")
+        raise HTTPException(status_code=401, detail="Não autenticado")
 
     user = await repository.fetch_user_by_id(db, user_id)
     if not user:
-        raise HTTPException(status_code=401, detail="User not found")
+        raise HTTPException(status_code=401, detail="Usuário não encontrado")
 
     await repository.revoke_refresh_token(db, token_row, datetime.now(timezone.utc))
 

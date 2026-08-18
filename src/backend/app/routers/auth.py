@@ -38,7 +38,7 @@ async def login(payload: LoginPayload, response: Response, db: AsyncSession = De
 async def refresh(request: Request, response: Response, db: AsyncSession = Depends(get_db)):
     refresh_token = request.cookies.get(REFRESH_COOKIE_NAME)
     if not refresh_token:
-        raise HTTPException(status_code=401, detail="Not authenticated")
+        raise HTTPException(status_code=401, detail="Não autenticado")
     access_token, new_refresh_token = await auth_service.rotate_refresh_token(db, refresh_token)
     set_refresh_cookie(response, new_refresh_token)
     return {"access_token": access_token}

@@ -15,7 +15,7 @@ async def list_services(db: AsyncSession, tenant_id: uuid.UUID, include_inactive
 async def get_service(db: AsyncSession, tenant_id: uuid.UUID, service_id: uuid.UUID) -> Service:
     service = await repository.fetch_by_id(db, tenant_id, service_id)
     if not service:
-        raise HTTPException(status_code=404, detail="Service not found")
+        raise HTTPException(status_code=404, detail="Serviço não encontrado")
     return service
 
 

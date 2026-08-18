@@ -47,9 +47,9 @@ def decode_token(token: str, expected_type: str) -> dict:
     try:
         payload = jwt.decode(token, settings.secret_key, algorithms=[ALGORITHM])
     except JWTError:
-        raise HTTPException(status_code=401, detail="Invalid or expired token")
+        raise HTTPException(status_code=401, detail="Token inválido ou expirado")
     if payload.get("type") != expected_type:
-        raise HTTPException(status_code=401, detail="Invalid or expired token")
+        raise HTTPException(status_code=401, detail="Token inválido ou expirado")
     return payload
 
 
@@ -73,15 +73,15 @@ async def get_current_user(
     token: str | None = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db)
 ) -> User:
     if not token:
-        raise HTTPException(status_code=401, detail="Not authenticated", headers={"WWW-Authenticate": "Bearer"})
+        raise HTTPException(status_code=401, detail="Não autenticado", headers={"WWW-Authenticate": "Bearer"})
     payload = decode_token(token, "access")
     user = await db.get(User, uuid.UUID(payload["sub"]))
     if not user:
-        raise HTTPException(status_code=401, detail="User not found")
+        raise HTTPException(status_code=401, detail="Usuário não encontrado")
     return user
 
 
 async def require_admin(user: User = Depends(get_current_user)) -> User:
     if user.role != UserRole.ADMIN.value:
-        raise HTTPException(status_code=403, detail="Admin privileges required")
+        raise HTTPException(status_code=403, detail="Privilégios de administrador necessários")
     return user

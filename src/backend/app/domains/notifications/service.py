@@ -123,7 +123,7 @@ async def list_notifications(db: AsyncSession, current_user: User) -> list[Notif
 async def mark_read(db: AsyncSession, current_user: User, notification_id: uuid.UUID) -> Notification:
     notification = await repository.fetch_by_id(db, current_user.tenant_id, current_user.id, notification_id)
     if not notification:
-        raise HTTPException(status_code=404, detail="Notification not found")
+        raise HTTPException(status_code=404, detail="Notificação não encontrada")
     if notification.read_at is None:
         notification.read_at = utcnow()
         await repository.save(db, notification)

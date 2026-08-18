@@ -26,7 +26,7 @@ async def create_agendamento(
     # — see availability/service.py::is_slot_bookable. Keeps the write path
     # from accepting anything the read path wouldn't have shown.
     if not await is_slot_bookable(db, tenant_id, service, start_time):
-        raise HTTPException(status_code=409, detail="Slot no longer available")
+        raise HTTPException(status_code=409, detail="Horário não está mais disponível")
 
     agendamento = Agendamento(
         tenant_id=tenant_id,
@@ -45,7 +45,7 @@ async def create_agendamento(
 async def get_agendamento(db: AsyncSession, tenant_id: uuid.UUID, agendamento_id: uuid.UUID) -> Agendamento:
     agendamento = await repository.fetch_by_id(db, tenant_id, agendamento_id)
     if not agendamento:
-        raise HTTPException(status_code=404, detail="Agendamento not found")
+        raise HTTPException(status_code=404, detail="Agendamento não encontrado")
     return agendamento
 
 
@@ -66,7 +66,7 @@ async def update_status(
     role = UserRole(current_user.role)
     previous_status = BookingStatus(agendamento.status)
     if role != UserRole.ADMIN and not can_transition(is_owner=is_owner, new=status):
-        raise HTTPException(status_code=404, detail="Agendamento not found")
+        raise HTTPException(status_code=404, detail="Agendamento não encontrado")
     try:
         validate_transition(previous_status, status)
     except InvalidStatusTransition as exc:
@@ -90,7 +90,7 @@ async def update_status(
 async def get_status_history(db: AsyncSession, current_user: User, agendamento_id: uuid.UUID) -> list[dict]:
     agendamento = await get_agendamento(db, current_user.tenant_id, agendamento_id)
     if current_user.role != UserRole.ADMIN.value and agendamento.created_by != current_user.id:
-        raise HTTPException(status_code=404, detail="Agendamento not found")
+        raise HTTPException(status_code=404, detail="Agendamento não encontrado")
 
     entries = [{"from_status": None, "to_status": "pending", "changed_at": agendamento.created_at}]
     history = await repository.list_status_history(db, agendamento_id)

@@ -258,7 +258,7 @@ async def test_booking_overlapping_pending_slot_is_rejected(client, unique_slug)
         headers=_auth_headers(customer_token),
     )
     assert res.status_code == 409
-    assert res.json()["detail"] == "Slot no longer available"
+    assert res.json()["detail"] == "Horário não está mais disponível"
 
 
 async def test_booking_overlapping_confirmed_slot_is_rejected(client, unique_slug):
@@ -378,7 +378,7 @@ async def test_booking_on_closed_day_is_rejected(client, unique_slug):
         headers=_auth_headers(customer_token),
     )
     assert res.status_code == 409
-    assert res.json()["detail"] == "Slot no longer available"
+    assert res.json()["detail"] == "Horário não está mais disponível"
 
 
 async def test_booking_outside_business_hours_is_rejected(client, unique_slug):
