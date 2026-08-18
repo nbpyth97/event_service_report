@@ -7,7 +7,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth import decode_token, get_current_user
 from app.core.database import get_db
-from app.core.enums import UserRole
 from app.core.models import User
 from app.core.schemas import NotificationOut
 from app.domains.notifications import service as notifications_service
@@ -47,9 +46,6 @@ async def _get_sse_user(token: str, db: AsyncSession) -> User:
 @router.get("/stream")
 async def stream_notifications(request: Request, token: str, db: AsyncSession = Depends(get_db)):
     user = await _get_sse_user(token, db)
-    if user.role != UserRole.ADMIN.value:
-        raise HTTPException(status_code=403, detail="Privilégios de administrador necessários")
-
     tenant_id = user.tenant_id
 
     async def event_generator():

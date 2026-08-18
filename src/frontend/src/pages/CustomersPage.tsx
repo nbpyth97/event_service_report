@@ -94,7 +94,7 @@ export default function CustomersPage() {
                   <span className="customers-page-row-count">Sem marcações</span>
                 )}
                 <Link
-                  to={`/services?book=1&customerId=${c.id}`}
+                  to={`/servicos?book=1&customerId=${c.id}`}
                   className="customers-page-row-new-appt"
                   aria-label={`Nova marcação para ${displayName}`}
                   title={`Nova marcação para ${displayName}`}

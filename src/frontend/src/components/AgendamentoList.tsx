@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { BellRing, CheckCircle2, MessageCircle, XCircle } from "lucide-react";
 import type { Agendamento } from "@/api/client";
-import { useCurrentUser } from "@/auth/user";
 import { useUpdateAgendamentoStatus } from "@/hooks/queries";
 import { useToast } from "@/lib/toast";
 import { fmtPrice, fmtTime } from "@/lib/format";
@@ -39,12 +38,10 @@ function groupByDate(agendamentos: Agendamento[]): DateGroup[] {
 
 function AppointmentRow({
   agendamento,
-  isAdmin,
   onOpenDetail,
   highlighted,
 }: {
   agendamento: Agendamento;
-  isAdmin: boolean;
   onOpenDetail: () => void;
   highlighted: boolean;
 }) {
@@ -102,41 +99,34 @@ function AppointmentRow({
           <span className="appt-row-time-duration">{agendamento.service_duration_min} min</span>
         </div>
         <div className="appt-row-identity">
-          {isAdmin ? (
-            <>
-              <span className="appt-row-name-line">
-                <span className="appt-row-primary appt-row-customer-name">
-                  {agendamento.customer_alias ?? agendamento.customer_name}
-                </span>
-                {agendamento.customer_alias && (
-                  <span className="appt-row-real-name">({agendamento.customer_name})</span>
-                )}
-                {agendamento.customer_phone && (
-                  <a
-                    href={waLink(agendamento.customer_phone)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="ticket-whatsapp-link appt-row-icon-link"
-                    aria-label={`Falar com ${agendamento.customer_name} via WhatsApp`}
-                    title="Falar com o cliente"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <MessageCircle size={13} aria-hidden="true" />
-                  </a>
-                )}
-              </span>
-              <span className="appt-row-secondary">{agendamento.service_name}</span>
-            </>
-          ) : (
-            <span className="appt-row-primary">{agendamento.service_name}</span>
-          )}
+          <span className="appt-row-name-line">
+            <span className="appt-row-primary appt-row-customer-name">
+              {agendamento.customer_alias ?? agendamento.customer_name}
+            </span>
+            {agendamento.customer_alias && (
+              <span className="appt-row-real-name">({agendamento.customer_name})</span>
+            )}
+            {agendamento.customer_phone && (
+              <a
+                href={waLink(agendamento.customer_phone)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="ticket-whatsapp-link appt-row-icon-link"
+                aria-label={`Falar com ${agendamento.customer_name} via WhatsApp`}
+                title="Falar com o cliente"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <MessageCircle size={13} aria-hidden="true" />
+              </a>
+            )}
+          </span>
+          <span className="appt-row-secondary">{agendamento.service_name}</span>
         </div>
         <div className="appt-row-meta">
           <span className="appt-row-price">{fmtPrice(agendamento.service_price)}</span>
           <span className="appt-row-status-line">
             <StatusChip status={agendamento.status} />
-            {isAdmin &&
-              agendamento.customer_phone &&
+            {agendamento.customer_phone &&
               (agendamento.status === "confirmed" || agendamento.status === "declined") && (
                 <a
                   href={waLink(agendamento.customer_phone, statusUpdateMessage(agendamento))}
@@ -154,7 +144,7 @@ function AppointmentRow({
         </div>
       </div>
 
-      {isAdmin && agendamento.status === "pending" && !confirmingDecline && (
+      {agendamento.status === "pending" && !confirmingDecline && (
         <div className="ticket-actions">
           <button
             type="button"
@@ -172,7 +162,7 @@ function AppointmentRow({
         </div>
       )}
 
-      {isAdmin && confirmingDecline && (
+      {confirmingDecline && (
         <div className="ticket-decline-confirm">
           <p>Recusar a marcação de {agendamento.customer_name}?</p>
           <button type="button" className="ticket-decline-cancel" onClick={() => setConfirmingDecline(false)}>
@@ -201,15 +191,12 @@ export default function AgendamentoList({
   emptyMessage?: string;
   highlightedId?: string | null;
 }) {
-  const { user } = useCurrentUser();
-  const isAdmin = user?.role === "admin";
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   if (agendamentos.length === 0) {
     return (
       <div className="empty-state">
-        <p>{emptyMessage ?? (isAdmin ? "Nenhuma marcação ainda." : "Ainda não tem marcações.")}</p>
-        {!isAdmin && <p>Escolha um serviço para marcar o seu horário.</p>}
+        <p>{emptyMessage ?? "Nenhuma marcação ainda."}</p>
       </div>
     );
   }
@@ -232,7 +219,6 @@ export default function AgendamentoList({
               <AppointmentRow
                 key={agendamento.id}
                 agendamento={agendamento}
-                isAdmin={isAdmin}
                 onOpenDetail={() => setSelectedId(agendamento.id)}
                 highlighted={agendamento.id === highlightedId}
               />
@@ -241,7 +227,7 @@ export default function AgendamentoList({
         </div>
       ))}
       {selected && (
-        <AgendamentoDetailModal agendamento={selected} isAdmin={isAdmin} onClose={() => setSelectedId(null)} />
+        <AgendamentoDetailModal agendamento={selected} onClose={() => setSelectedId(null)} />
       )}
     </>
   );

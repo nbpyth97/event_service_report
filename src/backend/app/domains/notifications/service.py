@@ -67,19 +67,19 @@ async def listen_for_notifications() -> asyncpg.Connection:
 async def _create_and_notify(
     db: AsyncSession, tenant_id: uuid.UUID, type_: str, agendamento_id: uuid.UUID, message: str
 ) -> None:
-    """Best-effort: fan out one Notification row per admin plus a Postgres
-    NOTIFY. Must never fail or roll back the caller's booking write."""
+    """Best-effort: fan out one Notification row per staff member plus a
+    Postgres NOTIFY. Must never fail or roll back the caller's booking write."""
     try:
-        admin_ids = await repository.list_admin_ids(db, tenant_id)
+        staff_ids = await repository.list_staff_ids(db, tenant_id)
         notifications = [
             Notification(
                 tenant_id=tenant_id,
-                recipient_id=admin_id,
+                recipient_id=staff_id,
                 type=type_,
                 agendamento_id=agendamento_id,
                 message=message,
             )
-            for admin_id in admin_ids
+            for staff_id in staff_ids
         ]
         await repository.insert_many(db, notifications)
         await repository.notify_channel(db, tenant_id)

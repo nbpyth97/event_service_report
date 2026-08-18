@@ -1,10 +1,11 @@
 import { getAccessToken, refreshAccessToken } from "@/auth/auth";
 
+// Staff only — a customer has no account (see Customer below), so there is no
+// role to branch on: anyone the frontend has a User for is staff.
 export interface User {
   id: string;
   tenant_id: string;
   name: string;
-  role: "admin" | "user";
 }
 
 export interface Service {

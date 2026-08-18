@@ -51,11 +51,13 @@ class Company(Base):
 
 
 class User(Base):
+    """Staff who can log in. There is no role column: since Customer was split
+    out (see Customer below), the only path that creates a User is company
+    registration, so every User *is* an administrator of their tenant. A
+    customer is a Customer row and never has a login."""
+
     __tablename__ = "users"
-    __table_args__ = (
-        UniqueConstraint("tenant_id", "name", name="uq_users_tenant_id_name"),
-        CheckConstraint("role IN ('admin', 'user')", name="ck_users_role"),
-    )
+    __table_args__ = (UniqueConstraint("tenant_id", "name", name="uq_users_tenant_id_name"),)
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     tenant_id: Mapped[uuid.UUID] = mapped_column(
@@ -63,10 +65,7 @@ class User(Base):
     )
     name: Mapped[str] = mapped_column(String(150), nullable=False)
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
-    role: Mapped[str] = mapped_column(String(20), nullable=False, default="user")
     # Optional — set at registration, nothing backfills it for existing users.
-    # Only consumer today is the admin's WhatsApp contact link on a booking
-    # (app.core.models.Agendamento.customer_phone); no SMS/OTP flow yet.
     phone: Mapped[str | None] = mapped_column(String(30), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)

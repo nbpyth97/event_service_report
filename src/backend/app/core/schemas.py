@@ -5,7 +5,7 @@ from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from app.core.enums import BookingStatus, UserRole
+from app.core.enums import BookingStatus
 
 # Portugal-only (single pilot tenant): 351 country code + 9-digit mobile =
 # 12 digits, not E.164's generic 15. Frontend-only validation doesn't mean
@@ -41,7 +41,6 @@ class UserOut(BaseModel):
     id: uuid.UUID
     tenant_id: uuid.UUID
     name: str
-    role: UserRole
 
 
 class RegisterCompanyOut(UserOut):

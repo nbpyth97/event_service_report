@@ -4,9 +4,8 @@ from datetime import date
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.auth import get_current_user, require_admin
+from app.core.auth import get_current_user
 from app.core.database import get_db
-from app.core.enums import UserRole
 from app.core.models import User
 from app.core.schemas import AvailabilityOut, ServiceCreate, ServiceOut, ServiceUpdate
 from app.domains.availability import service as availability_service
@@ -19,9 +18,10 @@ router = APIRouter(prefix="/api/services", tags=["services"])
 async def list_services(
     current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)
 ):
-    return await services_service.list_services(
-        db, current_user.tenant_id, include_inactive=current_user.role == UserRole.ADMIN.value
-    )
+    # Every authenticated caller is staff, so inactive services are always
+    # included here — the customer-facing list is routers/public.py, which
+    # passes include_inactive=False.
+    return await services_service.list_services(db, current_user.tenant_id, include_inactive=True)
 
 
 @router.get("/{service_id}", response_model=ServiceOut)
@@ -42,14 +42,14 @@ async def get_availability(
     return AvailabilityOut(slots=slots)
 
 
-@router.post("", response_model=ServiceOut, status_code=201, dependencies=[Depends(require_admin)])
+@router.post("", response_model=ServiceOut, status_code=201)
 async def create_service(
     payload: ServiceCreate, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)
 ):
     return await services_service.create_service(db, current_user.tenant_id, current_user.id, payload)
 
 
-@router.patch("/{service_id}", response_model=ServiceOut, dependencies=[Depends(require_admin)])
+@router.patch("/{service_id}", response_model=ServiceOut)
 async def update_service(
     service_id: uuid.UUID,
     payload: ServiceUpdate,
@@ -59,7 +59,7 @@ async def update_service(
     return await services_service.update_service(db, current_user.tenant_id, service_id, payload)
 
 
-@router.delete("/{service_id}", status_code=204, dependencies=[Depends(require_admin)])
+@router.delete("/{service_id}", status_code=204)
 async def delete_service(
     service_id: uuid.UUID, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)
 ):

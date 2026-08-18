@@ -34,8 +34,8 @@ async def _create_customer(client, admin_token: str, name: str = "Cliente", phon
 
 
 async def _book(client, admin_token: str, service_id: str, start_time: str, customer_id: str) -> dict:
-    """Admin-only manual-appointment booking — POST /api/agendamentos is
-    require_admin-gated now (see routers/agendamentos.py). Tests that
+    """Staff manual-appointment booking — POST /api/agendamentos requires a
+    login, and every login is staff (see routers/agendamentos.py). Tests that
     specifically exercise the anonymous public path use _public_book
     (below) instead."""
     res = await client.post(

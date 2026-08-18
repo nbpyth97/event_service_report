@@ -138,7 +138,7 @@ export default function LoginPage() {
       </form>
 
       <p className="auth-hint">
-        Não tem conta? <Link to="/register">Cadastre-se</Link>
+        Não tem conta? <Link to="/registar">Cadastre-se</Link>
       </p>
     </div>
   );

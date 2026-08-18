@@ -22,6 +22,19 @@ export function startOfWeek(d: Date): Date {
   return addDays(d, day === 0 ? -6 : 1 - day);
 }
 
+// The chosen slot, spelled out in full on a booking confirmation — this is
+// the last thing someone reads before committing, so it names the weekday and
+// month rather than leaning on a numeric dd/mm.
+export function fmtSlot(iso: string): string {
+  return new Date(iso).toLocaleString("pt-PT", {
+    weekday: "long",
+    day: "2-digit",
+    month: "long",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 // "Hoje" / "Amanhã" read faster than a weekday name when scanning a
 // schedule — full weekday+day+month only once the date is further out.
 export function fmtDateHeading(d: Date): string {

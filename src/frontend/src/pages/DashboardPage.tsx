@@ -48,7 +48,7 @@ export default function DashboardPage() {
           value={servicesLoading ? "…" : (services?.length ?? 0)}
           label="Serviços"
           secondary={servicesLoading ? undefined : `${activeServices} ativos`}
-          to="/services"
+          to="/servicos"
         />
         <StatCard
           icon={CalendarCheck}

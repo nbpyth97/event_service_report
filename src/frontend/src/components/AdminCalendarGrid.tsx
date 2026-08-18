@@ -3,7 +3,6 @@ import { CheckCircle2 } from "lucide-react";
 import type { Agendamento, CompanySettings } from "@/api/client";
 import { dowKeyOf, toDateStr } from "@/lib/date";
 import { layoutDayEvents, toMinutes } from "@/lib/calendarLayout";
-import { useCurrentUser } from "@/auth/user";
 import AgendamentoDetailModal from "@/components/AgendamentoDetailModal";
 
 const WEEKDAY_SHORT_PT = ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"];
@@ -45,8 +44,6 @@ export default function AdminCalendarGrid({
   highlightedId?: string | null;
   onSelectDay?: (d: Date) => void;
 }) {
-  const { user } = useCurrentUser();
-  const isAdmin = user?.role === "admin";
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [now, setNow] = useState(() => new Date());
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -204,21 +201,15 @@ export default function AdminCalendarGrid({
                       width: `calc(${100 / colCount}% - 3px)`,
                     }}
                     onClick={() => setSelectedId(agendamento.id)}
-                    title={
-                      isAdmin
-                        ? `${agendamento.customer_alias ?? agendamento.customer_name} · ${agendamento.service_name}`
-                        : agendamento.service_name
-                    }
+                    title={`${agendamento.customer_alias ?? agendamento.customer_name} · ${agendamento.service_name}`}
                   >
                     <span className="cal-grid-card-head">
                       <span className="cal-grid-card-title">
-                        {isAdmin ? agendamento.customer_alias ?? agendamento.customer_name : agendamento.service_name}
+                        {agendamento.customer_alias ?? agendamento.customer_name}
                       </span>
                       <CheckCircle2 className="cal-grid-card-icon" size={11} aria-hidden="true" />
                     </span>
-                    {showDetails && isAdmin && (
-                      <span className="cal-grid-card-subtitle">{agendamento.service_name}</span>
-                    )}
+                    {showDetails && <span className="cal-grid-card-subtitle">{agendamento.service_name}</span>}
                   </button>
                 );
               })}
@@ -227,7 +218,7 @@ export default function AdminCalendarGrid({
         })}
       </div>
 
-      {selected && <AgendamentoDetailModal agendamento={selected} isAdmin={isAdmin} onClose={() => setSelectedId(null)} />}
+      {selected && <AgendamentoDetailModal agendamento={selected} onClose={() => setSelectedId(null)} />}
     </div>
   );
 }

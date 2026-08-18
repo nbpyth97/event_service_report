@@ -1,7 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { Clock, Euro, Pencil, Save, Tag, Trash2, X } from "lucide-react";
 import type { Service } from "@/api/client";
-import { useCurrentUser } from "@/auth/user";
 import { useDeleteService, useUpdateService } from "@/hooks/queries";
 import { useToast } from "@/lib/toast";
 import { fmtPrice } from "@/lib/format";
@@ -178,27 +177,7 @@ function ServiceCard({ service }: { service: Service }) {
 }
 
 export default function ServiceList({ services }: { services: Service[] }) {
-  const { user } = useCurrentUser();
-  const isAdmin = user?.role === "admin";
-
   if (services.length === 0) return <p className="muted">Nenhum serviço cadastrado.</p>;
-
-  if (!isAdmin) {
-    return (
-      <ul className="service-card-list">
-        {services.map((service) => (
-          <li key={service.id} className="service-card">
-            <div className="service-card-main">
-              <span className="service-card-name">{service.name}</span>
-              <span className="service-card-meta">
-                {fmtPrice(service.price)} · {service.duration_min} min
-              </span>
-            </div>
-          </li>
-        ))}
-      </ul>
-    );
-  }
 
   const activeServices = services.filter((s) => s.active);
   const inactiveServices = services.filter((s) => !s.active);

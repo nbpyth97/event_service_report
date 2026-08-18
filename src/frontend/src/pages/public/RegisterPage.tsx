@@ -68,7 +68,7 @@ export default function RegisterPage() {
               </button>
             </div>
           </div>
-          <button type="button" className="auth-submit" onClick={() => navigate(`/login?company=${tenantSlug}`)}>
+          <button type="button" className="auth-submit" onClick={() => navigate(`/entrar?company=${tenantSlug}`)}>
             Ir para o login
           </button>
         </div>
@@ -166,7 +166,7 @@ export default function RegisterPage() {
       </form>
 
       <p className="auth-hint">
-        Já tem conta? <Link to="/login">Entrar</Link>
+        Já tem conta? <Link to="/entrar">Entrar</Link>
       </p>
     </div>
   );

@@ -1,5 +1,3 @@
-import { usePublicAvailability } from "@/hooks/queries";
-
 function fmtTime(iso: string): string {
   return new Date(iso).toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit" });
 }
@@ -20,27 +18,21 @@ function groupByPeriod(slots: string[]): { label: string; slots: string[] }[] {
   ].filter((p) => p.slots.length > 0);
 }
 
-// Same markup/behavior as TimeSlotList.tsx, wired to the unauthenticated
-// availability endpoint instead — kept separate rather than parameterizing
-// the authenticated one, since that component is also used by the
-// admin-only manual-appointment flow and shouldn't need to know about the
-// public/tenant-slug-scoped path at all.
-export default function PublicTimeSlotList({
-  slug,
-  serviceId,
-  date,
+// Presentational — the caller fetches. The two booking surfaces read from
+// different endpoints (authenticated useAvailability vs. the tenant-slug
+// scoped usePublicAvailability), and taking the slots as a prop is what lets
+// one component serve both instead of one copy per endpoint.
+export default function TimeSlotList({
+  slots,
+  isLoading,
   selectedSlot,
   onSelectSlot,
 }: {
-  slug: string;
-  serviceId: string;
-  date: string;
+  slots: string[];
+  isLoading: boolean;
   selectedSlot: string | null;
   onSelectSlot: (slot: string) => void;
 }) {
-  const { data, isLoading } = usePublicAvailability(slug, serviceId, date);
-  const slots = data?.slots ?? [];
-
   return (
     <div className="timeslot-list">
       <div className="timeslot-title">Horários disponíveis</div>

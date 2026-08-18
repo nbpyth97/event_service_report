@@ -1,23 +1,16 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import type { Customer } from "@/api/client";
-import CalendarGrid from "@/components/CalendarGrid";
+import ServiceBookingFlow from "@/components/booking/ServiceBookingFlow";
 import CustomerPicker from "@/components/CustomerPicker";
-import TimeSlotList from "@/components/TimeSlotList";
-import { useCreateAgendamento, useCustomers, useMyCompany, useServices } from "@/hooks/queries";
+import { useAvailability, useCreateAgendamento, useCustomers, useMyCompany, useServices } from "@/hooks/queries";
 import { useToast } from "@/lib/toast";
-import { fmtPrice } from "@/lib/format";
+import { fmtSlot } from "@/lib/date";
 
-function fmtSlot(iso: string): string {
-  return new Date(iso).toLocaleString("pt-PT", {
-    weekday: "long",
-    day: "2-digit",
-    month: "long",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
+// Staff booking on a customer's behalf — the mirror of
+// pages/public/PublicBookingPage.tsx, sharing ServiceBookingFlow for the
+// day/slot half. What differs is the identity step: a CustomerPicker over the
+// tenant's existing customers instead of a name+phone form.
 export default function BookingPage() {
   const { serviceId } = useParams<{ serviceId: string }>();
   const navigate = useNavigate();
@@ -31,6 +24,8 @@ export default function BookingPage() {
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
+
+  const { data: availability, isLoading: slotsLoading } = useAvailability(serviceId ?? "", selectedDate);
 
   // Arrived from CustomersPage's per-row "nova marcação" (or any link that
   // already knows the customer) — pre-select them once the list loads, so
@@ -46,7 +41,7 @@ export default function BookingPage() {
   }, [customerId, customers]);
 
   const service = services?.find((s) => s.id === serviceId);
-  const backHref = `/services?book=1${customerId ? `&customerId=${customerId}` : ""}`;
+  const backHref = `/servicos?book=1${customerId ? `&customerId=${customerId}` : ""}`;
 
   if (services && !service) {
     return (
@@ -69,49 +64,35 @@ export default function BookingPage() {
     );
   };
 
+  if (!service || !company) return <div className="page"><p>Carregando…</p></div>;
+
   return (
     <div className="page">
-      <div className="public-booking-topbar">
-        <Link to={backHref} className="public-back-pill">&larr; Todos os serviços</Link>
-      </div>
-      {service && (
-        <header className="booking-header">
-          <h1>{service.name}</h1>
-          <p className="sub">{service.duration_min} min · {fmtPrice(service.price)}</p>
-        </header>
-      )}
-
-      <CustomerPicker value={customer} onChange={setCustomer} />
-
-      {company && customer && (
-        <div className="booking-layout">
-          <CalendarGrid
-            businessHours={company.settings.business_hours}
-            selectedDate={selectedDate}
-            onSelectDate={(d) => { setSelectedDate(d); setSelectedSlot(null); }}
-          />
-          {selectedDate && serviceId && (
-            <TimeSlotList
-              serviceId={serviceId}
-              date={selectedDate}
-              selectedSlot={selectedSlot}
-              onSelectSlot={setSelectedSlot}
-            />
-          )}
-        </div>
-      )}
-
-      {selectedSlot && customer && (
-        <div className="booking-confirm-card">
-          <p>
-            Marcar <strong>{service?.name}</strong> para <strong>{customer.alias ?? customer.name}</strong> em{" "}
-            <strong>{fmtSlot(selectedSlot)}</strong>?
-          </p>
-          <button type="button" onClick={handleConfirm} disabled={createAgendamento.isPending}>
-            {createAgendamento.isPending ? "Agendando…" : "Confirmar marcação"}
-          </button>
-        </div>
-      )}
+      <ServiceBookingFlow
+        service={service}
+        businessHours={company.settings.business_hours}
+        back={<Link to={backHref} className="public-back-pill">&larr; Todos os serviços</Link>}
+        identity={<CustomerPicker value={customer} onChange={setCustomer} />}
+        canPickTime={Boolean(customer)}
+        selectedDate={selectedDate}
+        onSelectDate={(d) => { setSelectedDate(d); setSelectedSlot(null); }}
+        slots={availability?.slots ?? []}
+        slotsLoading={slotsLoading}
+        selectedSlot={selectedSlot}
+        onSelectSlot={setSelectedSlot}
+      >
+        {selectedSlot && customer && (
+          <div className="booking-confirm-card">
+            <p>
+              Marcar <strong>{service.name}</strong> para <strong>{customer.alias ?? customer.name}</strong> em{" "}
+              <strong>{fmtSlot(selectedSlot)}</strong>?
+            </p>
+            <button type="button" onClick={handleConfirm} disabled={createAgendamento.isPending}>
+              {createAgendamento.isPending ? "Agendando…" : "Confirmar marcação"}
+            </button>
+          </div>
+        )}
+      </ServiceBookingFlow>
     </div>
   );
 }

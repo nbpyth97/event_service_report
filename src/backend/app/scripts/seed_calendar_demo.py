@@ -1,12 +1,12 @@
-"""Re-populate 'anabela's agendamentos with a richer, presentation-ready set
-of fake bookings for exercising the week calendar UI — every status, a
-handful of intentionally overlapping bookings (to check the side-by-side
-column layout), and a spread across a closed day (Mon/Sun), past days, today,
-and next week.
+"""Re-populate the pilot company's agendamentos with a richer,
+presentation-ready set of fake bookings for exercising the week calendar UI —
+every status, a handful of intentionally overlapping bookings (to check the
+side-by-side column layout), and a spread across a closed day (Mon/Sun), past
+days, today, and next week.
 
-Assumes `app/scripts/seed.py` has already created the 'anabela' company, its
-admin, customers (maria/joana/ines), and services. Only ever touches
-'anabela's own agendamentos + notifications rows — re-runnable at any time.
+Assumes `app/scripts/seed.py` has already created the company, its admin, its
+customers (Maria/Joana/Inês) and its services. Only ever touches that
+company's own agendamentos + notifications rows — re-runnable at any time.
 
 Usage: uv run python -m app.scripts.seed_calendar_demo
 """
@@ -18,11 +18,20 @@ from zoneinfo import ZoneInfo
 from sqlalchemy import delete, select
 
 from app.core.database import AsyncSessionLocal
-from app.core.enums import BookingStatus, UserRole
-from app.core.models import Agendamento, AgendamentoStatusHistory, Company, Notification, Service, User
+from app.core.enums import BookingStatus
+from app.core.models import (
+    Agendamento,
+    AgendamentoStatusHistory,
+    Company,
+    Customer,
+    Notification,
+    Service,
+    User,
+)
 from app.domains.agendamentos import repository as agendamentos_repository
 from app.domains.agendamentos import service as agendamentos_service
 from app.domains.notifications import service as notifications_service
+from app.scripts.seed import COMPANY_NAME
 
 TZ = ZoneInfo("Europe/Lisbon")
 
@@ -33,25 +42,25 @@ def local_dt(d: date, hour: int, minute: int = 0) -> datetime:
 
 async def seed_calendar_demo() -> None:
     async with AsyncSessionLocal() as db:
-        company = (await db.execute(select(Company).where(Company.slug == "anabela"))).scalar_one_or_none()
+        company = (
+            await db.execute(select(Company).where(Company.name == COMPANY_NAME))
+        ).scalar_one_or_none()
         if not company:
-            raise SystemExit("Company 'anabela' not found — run `uv run python -m app.scripts.seed` first.")
+            raise SystemExit(f"Company '{COMPANY_NAME}' not found — run `uv run python -m app.scripts.seed` first.")
 
         admin = (
-            await db.execute(
-                select(User).where(User.tenant_id == company.id, User.role == UserRole.ADMIN.value)
-            )
-        ).scalar_one_or_none()
+            await db.execute(select(User).where(User.tenant_id == company.id).order_by(User.created_at))
+        ).scalars().first()
         if not admin:
-            raise SystemExit("Expected an admin user — run `app/scripts/seed.py` first.")
+            raise SystemExit("Expected a staff user — run `app/scripts/seed.py` first.")
 
-        users = (
-            await db.execute(select(User).where(User.tenant_id == company.id, User.role == UserRole.USER.value))
+        customers = (
+            await db.execute(select(Customer).where(Customer.tenant_id == company.id))
         ).scalars().all()
-        by_name = {u.name: u for u in users}
-        if not {"maria", "joana", "ines"} <= by_name.keys():
-            raise SystemExit("Expected customers maria/joana/ines — run `app/scripts/seed.py` first.")
-        maria, joana, ines = by_name["maria"], by_name["joana"], by_name["ines"]
+        by_name = {c.name: c for c in customers}
+        if not {"Maria", "Joana", "Inês"} <= by_name.keys():
+            raise SystemExit("Expected customers Maria/Joana/Inês — run `app/scripts/seed.py` first.")
+        maria, joana, ines = by_name["Maria"], by_name["Joana"], by_name["Inês"]
 
         services = (await db.execute(select(Service).where(Service.tenant_id == company.id))).scalars().all()
         by_service = {s.name: s for s in services}
@@ -108,7 +117,8 @@ async def seed_calendar_demo() -> None:
             agendamento = Agendamento(
                 tenant_id=company.id,
                 service_id=service.id,
-                created_by=customer.id,
+                customer_id=customer.id,
+                created_by=None,
                 start_time=start_time,
                 end_time=start_time + timedelta(minutes=service.duration_min),
                 status=BookingStatus.PENDING.value,
@@ -119,7 +129,10 @@ async def seed_calendar_demo() -> None:
             if final_status:
                 await agendamentos_service.update_status(db, admin, agendamento.id, final_status)
 
-        print(f"Reseeded {len(bookings)} agendamentos for 'anabela' (week of {monday} and the following week).")
+        print(
+            f"Reseeded {len(bookings)} agendamentos for '{company.slug}' "
+            f"(week of {monday} and the following week)."
+        )
 
 
 if __name__ == "__main__":

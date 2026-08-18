@@ -33,13 +33,13 @@ async def _create_customer(client, admin_token: str, name: str = "Cliente", phon
     return res.json()
 
 
-async def _create_raw_staff_user(tenant_id: str, name: str, password: str = "supersecret1", role: str = "user") -> None:
-    """Customers no longer self-register (that endpoint is gone), but the
-    require_admin regression coverage below still needs a non-admin login to
-    exercise — construct one directly, mirroring test_auth_service.py's
-    raw-session style."""
+async def _create_raw_staff_user(tenant_id: str, name: str, password: str = "supersecret1") -> None:
+    """Registration only ever creates the *first* staff user of a company, so a
+    second colleague has to be constructed directly — mirroring
+    test_auth_service.py's raw-session style. Used below to prove staff share
+    one tenant-wide view of the data."""
     async with AsyncSessionLocal() as db:
-        db.add(User(tenant_id=uuid.UUID(tenant_id), name=name, password_hash=hash_password(password), role=role))
+        db.add(User(tenant_id=uuid.UUID(tenant_id), name=name, password_hash=hash_password(password)))
         await db.commit()
 
 
@@ -67,39 +67,42 @@ async def test_login_wrong_password_401(client, unique_slug):
     assert res.status_code == 401
 
 
-async def test_services_rbac_and_tenant_isolation(client, unique_slug):
+async def test_staff_share_tenant_data_and_tenant_isolation(client, unique_slug):
+    """There are no roles any more: every User is staff of their company (see
+    core/models.py::User), so a second colleague has exactly the same rights as
+    the admin who registered — while a *different* tenant still sees nothing."""
     company = await _register_company(client, unique_slug)
     slug = company["tenant_slug"]
-    await _create_raw_staff_user(company["tenant_id"], "cliente")
+    await _create_raw_staff_user(company["tenant_id"], "colega")
 
     admin_token, _ = await _login(client, slug, "admin")
-    customer_token, _ = await _login(client, slug, "cliente")
+    colleague_token, _ = await _login(client, slug, "colega")
 
-    # non-admin staff login cannot create services
-    res = await client.post(
-        "/api/services", json={"name": "Corte", "price": "50.00", "duration_min": 30}, headers=_auth_headers(customer_token)
-    )
-    assert res.status_code == 403
-
-    # admin can
     res = await client.post(
         "/api/services", json={"name": "Corte", "price": "50.00", "duration_min": 30}, headers=_auth_headers(admin_token)
     )
     assert res.status_code == 201, res.text
     service = res.json()
 
-    # non-admin can read
-    res = await client.get("/api/services", headers=_auth_headers(customer_token))
+    # a second staff member can create services too
+    res = await client.post(
+        "/api/services",
+        json={"name": "Barba", "price": "20.00", "duration_min": 15},
+        headers=_auth_headers(colleague_token),
+    )
+    assert res.status_code == 201, res.text
+
+    res = await client.get("/api/services", headers=_auth_headers(colleague_token))
     assert res.status_code == 200
     assert any(s["id"] == service["id"] for s in res.json())
 
-    # a different tenant's admin gets 404, not 403, on this service id (no cross-tenant existence leak)
+    # a different tenant's staff gets 404, not 403, on this service id (no cross-tenant existence leak)
     other_company = await _register_company(client, f"{unique_slug}-other")
-    other_admin_token, _ = await _login(client, other_company["tenant_slug"], "admin")
-    res = await client.get(f"/api/services/{service['id']}", headers=_auth_headers(other_admin_token))
+    other_token, _ = await _login(client, other_company["tenant_slug"], "admin")
+    res = await client.get(f"/api/services/{service['id']}", headers=_auth_headers(other_token))
     assert res.status_code == 404
 
-    # customers have no login of their own now — the admin books on their behalf
+    # customers have no login of their own — staff book on their behalf
     customer = await _create_customer(client, admin_token)
     res = await client.post(
         "/api/agendamentos",
@@ -110,27 +113,28 @@ async def test_services_rbac_and_tenant_isolation(client, unique_slug):
     agendamento = res.json()
     assert agendamento["status"] == "pending"
 
-    # admin confirms it
+    # the colleague sees the admin's booking — listing is tenant-wide, no
+    # created_by narrowing any more
+    res = await client.get("/api/agendamentos", headers=_auth_headers(colleague_token))
+    assert res.status_code == 200
+    assert [a["id"] for a in res.json()] == [agendamento["id"]]
+
+    # ...and can decide it
     res = await client.patch(
-        f"/api/agendamentos/{agendamento['id']}/status", json={"status": "confirmed"}, headers=_auth_headers(admin_token)
+        f"/api/agendamentos/{agendamento['id']}/status",
+        json={"status": "confirmed"},
+        headers=_auth_headers(colleague_token),
     )
     assert res.status_code == 200
     assert res.json()["status"] == "confirmed"
 
-    # the non-admin staff login sees no agendamentos (listing for non-admins
-    # filters by created_by == their own id, and this booking was made by admin)
-    res = await client.get("/api/agendamentos", headers=_auth_headers(customer_token))
-    assert res.status_code == 200
-    assert res.json() == []
-
-    # non-admin staff login cannot confirm/decline bookings — PATCH /status is
-    # require_admin-gated at the router level now, so this is a 403 (that
-    # dependency fires before any route body logic runs), not the old
-    # owner/role-branching 404
+    # a different tenant still cannot touch it
     res = await client.patch(
-        f"/api/agendamentos/{agendamento['id']}/status", json={"status": "declined"}, headers=_auth_headers(customer_token)
+        f"/api/agendamentos/{agendamento['id']}/status",
+        json={"status": "declined"},
+        headers=_auth_headers(other_token),
     )
-    assert res.status_code == 403
+    assert res.status_code == 404
 
 
 async def test_refresh_and_logout_revokes_token(client, unique_slug):

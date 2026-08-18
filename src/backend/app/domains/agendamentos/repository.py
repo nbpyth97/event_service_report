@@ -20,13 +20,12 @@ async def fetch_by_id(db: AsyncSession, tenant_id: uuid.UUID, agendamento_id: uu
     return (await db.execute(stmt)).scalar_one_or_none()
 
 
-async def list_for_tenant(
-    db: AsyncSession, tenant_id: uuid.UUID, created_by: uuid.UUID | None = None
-) -> list[Agendamento]:
-    stmt = _with_relations(select(Agendamento)).where(Agendamento.tenant_id == tenant_id)
-    if created_by is not None:
-        stmt = stmt.where(Agendamento.created_by == created_by)
-    stmt = stmt.order_by(Agendamento.start_time)
+async def list_for_tenant(db: AsyncSession, tenant_id: uuid.UUID) -> list[Agendamento]:
+    stmt = (
+        _with_relations(select(Agendamento))
+        .where(Agendamento.tenant_id == tenant_id)
+        .order_by(Agendamento.start_time)
+    )
     return list((await db.execute(stmt)).scalars().all())
 
 

@@ -10,11 +10,9 @@ import StatusHistoryStepper from "@/components/StatusHistoryStepper";
 
 export default function AgendamentoDetailModal({
   agendamento,
-  isAdmin,
   onClose,
 }: {
   agendamento: Agendamento;
-  isAdmin: boolean;
   onClose: () => void;
 }) {
   const updateStatus = useUpdateAgendamentoStatus();
@@ -99,7 +97,7 @@ export default function AgendamentoDetailModal({
         {isEndedState ? (
           <div className="status-stepper-row">
             <StatusHistoryStepper history={history ?? []} />
-            {isAdmin && agendamento.customer_phone && agendamento.status === "declined" && (
+            {agendamento.customer_phone && agendamento.status === "declined" && (
               <a
                 href={waLink(agendamento.customer_phone, statusUpdateMessage(agendamento))}
                 target="_blank"
@@ -115,7 +113,7 @@ export default function AgendamentoDetailModal({
         ) : (
           <div className="status-stepper-row">
             <StatusStepper stepIndex={stepIndexOf(agendamento)} timestamps={historyTimes} />
-            {isAdmin && agendamento.customer_phone && agendamento.status === "confirmed" && (
+            {agendamento.customer_phone && agendamento.status === "confirmed" && (
               <a
                 href={waLink(agendamento.customer_phone, statusUpdateMessage(agendamento))}
                 target="_blank"
@@ -132,27 +130,25 @@ export default function AgendamentoDetailModal({
 
         <div className="modal-sheet-body">
           <div className="modal-meta-card">
-            {isAdmin && (
-              <div className="ticket-row">
-                <User size={14} aria-hidden="true" />
-                <span className="ticket-customer-name">{agendamento.customer_alias ?? agendamento.customer_name}</span>
-                {agendamento.customer_alias && (
-                  <span className="appt-row-real-name">({agendamento.customer_name})</span>
-                )}
-                {agendamento.customer_phone && (
-                  <a
-                    href={waLink(agendamento.customer_phone)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="ticket-whatsapp-link"
-                    aria-label={`Falar com ${agendamento.customer_name} via WhatsApp`}
-                    title="Falar com o cliente"
-                  >
-                    <MessageCircle size={13} aria-hidden="true" />
-                  </a>
-                )}
-              </div>
-            )}
+            <div className="ticket-row">
+              <User size={14} aria-hidden="true" />
+              <span className="ticket-customer-name">{agendamento.customer_alias ?? agendamento.customer_name}</span>
+              {agendamento.customer_alias && (
+                <span className="appt-row-real-name">({agendamento.customer_name})</span>
+              )}
+              {agendamento.customer_phone && (
+                <a
+                  href={waLink(agendamento.customer_phone)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="ticket-whatsapp-link"
+                  aria-label={`Falar com ${agendamento.customer_name} via WhatsApp`}
+                  title="Falar com o cliente"
+                >
+                  <MessageCircle size={13} aria-hidden="true" />
+                </a>
+              )}
+            </div>
             <div className="ticket-row">
               <CalendarDays size={14} aria-hidden="true" />
               <span>
@@ -170,7 +166,7 @@ export default function AgendamentoDetailModal({
           </div>
         </div>
 
-        {isAdmin && agendamento.status === "pending" && !confirmingDecline && (
+        {agendamento.status === "pending" && !confirmingDecline && (
           <div className="ticket-actions">
             <button
               type="button"
@@ -188,7 +184,7 @@ export default function AgendamentoDetailModal({
           </div>
         )}
 
-        {isAdmin && confirmingDecline && (
+        {confirmingDecline && (
           <div className="ticket-decline-confirm">
             <p>Recusar a marcação de {agendamento.customer_name}?</p>
             <button type="button" className="ticket-decline-cancel" onClick={() => setConfirmingDecline(false)}>
@@ -205,7 +201,7 @@ export default function AgendamentoDetailModal({
           </div>
         )}
 
-        {isAdmin && agendamento.status === "confirmed" && !confirmingCancel && (
+        {agendamento.status === "confirmed" && !confirmingCancel && (
           <div className="ticket-actions">
             <button
               type="button"
@@ -219,7 +215,7 @@ export default function AgendamentoDetailModal({
           </div>
         )}
 
-        {isAdmin && confirmingCancel && (
+        {confirmingCancel && (
           <div className="ticket-decline-confirm">
             <p>Cancelar a marcação de {agendamento.customer_name}?</p>
             <button type="button" className="ticket-decline-cancel" onClick={() => setConfirmingCancel(false)}>

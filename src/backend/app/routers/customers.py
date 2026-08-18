@@ -3,13 +3,16 @@ import uuid
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.auth import get_current_user, require_admin
+from app.core.auth import get_current_user
 from app.core.database import get_db
 from app.core.models import User
 from app.core.schemas import CustomerAliasUpdate, CustomerCreate, CustomerOut
 from app.domains.customers import service as customers_service
 
-router = APIRouter(prefix="/api/customers", tags=["customers"], dependencies=[Depends(require_admin)])
+# Staff-only, like every authenticated router — the customer directory has no
+# customer-facing counterpart (see routers/public.py for what a customer can
+# reach without a login).
+router = APIRouter(prefix="/api/customers", tags=["customers"])
 
 
 @router.get("", response_model=list[CustomerOut])

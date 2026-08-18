@@ -7,7 +7,6 @@ import type { DatePreset, DateRange } from "@/components/AgendamentoDateRangePic
 import SearchFilterInput from "@/components/SearchFilterInput";
 import AgendamentoStatusTabs, { matchesStatusFilter } from "@/components/AgendamentoStatusTabs";
 import type { StatusFilterKey } from "@/components/AgendamentoStatusTabs";
-import { useCurrentUser } from "@/auth/user";
 import { useAgendamentos, useMyCompany } from "@/hooks/queries";
 import { toDateStr } from "@/lib/date";
 
@@ -36,8 +35,6 @@ const PERIOD_PHRASE: Record<DatePreset, string> = {
 };
 
 export default function AgendamentosPage() {
-  const { user } = useCurrentUser();
-  const isAdmin = user?.role === "admin";
   const { data: agendamentos, isLoading } = useAgendamentos();
   const { data: company } = useMyCompany();
 
@@ -136,11 +133,11 @@ export default function AgendamentosPage() {
     setSelectedStatuses((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]));
   };
 
-  // Overview mode — date range + (admin) person filter apply first, feeding
-  // both the status-tab counts and the final filtered list.
+  // Overview mode — date range + person filter apply first, feeding both the
+  // status-tab counts and the final filtered list.
   const dateAndPersonFiltered = useMemo(() => {
     let list = agendamentos ?? [];
-    if (isAdmin && personQuery.trim()) {
+    if (personQuery.trim()) {
       const q = personQuery.trim().toLowerCase();
       list = list.filter(
         (a) => a.customer_name.toLowerCase().includes(q) || (a.customer_alias?.toLowerCase().includes(q) ?? false)
@@ -153,7 +150,7 @@ export default function AgendamentosPage() {
       list = list.filter((a) => toDateStr(new Date(a.start_time)) <= dateRange.end);
     }
     return list;
-  }, [agendamentos, isAdmin, personQuery, dateRange]);
+  }, [agendamentos, personQuery, dateRange]);
 
   const overviewVisible = dateAndPersonFiltered.filter((a) => matchesStatusFilter(a, selectedStatuses));
   const filtersActive = Boolean(dateRange.start || dateRange.end || personQuery.trim() || selectedStatuses.length > 0);
@@ -165,32 +162,30 @@ export default function AgendamentosPage() {
 
   return (
     <div className="page">
-      {isAdmin && (
-        <div className="agendamento-mode-switch" role="tablist" aria-label="Modo de visualização">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={mode === "calendar"}
-            className={mode === "calendar" ? "active" : ""}
-            onClick={() => setMode("calendar")}
-          >
-            Calendário
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={mode === "overview"}
-            className={mode === "overview" ? "active" : ""}
-            onClick={() => setMode("overview")}
-          >
-            Visão geral
-          </button>
-        </div>
-      )}
+      <div className="agendamento-mode-switch" role="tablist" aria-label="Modo de visualização">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={mode === "calendar"}
+          className={mode === "calendar" ? "active" : ""}
+          onClick={() => setMode("calendar")}
+        >
+          Calendário
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={mode === "overview"}
+          className={mode === "overview" ? "active" : ""}
+          onClick={() => setMode("overview")}
+        >
+          Visão geral
+        </button>
+      </div>
 
       {isLoading || !defaultsReady ? (
         <p>Carregando…</p>
-      ) : mode === "calendar" && isAdmin && company ? (
+      ) : mode === "calendar" && company ? (
         <CalendarView
           agendamentos={agendamentos ?? []}
           businessHours={company.settings.business_hours}
@@ -204,14 +199,12 @@ export default function AgendamentosPage() {
             onPresetChange={setDatePreset}
             onRangeChange={setDateRange}
           />
-          {isAdmin && (
-            <SearchFilterInput
-              value={personQuery}
-              onChange={setPersonQuery}
-              placeholder="Filtrar por cliente…"
-              ariaLabel="Filtrar por cliente"
-            />
-          )}
+          <SearchFilterInput
+            value={personQuery}
+            onChange={setPersonQuery}
+            placeholder="Filtrar por cliente…"
+            ariaLabel="Filtrar por cliente"
+          />
           <AgendamentoStatusTabs agendamentos={dateAndPersonFiltered} selected={selectedStatuses} onToggle={toggleStatus} />
           <p className="agendamento-overview-summary">{summaryText}</p>
           <AgendamentoList

@@ -48,11 +48,9 @@ def upgrade() -> None:
     sa.Column('tenant_id', sa.UUID(), nullable=False),
     sa.Column('name', sa.String(length=150), nullable=False),
     sa.Column('password_hash', sa.String(length=255), nullable=False),
-    sa.Column('role', sa.String(length=20), nullable=False),
     sa.Column('phone', sa.String(length=30), nullable=True),
     sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
     sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False),
-    sa.CheckConstraint("role IN ('admin', 'user')", name='ck_users_role'),
     sa.ForeignKeyConstraint(['tenant_id'], ['companies.id'], ),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('tenant_id', 'name', name='uq_users_tenant_id_name')

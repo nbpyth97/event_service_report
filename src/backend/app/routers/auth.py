@@ -18,7 +18,7 @@ router = APIRouter(prefix="/api/auth", tags=["auth"])
 @router.post("/register-company", response_model=RegisterCompanyOut, status_code=201)
 async def register_company(payload: RegisterCompanyPayload, db: AsyncSession = Depends(get_db)):
     admin, company = await auth_service.register_company_and_admin(db, payload)
-    return RegisterCompanyOut(id=admin.id, tenant_id=admin.tenant_id, name=admin.name, role=admin.role, tenant_slug=company.slug)
+    return RegisterCompanyOut(id=admin.id, tenant_id=admin.tenant_id, name=admin.name, tenant_slug=company.slug)
 
 
 @router.post("/login", response_model=AccessTokenWithUser)

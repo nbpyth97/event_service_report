@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.enums import BookingStatus, UserRole
+from app.core.enums import BookingStatus
 from app.core.models import Agendamento, AgendamentoStatusHistory, User
 from app.domains.agendamentos import repository
 from app.domains.agendamentos.policy import InvalidStatusTransition, validate_transition
@@ -58,16 +58,17 @@ async def get_agendamento(db: AsyncSession, tenant_id: uuid.UUID, agendamento_id
 
 
 async def list_agendamentos(db: AsyncSession, current_user: User) -> list[Agendamento]:
-    created_by = None if current_user.role == UserRole.ADMIN.value else current_user.id
-    return await repository.list_for_tenant(db, current_user.tenant_id, created_by=created_by)
+    """Every booking in the tenant — a User is staff, so there is no narrower
+    "only mine" view to fall back to (see core/models.py::User)."""
+    return await repository.list_for_tenant(db, current_user.tenant_id)
 
 
 async def update_status(
     db: AsyncSession, current_user: User, agendamento_id: uuid.UUID, status: BookingStatus
 ) -> Agendamento:
-    """Admin-only (gated at the router level — customers have no login to
-    manage their own bookings; see routers/agendamentos.py), restricted only
-    by ALLOWED_TRANSITIONS (see agendamentos/policy.py)."""
+    """Staff-only by construction — customers have no login to manage their own
+    bookings — and restricted only by ALLOWED_TRANSITIONS (see
+    agendamentos/policy.py)."""
     tenant_id = current_user.tenant_id
     agendamento = await get_agendamento(db, tenant_id, agendamento_id)
     previous_status = BookingStatus(agendamento.status)
@@ -93,9 +94,6 @@ async def update_status(
 
 async def get_status_history(db: AsyncSession, current_user: User, agendamento_id: uuid.UUID) -> list[dict]:
     agendamento = await get_agendamento(db, current_user.tenant_id, agendamento_id)
-    if current_user.role != UserRole.ADMIN.value and agendamento.created_by != current_user.id:
-        raise HTTPException(status_code=404, detail="Agendamento não encontrado")
-
     entries = [{"from_status": None, "to_status": "pending", "changed_at": agendamento.created_at}]
     history = await repository.list_status_history(db, agendamento_id)
     entries.extend({"from_status": h.from_status, "to_status": h.to_status, "changed_at": h.changed_at} for h in history)
