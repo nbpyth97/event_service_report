@@ -57,8 +57,9 @@ export type DayHours = { open: string; close: string } | null;
 
 export interface CompanySettings {
   timezone: string;
+  // Not consumed by availability logic (slots are back-to-back by service
+  // duration) — kept only as a future frontend display/grouping knob.
   slot_interval_min: number;
-  min_lead_time_min: number;
   business_hours: Record<"mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun", DayHours>;
 }
 

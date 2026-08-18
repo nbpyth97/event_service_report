@@ -4,11 +4,13 @@ from datetime import date, timedelta
 from sqlalchemy import select
 
 from app.core.database import AsyncSessionLocal
-from app.core.models import Agendamento, Company
+from app.core.models import Agendamento
 from app.domains.availability.service import get_available_slots
 
 # Default company settings (app/core/models.py DEFAULT_COMPANY_SETTINGS):
-# mon/sun closed, tue-sat 08:00-19:00, 15-min interval, 30-min lead time.
+# mon/sun closed, tue-sat 08:00-19:00. Slots are back-to-back by service
+# duration (no fixed interval grid, no lead-time floor) - see
+# availability/service.py::_candidate_slots.
 CLOSED_DAY = date(2026, 8, 31)  # Monday
 OPEN_DAY = date(2026, 9, 1)  # Tuesday
 
@@ -64,13 +66,6 @@ async def _book(client, customer_token: str, service_id: str, start_time: str, s
     return agendamento
 
 
-async def _set_lead_time_min(tenant_id: str, minutes: int) -> None:
-    async with AsyncSessionLocal() as db:
-        company = (await db.execute(select(Company).where(Company.id == uuid.UUID(tenant_id)))).scalar_one()
-        company.settings = {**company.settings, "min_lead_time_min": minutes}
-        await db.commit()
-
-
 async def test_closed_day_returns_no_slots(client, unique_slug):
     company = await _register_company(client, unique_slug)
     admin_token, _ = await _login(client, unique_slug, "admin")
@@ -89,13 +84,15 @@ async def test_open_day_slots_span_business_hours_at_interval(client, unique_slu
     async with AsyncSessionLocal() as db:
         slots = await get_available_slots(db, uuid.UUID(company["tenant_id"]), uuid.UUID(service["id"]), OPEN_DAY)
 
-    # 08:00-19:00 local, 15-min interval, 30-min service duration:
-    # last bookable start is 18:30 -> (11h*60 - 30) / 15 + 1 = 43 slots.
-    assert len(slots) == 43
+    # 08:00-19:00 local (660 min), slots step back-to-back by the 30-min
+    # service duration starting at open: last bookable start is 18:30, since
+    # 18:30 + 30min == 19:00 (close) but 19:00 + 30min would exceed it.
+    # Count: (630 min span) / 30 + 1 = 22 slots.
+    assert len(slots) == 22
     assert slots[0].strftime("%H:%M") == "08:00"
     assert slots[-1].strftime("%H:%M") == "18:30"
-    # slots are evenly spaced at the configured interval
-    assert all((b - a) == timedelta(minutes=15) for a, b in zip(slots, slots[1:]))
+    # slots are spaced exactly by the service duration, back-to-back
+    assert all((b - a) == timedelta(minutes=30) for a, b in zip(slots, slots[1:]))
 
 
 async def test_pending_and_confirmed_bookings_block_overlapping_slots(client, unique_slug):
@@ -110,9 +107,10 @@ async def test_pending_and_confirmed_bookings_block_overlapping_slots(client, un
     async with AsyncSessionLocal() as db:
         slots = await get_available_slots(db, uuid.UUID(company["tenant_id"]), uuid.UUID(service["id"]), OPEN_DAY)
 
-    booked_times = {"08:45", "09:00"}
-    assert not any(s.strftime("%H:%M") in booked_times for s in slots)
-    # neighboring slots are untouched
+    # duration now equals the grid step, so only the exact occupied slot is
+    # blocked - there's no separate finer-grained interval to partially collide.
+    assert not any(s.strftime("%H:%M") == "09:00" for s in slots)
+    # neighboring slots (which don't overlap [09:00, 09:30)) are untouched
     assert any(s.strftime("%H:%M") == "08:30" for s in slots)
     assert any(s.strftime("%H:%M") == "09:30" for s in slots)
 
@@ -132,17 +130,3 @@ async def test_declined_and_cancelled_bookings_do_not_block_slots(client, unique
 
     assert any(s.strftime("%H:%M") == "09:00" for s in slots)
     assert any(s.strftime("%H:%M") == "10:00" for s in slots)
-
-
-async def test_min_lead_time_excludes_all_slots_when_larger_than_the_day(client, unique_slug):
-    company = await _register_company(client, unique_slug)
-    admin_token, _ = await _login(client, unique_slug, "admin")
-    service = await _create_service(client, admin_token)
-
-    # a lead time longer than the gap between now and OPEN_DAY's close pushes
-    # earliest_allowed past every candidate slot for that day
-    await _set_lead_time_min(company["tenant_id"], 10 * 365 * 24 * 60)
-
-    async with AsyncSessionLocal() as db:
-        slots = await get_available_slots(db, uuid.UUID(company["tenant_id"]), uuid.UUID(service["id"]), OPEN_DAY)
-    assert slots == []

@@ -16,8 +16,9 @@ NOTIFICATION_TYPES = ("booking_pending", "booking_cancelled")
 # real hours (tenants/anabela/config.json) as a sane default for any new company.
 DEFAULT_COMPANY_SETTINGS = {
     "timezone": "Europe/Lisbon",
+    # Not read by availability logic (slots are generated back-to-back by
+    # service duration) — kept only as a future frontend display/grouping knob.
     "slot_interval_min": 15,
-    "min_lead_time_min": 30,
     "business_hours": {
         "mon": None,
         "tue": {"open": "08:00", "close": "19:00"},

@@ -1,6 +1,6 @@
 import uuid
 from datetime import date as date_cls
-from datetime import datetime, time, timedelta, timezone
+from datetime import datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -47,22 +47,20 @@ async def _candidate_slots(
     if not hours:
         return []
 
-    interval_min = company_settings.get("slot_interval_min", 15)
-    lead_time_min = company_settings.get("min_lead_time_min", 0)
-
     open_dt = datetime.combine(day, time.fromisoformat(hours["open"]), tzinfo=tz)
     close_dt = datetime.combine(day, time.fromisoformat(hours["close"]), tzinfo=tz)
     duration = timedelta(minutes=service.duration_min)
-    earliest_allowed = datetime.now(timezone.utc) + timedelta(minutes=lead_time_min)
 
     busy = await repository.list_busy_intervals(db, tenant_id, open_dt, close_dt)
 
+    # Slots are back-to-back by service duration (no separate interval grid
+    # or lead-time floor) — a candidate starts every `duration` from open_dt.
     slots = []
     cursor = open_dt
     while cursor + duration <= close_dt:
         slot_end = cursor + duration
         overlaps_busy = any(cursor < b_end and slot_end > b_start for b_start, b_end in busy)
-        if cursor >= earliest_allowed and not overlaps_busy:
+        if not overlaps_busy:
             slots.append(cursor)
-        cursor += timedelta(minutes=interval_min)
+        cursor += duration
     return slots
