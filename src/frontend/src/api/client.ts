@@ -79,6 +79,11 @@ export interface Company {
   settings: CompanySettings;
 }
 
+export interface PublicCompany {
+  name: string;
+  business_hours: CompanySettings["business_hours"];
+}
+
 export interface RegisterCompanyResult extends User {
   tenant_slug: string;
 }
@@ -169,4 +174,14 @@ export const api = {
 
   notifications: () => request<Notification[]>("/api/notifications"),
   markNotificationRead: (id: string) => request<Notification>(`/api/notifications/${id}/read`, { method: "POST" }),
+
+  // Unauthenticated — the public anonymous booking page (no account, no
+  // token). Mirrors the authenticated service/availability/agendamento
+  // shapes 1:1, scoped by tenant slug instead of a JWT's tenant_id.
+  publicCompany: (slug: string) => request<PublicCompany>(`/api/public/${slug}/company`),
+  publicServices: (slug: string) => request<Service[]>(`/api/public/${slug}/services`),
+  publicAvailability: (slug: string, serviceId: string, date: string) =>
+    request<Availability>(`/api/public/${slug}/services/${serviceId}/availability?date=${date}`),
+  publicBook: (slug: string, payload: { service_id: string; start_time: string; name: string; phone: string }) =>
+    request<Agendamento>(`/api/public/${slug}/book`, { method: "POST", body: JSON.stringify(payload) }),
 };

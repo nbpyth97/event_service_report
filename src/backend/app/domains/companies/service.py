@@ -16,6 +16,13 @@ async def get_company(db: AsyncSession, tenant_id: uuid.UUID) -> Company:
     return company
 
 
+async def get_company_by_slug(db: AsyncSession, slug: str) -> Company:
+    company = await repository.fetch_by_slug(db, slug)
+    if not company:
+        raise HTTPException(status_code=404, detail="Empresa não encontrada")
+    return company
+
+
 def slugify(name: str) -> str:
     """Company registration no longer asks the admin to pick a slug — this
     derives one from the company name (auth/service.py::register_company_and_admin

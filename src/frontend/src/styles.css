@@ -1735,6 +1735,20 @@ button:disabled {
   margin-bottom: 0.5rem;
 }
 
+.timeslot-period + .timeslot-period {
+  margin-top: 0.85rem;
+}
+
+.timeslot-period-label {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+  margin-bottom: 0.5rem;
+}
+
 .timeslot-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));

@@ -132,6 +132,25 @@ class CustomerAliasUpdate(BaseModel):
     alias: str | None = Field(default=None, max_length=150)
 
 
+class PublicCompanyOut(BaseModel):
+    # Not from_attributes — business_hours lives nested inside Company.settings
+    # (JSONB), not as a plain attribute, so routers/public.py builds this
+    # explicitly. Deliberately narrower than CompanyOut (no id/slug/full
+    # settings) but still needs business_hours: the public booking page's
+    # date picker greys out closed days the same way the authenticated one does.
+    name: str
+    business_hours: dict
+
+
+class PublicBookingCreate(BaseModel):
+    service_id: uuid.UUID
+    start_time: datetime
+    name: str = Field(min_length=1, max_length=150)
+    phone: str = Field(min_length=1, max_length=30)
+
+    _validate_phone = field_validator("phone")(_validate_phone_digits)
+
+
 class AgendamentoStatusHistoryOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

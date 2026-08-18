@@ -9,6 +9,10 @@ export const queryKeys = {
   notifications: ["notifications"] as const,
   agendamentoHistory: (agendamentoId: string) => ["agendamentoHistory", agendamentoId] as const,
   customers: ["customers"] as const,
+  publicCompany: (slug: string) => ["publicCompany", slug] as const,
+  publicServices: (slug: string) => ["publicServices", slug] as const,
+  publicAvailability: (slug: string, serviceId: string, date: string) =>
+    ["publicAvailability", slug, serviceId, date] as const,
 };
 
 export function useMyCompany() {
@@ -90,6 +94,29 @@ export function useSetCustomerAlias() {
       // up without waiting on their own unrelated invalidation.
       qc.invalidateQueries({ queryKey: queryKeys.agendamentos });
     },
+  });
+}
+
+export function usePublicCompany(slug: string) {
+  return useQuery({ queryKey: queryKeys.publicCompany(slug), queryFn: () => api.publicCompany(slug), staleTime: Infinity });
+}
+
+export function usePublicServices(slug: string) {
+  return useQuery({ queryKey: queryKeys.publicServices(slug), queryFn: () => api.publicServices(slug) });
+}
+
+export function usePublicAvailability(slug: string, serviceId: string, date: string | null) {
+  return useQuery({
+    queryKey: queryKeys.publicAvailability(slug, serviceId, date ?? ""),
+    queryFn: () => api.publicAvailability(slug, serviceId, date as string),
+    enabled: Boolean(slug) && Boolean(serviceId) && Boolean(date),
+  });
+}
+
+export function usePublicBook() {
+  return useMutation({
+    mutationFn: ({ slug, payload }: { slug: string; payload: Parameters<typeof api.publicBook>[1] }) =>
+      api.publicBook(slug, payload),
   });
 }
 
