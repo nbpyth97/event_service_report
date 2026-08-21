@@ -36,11 +36,17 @@ export function useUpdateMyCompany() {
   });
 }
 
+// staleTime 0 overrides the global 30s (main.tsx): free slots are the most
+// volatile thing the app reads and the only data whose staleness a user can
+// see — a slot someone else took stays clickable, then 409s. Zero means the
+// global refetchOnWindowFocus always refires, so a picker left open in a
+// backgrounded tab is re-read the moment it comes back.
 export function useAvailability(serviceId: string, date: string | null) {
   return useQuery({
     queryKey: queryKeys.availability(serviceId, date ?? ""),
     queryFn: () => api.availability(serviceId, date as string),
     enabled: Boolean(serviceId) && Boolean(date),
+    staleTime: 0,
   });
 }
 
@@ -122,11 +128,18 @@ export function usePublicServices(slug: string) {
   return useQuery({ queryKey: queryKeys.publicServices(slug), queryFn: () => api.publicServices(slug) });
 }
 
+// Same staleTime 0 reasoning as useAvailability, and it matters more here:
+// this picker has no SSE to fall back on. The stream is token-authenticated
+// (routers/notifications.py::_get_sse_user) and a public visitor has no
+// account, so window focus is the only freshness signal available short of
+// opening an unauthenticated per-visitor stream — which these unthrottled
+// public endpoints should not have.
 export function usePublicAvailability(slug: string, serviceId: string, date: string | null) {
   return useQuery({
     queryKey: queryKeys.publicAvailability(slug, serviceId, date ?? ""),
     queryFn: () => api.publicAvailability(slug, serviceId, date as string),
     enabled: Boolean(slug) && Boolean(serviceId) && Boolean(date),
+    staleTime: 0,
   });
 }
 

@@ -32,6 +32,15 @@ export function useNotificationStream(enabled: boolean): void {
         // so clicking a fresh notification's deep link can't find the
         // booking to highlight yet.
         qc.invalidateQueries({ queryKey: queryKeys.agendamentos });
+        // Those same changes take a slot or give one back, so a colleague's
+        // booking would otherwise leave this staff member's open slot picker
+        // offering a time that's already gone. Best-effort only: a *declined*
+        // booking frees a slot without emitting a notification (update_status
+        // resolves the pending one rather than notifying), so this narrows the
+        // stale window instead of closing it. The guarantee stays server-side
+        // — is_slot_bookable plus ex_agendamentos_no_overlap 409 on a slot
+        // that was taken in the meantime.
+        qc.invalidateQueries({ queryKey: ["availability"] });
       });
 
       reconnectTimer = setTimeout(async () => {
