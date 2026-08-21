@@ -3,7 +3,6 @@ from contextlib import asynccontextmanager
 from fastapi import APIRouter, Depends, FastAPI
 
 from app.core.auth import get_current_user
-from app.middleware import setup_middleware
 from app.routers import agendamentos, auth, companies, customers, health, notifications, public, services
 from app.domains.notifications.service import listen_for_notifications
 
@@ -20,7 +19,6 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Meeting Scheduler API", lifespan=lifespan)
-setup_middleware(app)
 
 # Every router's own prefix is relative (e.g. "/agendamentos", not
 # "/api/agendamentos") — "/api" is written exactly once, here, so nginx/

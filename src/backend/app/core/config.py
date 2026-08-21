@@ -19,7 +19,6 @@ class Settings(BaseSettings):
     refresh_token_expire_minutes: int = 10080
 
     cookie_secure: bool = False
-    cors_origins: list[str] = ["http://localhost:5173"]
 
     environment: Literal["local", "staging", "production"] = "local"
 
