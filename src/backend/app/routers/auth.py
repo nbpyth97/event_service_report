@@ -12,7 +12,7 @@ from app.core.schemas import (
 )
 from app.domains.auth import service as auth_service
 
-router = APIRouter(prefix="/api/auth", tags=["auth"])
+router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 @router.post("/register-company", response_model=RegisterCompanyOut, status_code=201)

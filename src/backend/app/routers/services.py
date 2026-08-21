@@ -11,7 +11,7 @@ from app.core.schemas import AvailabilityOut, ServiceCreate, ServiceOut, Service
 from app.domains.availability import service as availability_service
 from app.domains.services import service as services_service
 
-router = APIRouter(prefix="/api/services", tags=["services"])
+router = APIRouter(prefix="/services", tags=["services"])
 
 
 @router.get("", response_model=list[ServiceOut])

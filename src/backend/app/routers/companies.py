@@ -7,7 +7,7 @@ from app.core.models import User
 from app.core.schemas import CompanyOut, CompanyUpdate
 from app.domains.companies import service as companies_service
 
-router = APIRouter(prefix="/api/companies", tags=["companies"])
+router = APIRouter(prefix="/companies", tags=["companies"])
 
 
 @router.get("/me", response_model=CompanyOut)

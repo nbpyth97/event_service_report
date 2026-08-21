@@ -10,7 +10,7 @@ from app.core.schemas import AgendamentoCreate, AgendamentoOut, AgendamentoStatu
 from app.domains.agendamentos import service as agendamentos_service
 from app.domains.customers import service as customers_service
 
-router = APIRouter(prefix="/api/agendamentos", tags=["agendamentos"])
+router = APIRouter(prefix="/agendamentos", tags=["agendamentos"])
 
 
 @router.get("", response_model=list[AgendamentoOut])

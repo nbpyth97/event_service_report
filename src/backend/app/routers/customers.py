@@ -12,7 +12,7 @@ from app.domains.customers import service as customers_service
 # Staff-only, like every authenticated router — the customer directory has no
 # customer-facing counterpart (see routers/public.py for what a customer can
 # reach without a login).
-router = APIRouter(prefix="/api/customers", tags=["customers"])
+router = APIRouter(prefix="/customers", tags=["customers"])
 
 
 @router.get("", response_model=list[CustomerOut])

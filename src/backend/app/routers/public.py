@@ -15,7 +15,7 @@ from app.domains.services import service as services_service
 # Unauthenticated — the only booking path available to a customer who has no
 # account (see CLAUDE.md's Customer != User note). Every route resolves the
 # tenant by slug itself; no dependency on get_current_user anywhere here.
-router = APIRouter(prefix="/api/public/{tenant_slug}", tags=["public"])
+router = APIRouter(prefix="/public/{tenant_slug}", tags=["public"])
 
 
 @router.get("/company", response_model=PublicCompanyOut)

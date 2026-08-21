@@ -11,7 +11,7 @@ from app.core.models import User
 from app.core.schemas import NotificationOut
 from app.domains.notifications import service as notifications_service
 
-router = APIRouter(prefix="/api/notifications", tags=["notifications"])
+router = APIRouter(prefix="/notifications", tags=["notifications"])
 
 SSE_HEARTBEAT_SECONDS = 15
 
