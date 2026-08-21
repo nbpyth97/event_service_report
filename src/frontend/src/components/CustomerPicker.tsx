@@ -24,10 +24,7 @@ export default function CustomerPicker({
     return (
       <div className="customer-picker-selected">
         <UserCheck size={16} aria-hidden="true" />
-        <span className="customer-picker-selected-name">
-          {value.alias ?? value.name}
-          {value.alias && <span className="appt-row-real-name"> ({value.name})</span>}
-        </span>
+        <span className="customer-picker-selected-name">{value.customer_known_name}</span>
         <span className="customer-picker-selected-phone">{value.phone}</span>
         <button type="button" className="customer-picker-change" onClick={() => onChange(null as unknown as Customer)}>
           Trocar
@@ -40,9 +37,8 @@ export default function CustomerPicker({
   const matches = (customers ?? []).filter((c) => {
     if (!needle) return true;
     return (
-      c.name.toLowerCase().includes(needle) ||
-      c.phone.toLowerCase().includes(needle) ||
-      (c.alias?.toLowerCase().includes(needle) ?? false)
+      c.customer_known_name.toLowerCase().includes(needle) ||
+      c.phone.toLowerCase().includes(needle)
     );
   });
 
@@ -62,10 +58,7 @@ export default function CustomerPicker({
           {matches.map((c) => (
             <li key={c.id}>
               <button type="button" className="customer-picker-row" onClick={() => onChange(c)}>
-                <span className="customer-picker-row-name">
-                  {c.alias ?? c.name}
-                  {c.alias && <span className="appt-row-real-name"> ({c.name})</span>}
-                </span>
+                <span className="customer-picker-row-name">{c.customer_known_name}</span>
                 <span className="customer-picker-row-phone">{c.phone}</span>
               </button>
             </li>

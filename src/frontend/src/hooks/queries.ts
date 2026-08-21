@@ -106,15 +106,16 @@ export function useCreateCustomer() {
   });
 }
 
-export function useSetCustomerAlias() {
+export function useUpdateCustomer() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, alias }: { id: string; alias: string | null }) => api.setCustomerAlias(id, alias),
+    mutationFn: ({ id, ...payload }: { id: string; customer_known_name: string; phone?: string }) =>
+      api.updateCustomer(id, payload),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.customers });
-      // The alias also shows up denormalized on every Agendamento row
-      // (customer_alias) — refetch those too so list/calendar views pick it
-      // up without waiting on their own unrelated invalidation.
+      // Name and phone also show up denormalized on every Agendamento row
+      // (customer_name/customer_phone) — refetch those too so list/calendar
+      // views pick it up without waiting on their own unrelated invalidation.
       qc.invalidateQueries({ queryKey: queryKeys.agendamentos });
     },
   });

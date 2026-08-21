@@ -1,17 +1,16 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
-import { CalendarCheck, CalendarPlus, Plus } from "lucide-react";
-import CustomerAliasEditor from "@/components/CustomerAliasEditor";
+import { Plus } from "lucide-react";
+import CustomerRow from "@/components/CustomerRow";
 import NewCustomerForm from "@/components/NewCustomerForm";
 import SearchFilterInput from "@/components/SearchFilterInput";
 import { useAgendamentos, useCustomers } from "@/hooks/queries";
-import { fmtPhoneLocalPT } from "@/lib/format";
 
 // Admin's customer directory — browse/search everyone who has ever booked
 // (public anonymous page or a manual appointment), independent of any
-// specific booking. Alias editing lives here too, not just contextually on
-// an appointment, since an admin may want to label a regular before their
-// next visit rather than in the middle of confirming a booking.
+// specific booking. Name/phone editing lives here too, not just contextually
+// on an appointment, since an admin may want to correct a customer (e.g. a
+// mistyped phone) before their next visit rather than in the middle of
+// confirming a booking.
 export default function CustomersPage() {
   const { data: customers, isLoading } = useCustomers();
   const { data: agendamentos } = useAgendamentos();
@@ -28,11 +27,10 @@ export default function CustomersPage() {
     .filter(
       (c) =>
         !needle ||
-        c.name.toLowerCase().includes(needle) ||
-        c.phone.toLowerCase().includes(needle) ||
-        (c.alias?.toLowerCase().includes(needle) ?? false)
+        c.customer_known_name.toLowerCase().includes(needle) ||
+        c.phone.toLowerCase().includes(needle)
     )
-    .sort((a, b) => (a.alias ?? a.name).localeCompare(b.alias ?? b.name, "pt-PT"));
+    .sort((a, b) => a.customer_known_name.localeCompare(b.customer_known_name, "pt-PT"));
 
   return (
     <div className="page">
@@ -53,7 +51,7 @@ export default function CustomersPage() {
       <SearchFilterInput
         value={query}
         onChange={setQuery}
-        placeholder="Procurar por nome, apelido ou telemóvel"
+        placeholder="Procurar por nome ou telemóvel"
         ariaLabel="Procurar clientes"
       />
 
@@ -68,42 +66,9 @@ export default function CustomersPage() {
 
       {filtered.length > 0 && (
         <ul className="customers-page-list">
-          {filtered.map((c) => {
-            const count = bookingCounts.get(c.id) ?? 0;
-            const displayName = c.alias ?? c.name;
-            return (
-              <li key={c.id} className="customers-page-row">
-                <div className="customers-page-row-identity">
-                  <span className="customers-page-row-name">
-                    {displayName}
-                    {c.alias && <span className="appt-row-real-name"> ({c.name})</span>}
-                  </span>
-                  <CustomerAliasEditor customerId={c.id} alias={c.alias} />
-                </div>
-                <span className="customers-page-row-phone">{fmtPhoneLocalPT(c.phone)}</span>
-                {count > 0 ? (
-                  <Link
-                    to={`/agendamentos?person=${encodeURIComponent(displayName)}`}
-                    className="customers-page-row-count customers-page-row-count-link"
-                    title={`Ver marcações de ${displayName}`}
-                  >
-                    <CalendarCheck size={13} aria-hidden="true" />
-                    {count} marcaç{count === 1 ? "ão" : "ões"}
-                  </Link>
-                ) : (
-                  <span className="customers-page-row-count">Sem marcações</span>
-                )}
-                <Link
-                  to={`/servicos?book=1&customerId=${c.id}`}
-                  className="customers-page-row-new-appt"
-                  aria-label={`Nova marcação para ${displayName}`}
-                  title={`Nova marcação para ${displayName}`}
-                >
-                  <CalendarPlus size={15} aria-hidden="true" />
-                </Link>
-              </li>
-            );
-          })}
+          {filtered.map((c) => (
+            <CustomerRow key={c.id} customer={c} bookingCount={bookingCounts.get(c.id) ?? 0} />
+          ))}
         </ul>
       )}
     </div>

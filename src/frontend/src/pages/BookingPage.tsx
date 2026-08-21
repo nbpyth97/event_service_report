@@ -57,7 +57,7 @@ export default function BookingPage() {
       { service_id: serviceId, start_time: selectedSlot, customer_id: customer.id },
       {
         onSuccess: () => {
-          showSuccess(`Marcação de ${customer.alias ?? customer.name} enviada — aguarde a confirmação.`);
+          showSuccess(`Marcação de ${customer.customer_known_name} enviada — aguarde a confirmação.`);
           navigate("/agendamentos");
         },
       }
@@ -84,7 +84,7 @@ export default function BookingPage() {
         {selectedSlot && customer && (
           <div className="booking-confirm-card">
             <p>
-              Marcar <strong>{service.name}</strong> para <strong>{customer.alias ?? customer.name}</strong> em{" "}
+              Marcar <strong>{service.name}</strong> para <strong>{customer.customer_known_name}</strong> em{" "}
               <strong>{fmtSlot(selectedSlot)}</strong>?
             </p>
             <button type="button" onClick={handleConfirm} disabled={createAgendamento.isPending}>

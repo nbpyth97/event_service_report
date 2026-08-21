@@ -57,7 +57,7 @@ async def seed_calendar_demo() -> None:
         customers = (
             await db.execute(select(Customer).where(Customer.tenant_id == company.id))
         ).scalars().all()
-        by_name = {c.name: c for c in customers}
+        by_name = {c.customer_known_name: c for c in customers}
         if not {"Maria", "Joana", "Inês"} <= by_name.keys():
             raise SystemExit("Expected customers Maria/Joana/Inês — run `app/scripts/seed.py` first.")
         maria, joana, ines = by_name["Maria"], by_name["Joana"], by_name["Inês"]

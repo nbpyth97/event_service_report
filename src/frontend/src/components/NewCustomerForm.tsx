@@ -33,7 +33,7 @@ export default function NewCustomerForm({
 
   const onSubmit = (values: NewCustomerFormValues) => {
     createCustomer.mutate(
-      { name: values.name.trim(), phone: values.phone.trim() },
+      { customer_known_name: values.name.trim(), phone: values.phone.trim() },
       {
         onSuccess: (customer) => {
           onCreated(customer);
@@ -69,7 +69,7 @@ export default function NewCustomerForm({
           rules={{ required: "Indique o telemóvel.", validate: validatePhoneDigits }}
           render={({ field }) => (
             <input
-              placeholder="+351 912 345 678"
+              placeholder="351 912 345 678"
               type="tel"
               inputMode="tel"
               maxLength={16}

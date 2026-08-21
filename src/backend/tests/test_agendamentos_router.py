@@ -27,7 +27,7 @@ async def _create_service(client, admin_token: str) -> dict:
 
 async def _create_customer(client, admin_token: str, name: str = "Cliente", phone: str = "+351911111111") -> dict:
     res = await client.post(
-        "/api/customers", json={"name": name, "phone": phone}, headers=_auth_headers(admin_token)
+        "/api/customers", json={"customer_known_name": name, "phone": phone}, headers=_auth_headers(admin_token)
     )
     assert res.status_code == 201, res.text
     return res.json()
@@ -357,7 +357,7 @@ async def test_public_booking_succeeds_with_no_auth(client, unique_slug):
 
     assert agendamento["created_by"] is None
     assert agendamento["customer_name"] == "Maria"
-    assert agendamento["customer_phone"] == "+351911112222"
+    assert agendamento["customer_phone"] == "351911112222"
     assert agendamento["status"] == "pending"
 
 

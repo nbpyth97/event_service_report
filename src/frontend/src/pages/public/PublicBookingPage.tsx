@@ -177,7 +177,7 @@ export default function PublicBookingPage() {
                     render={({ field }) => (
                       <input
                         id="public-booking-phone"
-                        placeholder="+351 912 345 678"
+                        placeholder="351 912 345 678"
                         type="tel"
                         inputMode="tel"
                         maxLength={16}

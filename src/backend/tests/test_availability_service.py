@@ -67,7 +67,7 @@ async def _create_service(client, admin_token: str, duration_min: int = 30, name
 
 async def _create_customer(client, admin_token: str, name: str = "Cliente", phone: str = "+351911111111") -> dict:
     res = await client.post(
-        "/api/customers", json={"name": name, "phone": phone}, headers=_auth_headers(admin_token)
+        "/api/customers", json={"customer_known_name": name, "phone": phone}, headers=_auth_headers(admin_token)
     )
     assert res.status_code == 201, res.text
     return res.json()

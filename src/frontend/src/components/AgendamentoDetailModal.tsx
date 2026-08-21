@@ -132,10 +132,7 @@ export default function AgendamentoDetailModal({
           <div className="modal-meta-card">
             <div className="ticket-row">
               <User size={14} aria-hidden="true" />
-              <span className="ticket-customer-name">{agendamento.customer_alias ?? agendamento.customer_name}</span>
-              {agendamento.customer_alias && (
-                <span className="appt-row-real-name">({agendamento.customer_name})</span>
-              )}
+              <span className="ticket-customer-name">{agendamento.customer_name}</span>
               {agendamento.customer_phone && (
                 <a
                   href={waLink(agendamento.customer_phone)}

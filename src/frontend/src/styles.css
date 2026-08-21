@@ -2836,19 +2836,7 @@ button:disabled {
   min-width: 0;
 }
 
-/* The customer's real registered name, shown alongside an admin-set alias
-   so both stay visible — the alias is a label this business uses, not a
-   replacement for who actually booked. */
-.appt-row-real-name {
-  color: var(--color-muted);
-  font-size: 0.8em;
-  font-weight: 400;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.alias-editor-trigger {
+.name-editor-trigger {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2860,18 +2848,18 @@ button:disabled {
   flex-shrink: 0;
 }
 
-.alias-editor-trigger:hover {
+.name-editor-trigger:hover {
   color: var(--color-primary);
 }
 
-.alias-editor {
+.name-editor {
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
   min-width: 0;
 }
 
-.alias-editor-input {
+.name-editor-input {
   min-width: 0;
   width: 11rem;
   max-width: 40vw;
@@ -2883,7 +2871,7 @@ button:disabled {
   color: var(--color-ink);
 }
 
-.alias-editor-btn {
+.name-editor-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2896,10 +2884,32 @@ button:disabled {
   border: none;
 }
 
-.alias-editor-btn:hover {
+.name-editor-btn:hover {
   color: var(--color-ink);
   background: var(--color-bg);
   border-radius: 6px;
+}
+
+/* CustomerRow: the phone display and its edit trigger sit together, right
+   where the phone normally reads — editing swaps the text for an input in
+   place rather than opening a panel elsewhere on the row. */
+.customers-page-row-phone-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex-shrink: 0;
+}
+
+.customers-page-row-edit-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  flex-shrink: 0;
+}
+
+.customers-page-row-error {
+  flex-basis: 100%;
+  font-size: 0.78rem;
 }
 
 .appt-row-status-line {
@@ -3307,6 +3317,7 @@ button:disabled {
 
 .customers-page-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 0.75rem;
   background: var(--color-surface);
@@ -3380,7 +3391,7 @@ button:disabled {
 }
 
 /* Icon-only "nova marcação for this customer" — same circular hover
-   treatment as .alias-editor-trigger, but primary-colored since it's a
+   treatment as .name-editor-trigger, but primary-colored since it's a
    create action rather than an edit affordance. */
 .customers-page-row-new-appt {
   display: inline-flex;

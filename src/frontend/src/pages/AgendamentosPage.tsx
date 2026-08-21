@@ -139,9 +139,7 @@ export default function AgendamentosPage() {
     let list = agendamentos ?? [];
     if (personQuery.trim()) {
       const q = personQuery.trim().toLowerCase();
-      list = list.filter(
-        (a) => a.customer_name.toLowerCase().includes(q) || (a.customer_alias?.toLowerCase().includes(q) ?? false)
-      );
+      list = list.filter((a) => a.customer_name.toLowerCase().includes(q));
     }
     if (dateRange.start) {
       list = list.filter((a) => zonedDateStr(a.start_time) >= dateRange.start);

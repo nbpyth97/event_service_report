@@ -8,19 +8,23 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 
 from app.core.enums import BookingStatus
 
-# Portugal-only (single pilot tenant): 351 country code + 9-digit mobile =
-# 12 digits, not E.164's generic 15. Frontend-only validation doesn't mean
-# anything on the public booking endpoint — it's unauthenticated, so this is
-# the actual enforcement, not just UX polish (see lib/format.ts::
-# validatePhoneDigits for the matching frontend rule).
-_MIN_PHONE_DIGITS = 9
-_MAX_PHONE_DIGITS = 12
+# Portugal-only (single pilot tenant): exactly 351 + a 9-digit mobile = 12
+# digits, no more, no less — a fixed length rather than a 9-12 range means
+# there's only one way to type a given number, so two spellings of the same
+# phone (with/without the country code) can never normalize to two different
+# values (see domains/customers/service.py::normalize_phone) and silently
+# split one customer into two rows. No "+": it reads as noise, not help, so
+# the placeholder ("351 912 345 678") is what teaches the format. Frontend-only
+# validation doesn't mean anything on the public booking endpoint — it's
+# unauthenticated, so this is the actual enforcement, not just UX polish (see
+# lib/format.ts::validatePhoneDigits for the matching frontend rule).
+_PHONE_DIGITS = 12
 
 
 def _validate_phone_digits(value: str) -> str:
     digits = re.sub(r"\D", "", value)
-    if not (_MIN_PHONE_DIGITS <= len(digits) <= _MAX_PHONE_DIGITS):
-        raise ValueError(f"Phone number must have between {_MIN_PHONE_DIGITS} and {_MAX_PHONE_DIGITS} digits")
+    if len(digits) != _PHONE_DIGITS:
+        raise ValueError(f"Phone number must have exactly {_PHONE_DIGITS} digits (country code + mobile number)")
     return value
 
 
@@ -105,7 +109,6 @@ class AgendamentoOut(BaseModel):
     end_time: datetime
     status: BookingStatus
     customer_name: str
-    customer_alias: str | None
     customer_phone: str | None
     service_name: str
     service_price: Decimal
@@ -116,20 +119,28 @@ class CustomerOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
-    name: str
+    customer_known_name: str
     phone: str
-    alias: str | None
 
 
 class CustomerCreate(BaseModel):
-    name: str = Field(min_length=1, max_length=150)
+    customer_known_name: str = Field(min_length=1, max_length=150)
     phone: str = Field(min_length=1, max_length=30)
 
     _validate_phone = field_validator("phone")(_validate_phone_digits)
 
 
-class CustomerAliasUpdate(BaseModel):
-    alias: str | None = Field(default=None, max_length=150)
+class CustomerUpdate(BaseModel):
+    customer_known_name: str = Field(min_length=1, max_length=150)
+    # Optional — staff correcting a wrong number after the fact. Omitted (or
+    # None) means "leave the phone alone"; the column itself is never
+    # nullable, so None can't mean "clear it".
+    phone: str | None = Field(default=None, min_length=1, max_length=30)
+
+    @field_validator("phone")
+    @classmethod
+    def _validate_phone(cls, value: str | None) -> str | None:
+        return _validate_phone_digits(value) if value is not None else value
 
 
 class PublicCompanyOut(BaseModel):

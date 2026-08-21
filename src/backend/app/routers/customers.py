@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.auth import get_current_user
 from app.core.database import get_db
 from app.core.models import User
-from app.core.schemas import CustomerAliasUpdate, CustomerCreate, CustomerOut
+from app.core.schemas import CustomerCreate, CustomerOut, CustomerUpdate
 from app.domains.customers import service as customers_service
 
 # Staff-only, like every authenticated router — the customer directory has no
@@ -27,14 +27,18 @@ async def create_customer(
     """Same find-or-create-by-phone as the public booking path (see
     domains/customers/service.py) — an admin adding a "new" customer who
     already booked once themselves resolves to that same Customer row."""
-    return await customers_service.find_or_create_customer(db, current_user.tenant_id, payload.name, payload.phone)
+    return await customers_service.find_or_create_customer(
+        db, current_user.tenant_id, payload.customer_known_name, payload.phone
+    )
 
 
-@router.patch("/{customer_id}", response_model=CustomerOut)
-async def update_customer_alias(
+@router.put("/{customer_id}", response_model=CustomerOut)
+async def update_customer(
     customer_id: uuid.UUID,
-    payload: CustomerAliasUpdate,
+    payload: CustomerUpdate,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    return await customers_service.set_alias(db, current_user.tenant_id, customer_id, payload.alias)
+    return await customers_service.update_customer(
+        db, current_user.tenant_id, customer_id, payload.customer_known_name, payload.phone
+    )

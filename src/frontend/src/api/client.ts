@@ -28,7 +28,6 @@ export interface Agendamento {
   end_time: string;
   status: "pending" | "confirmed" | "declined" | "cancelled";
   customer_name: string;
-  customer_alias: string | null;
   customer_phone: string | null;
   service_name: string;
   service_price: string;
@@ -37,9 +36,8 @@ export interface Agendamento {
 
 export interface Customer {
   id: string;
-  name: string;
+  customer_known_name: string;
   phone: string;
-  alias: string | null;
 }
 
 export interface AgendamentoStatusHistoryEntry {
@@ -176,10 +174,10 @@ export const api = {
     request<Company>("/api/companies/me", { method: "PATCH", body: JSON.stringify(payload) }),
 
   customers: () => request<Customer[]>("/api/customers"),
-  createCustomer: (payload: { name: string; phone: string }) =>
+  createCustomer: (payload: { customer_known_name: string; phone: string }) =>
     request<Customer>("/api/customers", { method: "POST", body: JSON.stringify(payload) }),
-  setCustomerAlias: (id: string, alias: string | null) =>
-    request<Customer>(`/api/customers/${id}`, { method: "PATCH", body: JSON.stringify({ alias }) }),
+  updateCustomer: (id: string, payload: { customer_known_name: string; phone?: string }) =>
+    request<Customer>(`/api/customers/${id}`, { method: "PUT", body: JSON.stringify(payload) }),
 
   agendamentos: () => request<Agendamento[]>("/api/agendamentos"),
   createAgendamento: (payload: { service_id: string; start_time: string; customer_id: string }) =>

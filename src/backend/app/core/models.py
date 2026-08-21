@@ -95,10 +95,11 @@ class Customer(Base):
     # migration backfill's fallback key for phone-less legacy users
     # ("legacy-" + a UUID) is 43 chars — see 0005_add_customers.py.
     phone: Mapped[str] = mapped_column(String(50), nullable=False)
-    name: Mapped[str] = mapped_column(String(150), nullable=False)
-    # Admin-set label for a customer they know by another name — independent
-    # of, and never auto-overwritten by, the name the customer books under.
-    alias: Mapped[str | None] = mapped_column(String(150), nullable=True)
+    # Set once, from whatever the customer typed at their first booking under
+    # this phone number — later bookings from the same phone never overwrite
+    # it (see repository.py::upsert_by_phone, ON CONFLICT DO NOTHING). Staff
+    # can still rename it via PUT /api/customers/{id}.
+    customer_known_name: Mapped[str] = mapped_column(String(150), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
 
@@ -181,11 +182,7 @@ class Agendamento(Base):
     # _with_relations), never trigger a lazy load.
     @property
     def customer_name(self) -> str:
-        return self.customer.name
-
-    @property
-    def customer_alias(self) -> str | None:
-        return self.customer.alias
+        return self.customer.customer_known_name
 
     @property
     def customer_phone(self) -> str | None:

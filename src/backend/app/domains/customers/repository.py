@@ -13,29 +13,44 @@ async def fetch_by_id(db: AsyncSession, tenant_id: uuid.UUID, customer_id: uuid.
 
 
 async def list_for_tenant(db: AsyncSession, tenant_id: uuid.UUID) -> list[Customer]:
-    stmt = select(Customer).where(Customer.tenant_id == tenant_id).order_by(Customer.name)
+    stmt = select(Customer).where(Customer.tenant_id == tenant_id).order_by(Customer.customer_known_name)
     return list((await db.execute(stmt)).scalars().all())
 
 
 async def upsert_by_phone(db: AsyncSession, tenant_id: uuid.UUID, phone: str, name: str) -> Customer:
-    """Atomic find-or-create keyed on (tenant_id, phone) — most-recent name
-    wins on conflict. Uses INSERT ... ON CONFLICT DO UPDATE rather than
-    select-then-insert so two near-simultaneous bookings from a phone number
-    seen for the first time can't race into duplicate Customer rows."""
+    """Atomic find-or-create keyed on (tenant_id, phone) — the name is only
+    ever written on first insert. Uses INSERT ... ON CONFLICT DO NOTHING
+    rather than select-then-insert so two near-simultaneous bookings from a
+    phone number seen for the first time can't race into duplicate Customer
+    rows; on conflict we fall back to a plain SELECT since DO NOTHING returns
+    no row."""
     stmt = (
         pg_insert(Customer)
-        .values(tenant_id=tenant_id, phone=phone, name=name)
-        .on_conflict_do_update(
-            constraint="uq_customers_tenant_id_phone",
-            set_={"name": name},
-        )
+        .values(tenant_id=tenant_id, phone=phone, customer_known_name=name)
+        .on_conflict_do_nothing(constraint="uq_customers_tenant_id_phone")
         .returning(Customer)
     )
     result = await db.execute(stmt)
+    customer = result.scalar_one_or_none()
+    if customer is None:
+        stmt = select(Customer).where(Customer.tenant_id == tenant_id, Customer.phone == phone)
+        customer = (await db.execute(stmt)).scalar_one()
     await db.commit()
-    return result.scalar_one()
+    return customer
 
 
-async def save(db: AsyncSession, customer: Customer) -> None:
+async def update(
+    db: AsyncSession, tenant_id: uuid.UUID, customer_id: uuid.UUID, name: str, phone: str | None
+) -> Customer | None:
+    """phone=None leaves the stored phone alone (see schemas.py::CustomerUpdate)
+    — the caller is responsible for catching the IntegrityError a colliding
+    phone raises on commit (uq_customers_tenant_id_phone)."""
+    customer = await fetch_by_id(db, tenant_id, customer_id)
+    if customer is None:
+        return None
+    customer.customer_known_name = name
+    if phone is not None:
+        customer.phone = phone
     await db.commit()
     await db.refresh(customer)
+    return customer
