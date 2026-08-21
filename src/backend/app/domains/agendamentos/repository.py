@@ -48,10 +48,15 @@ async def mark_notified(db: AsyncSession, agendamento: Agendamento, notified_at:
     await db.commit()
 
 
-async def list_status_history(db: AsyncSession, agendamento_id: uuid.UUID) -> list[AgendamentoStatusHistory]:
+async def list_status_history(
+    db: AsyncSession, tenant_id: uuid.UUID, agendamento_id: uuid.UUID
+) -> list[AgendamentoStatusHistory]:
     stmt = (
         select(AgendamentoStatusHistory)
-        .where(AgendamentoStatusHistory.agendamento_id == agendamento_id)
+        .where(
+            AgendamentoStatusHistory.agendamento_id == agendamento_id,
+            AgendamentoStatusHistory.tenant_id == tenant_id,
+        )
         .order_by(AgendamentoStatusHistory.changed_at)
     )
     return list((await db.execute(stmt)).scalars().all())

@@ -122,6 +122,6 @@ async def mark_notified(db: AsyncSession, current_user: User, agendamento_id: uu
 async def get_status_history(db: AsyncSession, current_user: User, agendamento_id: uuid.UUID) -> list[dict]:
     agendamento = await get_agendamento(db, current_user.tenant_id, agendamento_id)
     entries = [{"from_status": None, "to_status": "pending", "changed_at": agendamento.created_at}]
-    history = await repository.list_status_history(db, agendamento_id)
+    history = await repository.list_status_history(db, current_user.tenant_id, agendamento_id)
     entries.extend({"from_status": h.from_status, "to_status": h.to_status, "changed_at": h.changed_at} for h in history)
     return entries
