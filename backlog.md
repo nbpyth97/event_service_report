@@ -95,3 +95,9 @@ missing toast notifications for sucess/failed operations
  - Por hora não.
 - Servidor está no brasil
  - Depois mudar para europa
+
+### Security 
+- Password policy? MFA? (Up to debate)
+  - Obrigar a senha a ser minimo dificil com frontend validatiion as user types and backend validation as well
+  - Ou ao menos adicionar MFA
+  - Ver como ta a parte de hashing da senha se ja ta adicionando salt e pepper
