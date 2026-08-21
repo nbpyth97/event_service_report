@@ -109,6 +109,7 @@ class AgendamentoOut(BaseModel):
     end_time: datetime
     status: BookingStatus
     notified_at: datetime | None
+    notes: str | None
     customer_name: str
     customer_known_name: str
     customer_phone: str | None
@@ -163,6 +164,7 @@ class PublicBookingCreate(BaseModel):
     start_time: datetime
     name: str = Field(min_length=1, max_length=150)
     phone: str = Field(min_length=1, max_length=30)
+    notes: str | None = Field(default=None, max_length=500)
 
     _validate_phone = field_validator("phone")(_validate_phone_digits)
 

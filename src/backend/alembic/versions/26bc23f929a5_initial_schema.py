@@ -10,6 +10,12 @@ reflected DB and can never emit a CREATE EXTENSION on its own, but
 ex_agendamentos_no_overlap's GIST index needs the extension's operator
 classes to exist before this revision's CREATE TABLE runs.
 
+agendamentos.notes (nullable, 500 chars — the customer's free-text note from
+public booking) was folded in here too, re-squashing what was briefly its own
+follow-up revision (a1f3c9d7e824) — same rationale as above: still no
+production data, so there's nothing that stepwise revision needed to
+preserve either.
+
 Revision ID: 26bc23f929a5
 Revises: 0001
 Create Date: 2026-08-21
@@ -102,6 +108,7 @@ def upgrade() -> None:
     sa.Column('end_time', sa.DateTime(timezone=True), nullable=False),
     sa.Column('status', sa.String(length=20), nullable=False),
     sa.Column('customer_name', sa.String(length=150), nullable=False),
+    sa.Column('notes', sa.String(length=500), nullable=True),
     sa.Column('notified_at', sa.DateTime(timezone=True), nullable=True),
     sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
     sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False),

@@ -18,6 +18,7 @@ Usage: uv run python -m app.scripts.seed_calendar_demo
 """
 
 import asyncio
+import random
 from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
@@ -37,7 +38,7 @@ from app.core.models import (
 from app.domains.agendamentos import repository as agendamentos_repository
 from app.domains.agendamentos import service as agendamentos_service
 from app.domains.notifications import service as notifications_service
-from app.scripts.seed import COMPANY_NAME
+from app.scripts.seed import COMPANY_NAME, SAMPLE_NOTES
 
 TZ = ZoneInfo("Europe/Lisbon")
 
@@ -129,6 +130,7 @@ async def seed_calendar_demo() -> None:
                 end_time=start_time + timedelta(minutes=service.duration_min),
                 status=BookingStatus.PENDING.value,
                 customer_name=customer.customer_known_name,
+                notes=random.choice(SAMPLE_NOTES) if random.random() < 0.5 else None,
             )
             await agendamentos_repository.insert(db, agendamento)
             agendamento = await agendamentos_service.get_agendamento(db, company.id, agendamento.id)

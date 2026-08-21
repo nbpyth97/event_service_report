@@ -22,6 +22,7 @@ async def create_agendamento(
     start_time: datetime,
     customer_name: str,
     created_by: uuid.UUID | None = None,
+    notes: str | None = None,
 ) -> Agendamento:
     """created_by is the staff member creating this on the admin manual-
     appointment path, or None for a customer's own anonymous booking (see
@@ -29,7 +30,9 @@ async def create_agendamento(
     (customer_id is). customer_name is a one-time snapshot for this booking's
     correspondence (see models.py::Agendamento.customer_name) — the caller
     decides what that name is (typed at submission for a public booking,
-    customer_known_name as-of-now for a staff-created one)."""
+    customer_known_name as-of-now for a staff-created one). notes is the
+    customer's free-text note from the public booking form, if any — normalized
+    to None (never "") so callers can rely on a falsy check."""
     service = await get_service(db, tenant_id, service_id)
     end_time = start_time + timedelta(minutes=service.duration_min)
 
@@ -49,6 +52,7 @@ async def create_agendamento(
         end_time=end_time,
         status=BookingStatus.PENDING.value,
         customer_name=customer_name.strip(),
+        notes=notes.strip() or None if notes else None,
     )
     try:
         await repository.insert(db, agendamento)

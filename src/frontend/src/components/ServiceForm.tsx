@@ -7,6 +7,10 @@ export default function ServiceForm() {
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
   const [durationMin, setDurationMin] = useState("");
+  // See CustomerEditModal.tsx for why: neither autocomplete="off" nor
+  // "new-password" alone stops Chrome/Android's autofill accessory strip —
+  // loading readOnly and lifting that only on focus is the remaining lever.
+  const [nameLocked, setNameLocked] = useState(true);
   const createService = useCreateService();
 
   const handleSubmit = (e: FormEvent) => {
@@ -29,7 +33,12 @@ export default function ServiceForm() {
             aria-label="Nome do serviço"
             placeholder="Ex.: Manicure"
             value={name}
+            readOnly={nameLocked}
+            onFocus={() => setNameLocked(false)}
             autoComplete="off"
+            data-lpignore="true"
+            data-1p-ignore
+            name="cf-svc-name"
             onChange={(e) => setName(e.target.value)}
             required
           />

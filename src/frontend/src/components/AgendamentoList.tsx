@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { CheckCircle2, MessageCircle, XCircle } from "lucide-react";
+import { CheckCircle2, MessageCircle, StickyNote, XCircle } from "lucide-react";
 import type { Agendamento } from "@/api/client";
 import { useUpdateAgendamentoStatus } from "@/hooks/queries";
 import { useToast } from "@/lib/toast";
@@ -120,7 +120,14 @@ function AppointmentRow({
               </a>
             )}
           </span>
-          <span className="appt-row-secondary">{agendamento.service_name}</span>
+          <span className="appt-row-secondary-line">
+            <span className="appt-row-secondary">{agendamento.service_name}</span>
+            {agendamento.notes && (
+              <span className="appt-row-notes-flag" title={agendamento.notes} aria-hidden="true">
+                <StickyNote size={12} />
+              </span>
+            )}
+          </span>
         </div>
         <div className="appt-row-meta">
           <span className="appt-row-price">{fmtPrice(agendamento.service_price)}</span>

@@ -21,11 +21,16 @@ import AgendamentosPage from "@/pages/AgendamentosPage";
 import CustomersPage from "@/pages/CustomersPage";
 import CompanySettingsPage from "@/pages/CompanySettingsPage";
 
+// Ordered by how often staff reach for each during a working day, not by
+// how they were built — Agendamentos and Clientes are the constant-contact
+// tools during active bookings, so they sit in the easiest thumb reach on
+// the left; Serviços (setup) and Painel (a periodic overview, not a
+// workflow) trail toward the edge.
 const NAV_ITEMS = [
-  { to: "/", label: "Painel", icon: LayoutGrid, end: true },
-  { to: "/agendamentos", label: "Agendamentos", icon: CalendarCheck, end: false },
-  { to: "/servicos", label: "Serviços", icon: Briefcase, end: false },
+  { to: "/agendamentos", label: "Marcações", icon: CalendarCheck, end: false },
   { to: "/clientes", label: "Clientes", icon: Users, end: false },
+  { to: "/servicos", label: "Serviços", icon: Briefcase, end: false },
+  { to: "/", label: "Painel", icon: LayoutGrid, end: true },
 ];
 
 function AppShell() {
@@ -53,12 +58,8 @@ function AppShell() {
           </span>
         </div>
         <div className="app-nav-account">
-          <StartingSoonIndicator />
           <NotificationBell />
-          {/* The only entry point to company settings, plus logout —
-              deliberately not in NAV_ITEMS, since the bottom nav is for the
-              four day-to-day surfaces and this cluster is visited rarely. */}
-          {user && <ProfileMenu userName={user.name} onLogout={() => void logout()} />}
+          <StartingSoonIndicator />
         </div>
       </header>
       <main id="main-content" tabIndex={-1}>
@@ -72,6 +73,9 @@ function AppShell() {
             <span>{label}</span>
           </NavLink>
         ))}
+        {/* Settings + logout, not a route of its own — see ProfileMenu.tsx
+            for why it sits here instead of the top-right corner. */}
+        {user && <ProfileMenu userName={user.name} onLogout={() => void logout()} />}
       </nav>
     </div>
   );

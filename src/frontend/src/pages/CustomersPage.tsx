@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Plus } from "lucide-react";
 import CustomerRow from "@/components/CustomerRow";
-import NewCustomerForm from "@/components/NewCustomerForm";
+import NewCustomerModal from "@/components/NewCustomerModal";
 import SearchFilterInput from "@/components/SearchFilterInput";
 import { useAgendamentos, useCustomers } from "@/hooks/queries";
 
@@ -36,16 +36,14 @@ export default function CustomersPage() {
     <div className="page">
       <div className="page-header-row">
         <h1>Clientes</h1>
-        {!addingCustomer && (
-          <button type="button" className="agendamentos-new-link customers-page-add-btn" onClick={() => setAddingCustomer(true)}>
-            <Plus size={15} aria-hidden="true" />
-            Adicionar cliente
-          </button>
-        )}
+        <button type="button" className="agendamentos-new-link customers-page-add-btn" onClick={() => setAddingCustomer(true)}>
+          <Plus size={15} aria-hidden="true" />
+          Adicionar Cliente
+        </button>
       </div>
 
       {addingCustomer && (
-        <NewCustomerForm onCreated={() => setAddingCustomer(false)} onCancel={() => setAddingCustomer(false)} />
+        <NewCustomerModal onCreated={() => setAddingCustomer(false)} onClose={() => setAddingCustomer(false)} />
       )}
 
       <SearchFilterInput

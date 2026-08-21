@@ -11,9 +11,12 @@ import { setDisplayTimeZone } from "@/lib/tz";
 import { formatPhonePT, validatePhoneDigits } from "@/lib/format";
 import Button from "@/components/Button";
 
+const NOTES_MAX_LENGTH = 500;
+
 interface BookingFormValues {
   name: string;
   phone: string;
+  notes: string;
 }
 
 // The only unauthenticated booking path — no account, no password, just
@@ -51,8 +54,11 @@ export default function PublicBookingPage() {
     control,
     register,
     handleSubmit,
+    watch,
     formState: { errors },
-  } = useForm<BookingFormValues>({ defaultValues: { name: "", phone: "" } });
+  } = useForm<BookingFormValues>({ defaultValues: { name: "", phone: "", notes: "" } });
+
+  const notesLength = watch("notes")?.length ?? 0;
 
   if (!slug) {
     return (
@@ -97,6 +103,7 @@ export default function PublicBookingPage() {
           start_time: selectedSlot,
           name: values.name.trim(),
           phone: values.phone.trim(),
+          notes: values.notes.trim() || undefined,
         },
       },
       { onSuccess: () => { showSuccess("Marcação enviada!"); setDone(true); } }
@@ -195,6 +202,23 @@ export default function PublicBookingPage() {
                 </div>
                 {errors.phone && <p className="form-error" role="alert">{errors.phone.message}</p>}
                 <p className="auth-field-hint">Usado pelo salão para confirmar a sua marcação.</p>
+              </div>
+
+              <div className="auth-field">
+                <label className="auth-label" htmlFor="public-booking-notes">
+                  Nota para o salão (opcional)
+                </label>
+                <textarea
+                  id="public-booking-notes"
+                  className="booking-notes-input"
+                  rows={2}
+                  maxLength={NOTES_MAX_LENGTH}
+                  placeholder="Alguma preferência ou informação para a equipa?"
+                  {...register("notes")}
+                />
+                <p className="auth-field-hint booking-notes-count">
+                  {notesLength}/{NOTES_MAX_LENGTH}
+                </p>
               </div>
 
               <Button type="submit" disabled={publicBook.isPending}>

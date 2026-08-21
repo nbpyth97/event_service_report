@@ -31,6 +31,10 @@ function EditServiceForm({ service, onDone }: { service: Service; onDone: () => 
   const [name, setName] = useState(service.name);
   const [price, setPrice] = useState(String(service.price));
   const [durationMin, setDurationMin] = useState(String(service.duration_min));
+  // See CustomerEditModal.tsx for why: neither autocomplete="off" nor
+  // "new-password" alone stops Chrome/Android's autofill accessory strip —
+  // loading readOnly and lifting that only on focus is the remaining lever.
+  const [nameLocked, setNameLocked] = useState(true);
   const updateService = useUpdateService();
   const { showSuccess } = useToast();
 
@@ -56,7 +60,12 @@ function EditServiceForm({ service, onDone }: { service: Service; onDone: () => 
           <input
             aria-label="Nome do serviço"
             value={name}
+            readOnly={nameLocked}
+            onFocus={() => setNameLocked(false)}
             autoComplete="off"
+            data-lpignore="true"
+            data-1p-ignore
+            name="cf-svc-name-edit"
             onChange={(e) => setName(e.target.value)}
             required
           />

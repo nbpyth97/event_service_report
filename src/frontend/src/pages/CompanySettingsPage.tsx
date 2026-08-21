@@ -148,7 +148,7 @@ function PublicLinkCard({ company }: { company: Company }) {
   return (
     <section className="settings-section settings-link-card">
       <p className="settings-section-title">
-        <Link2 size={13} aria-hidden="true" /> Ligação pública
+        <Link2 size={13} aria-hidden="true" /> Link público
       </p>
       <p className="muted settings-link-lead">Os seus clientes podem fazer marcações em:</p>
       {/* Rendered as a link, not a read-only input: an input field invites
@@ -282,6 +282,7 @@ function SettingsForm({ company }: { company: Company }) {
               maxLength={200}
               autoComplete="organization"
               aria-invalid={Boolean(errors.name)}
+              disabled
               {...register("name", {
                 required: "Indique o nome da empresa.",
                 validate: (v) => v.trim().length > 0 || "Indique o nome da empresa.",
@@ -289,6 +290,7 @@ function SettingsForm({ company }: { company: Company }) {
               })}
             />
           </div>
+          <p className="muted settings-meta">Contacte o suporte para alterar o nome da empresa.</p>
           {errors.name && (
             <p className="form-error settings-field-error" role="alert">
               {errors.name.message}

@@ -23,6 +23,7 @@ export default function SearchFilterInput({
   ariaLabel: string;
 }) {
   const [draft, setDraft] = useState(value);
+  const [locked, setLocked] = useState(true);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Stay in sync when the parent resets the filter from outside (e.g. a
@@ -58,9 +59,22 @@ export default function SearchFilterInput({
         value={draft}
         onChange={(e) => handleChange(e.target.value)}
         aria-label={ariaLabel}
+        // Neither autocomplete="off" nor "new-password" alone stopped
+        // Chrome/Android's autofill accessory strip (passkey/payment/
+        // address icons) on this field — it's decided at the browser's
+        // initial DOM scan, before any attribute-based opt-out is read as
+        // authoritative. Loading the field readOnly and only lifting that
+        // on focus (autofill only attaches to fields it sees as editable
+        // during that scan) is the remaining lever; combined with the
+        // suppression attributes below in case the browser rescans later.
+        readOnly={locked}
+        onFocus={() => setLocked(false)}
         autoComplete="off"
         autoCorrect="off"
         spellCheck={false}
+        name="cf-search"
+        data-lpignore="true"
+        data-1p-ignore
       />
       {draft && (
         <button type="button" className="search-filter-input-clear" onClick={clear} aria-label="Limpar filtro">

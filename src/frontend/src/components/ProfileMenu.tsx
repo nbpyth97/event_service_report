@@ -9,8 +9,13 @@ function initialsOf(name: string): string {
   return (first + last).toUpperCase();
 }
 
-// Nests settings + logout under the avatar instead of exposing each as its
-// own top-bar icon — same fixed/centered popover shell as
+// Lives in the bottom nav, not the top-right corner — sitting there put it
+// shoulder-to-shoulder with the reminder/notification icons, which are
+// separate concerns (things happening now, not "my account") and only need
+// each other for breathing room. As a bottom-nav item it gets the same
+// dedicated flex slot as Painel/Agendamentos/etc, no risk of a fat-fingered
+// tap landing on the wrong icon. Nests settings + logout under it instead of
+// exposing each as its own control — same fixed/centered popover shell as
 // NotificationBell/StartingSoonIndicator (see .reminder-panel's comment for
 // why: readable and never runs off-screen on a narrow phone), just with a
 // short menu instead of a scrollable list. Theme lives on the settings page
@@ -30,14 +35,16 @@ export default function ProfileMenu({
     <div className="profile-menu">
       <button
         type="button"
-        className="app-nav-avatar"
+        className="bottom-nav-profile"
         onClick={() => setOpen((v) => !v)}
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label={`Menu de ${userName}`}
-        title={userName}
       >
-        {initialsOf(userName)}
+        <span className="app-nav-avatar bottom-nav-avatar" aria-hidden="true">
+          {initialsOf(userName)}
+        </span>
+        <span>Perfil</span>
       </button>
       {open && (
         <>

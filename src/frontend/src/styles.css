@@ -35,6 +35,12 @@
      --color-pending or --color-accent, so it never picks up their semantics. */
   --color-brand: #ea580c;
 
+  /* Reminders badge (StartingSoonIndicator) — a lighter, more saturated
+     orange than --color-pending's dark amber, so the "starting soon" count
+     reads as visually distinct from the notification bell's red badge
+     right next to it, not just a muted variant of the same color. */
+  --color-reminder: #f97316;
+
   --color-dot: #dcdce0;
   --color-skeleton-base: #eee;
   --color-skeleton-highlight: #f5f5f5;
@@ -70,6 +76,7 @@
   --color-accent-soft: #362c14;
 
   --color-brand: #fb923c;
+  --color-reminder: #fb923c;
 
   --color-dot: #29283333;
   --color-skeleton-base: #26252f;
@@ -153,7 +160,7 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 0.4rem;
-  padding: 0.5rem 0.6rem;
+  padding: 0.5rem 1rem;
   background: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
 }
@@ -161,7 +168,7 @@ body {
 @media (min-width: 480px) {
   .app-topbar {
     gap: 0.6rem;
-    padding: 0.6rem 1rem;
+    padding: 0.6rem 1.25rem;
   }
 }
 
@@ -245,25 +252,51 @@ body {
   padding-bottom: calc(64px + env(safe-area-inset-bottom));
 }
 
-/* Three controls now that theme/settings/logout live inside ProfileMenu
-   (reminders, notifications, avatar) — generous whitespace reads as three
-   distinct destinations without the vertical-pipe dividers this row used
-   to lean on. */
+/* Just the two "happening now" controls (reminders, notifications) — the
+   account/profile cluster moved to the bottom nav (see ProfileMenu.tsx), so
+   this row no longer needs generous whitespace standing in for a third,
+   unrelated destination. Tight gap reads as one cluster. */
 .app-nav-account {
   display: flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.2rem;
   flex-shrink: 0;
-}
-
-@media (min-width: 480px) {
-  .app-nav-account {
-    gap: 0.75rem;
-  }
 }
 
 .profile-menu {
   position: relative;
+  flex: 1;
+  display: flex;
+}
+
+.bottom-nav-profile {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 8px 0 10px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--color-muted);
+  opacity: 0.7;
+  font-size: 0.72rem;
+  font-family: inherit;
+  min-height: var(--touch-min);
+}
+
+.bottom-nav-profile[aria-expanded="true"] {
+  color: var(--color-primary);
+  opacity: 1;
+  font-weight: 600;
+}
+
+.bottom-nav-avatar {
+  width: 22px;
+  height: 22px;
+  font-size: 0.62rem;
 }
 
 .app-nav-avatar {
@@ -283,8 +316,8 @@ body {
   cursor: pointer;
 }
 
-.app-nav-avatar:hover,
-.app-nav-avatar[aria-expanded="true"] {
+.bottom-nav-profile:hover .app-nav-avatar,
+.bottom-nav-profile[aria-expanded="true"] .app-nav-avatar {
   background: var(--color-primary);
   color: var(--color-surface);
 }
@@ -587,7 +620,7 @@ body {
    .ledger-header-status-alert), so the two live indicators read as related
    but distinct at a glance. */
 .starting-soon-badge {
-  background: var(--color-pending);
+  background: var(--color-reminder);
 }
 
 .page {
@@ -750,6 +783,20 @@ body {
   margin: 0;
   font-size: 0.75rem;
   color: var(--color-muted);
+}
+
+.booking-notes-input {
+  padding: 0.6rem;
+  font-size: 0.95rem;
+  font-family: inherit;
+  border-radius: 6px;
+  border: 1px solid var(--color-border);
+  resize: vertical;
+  min-height: 2.5rem;
+}
+
+.booking-notes-count {
+  align-self: flex-end;
 }
 
 /* Password show/hide toggle — a plain flex child of .service-form-input-wrap
@@ -2690,12 +2737,20 @@ button:disabled {
   text-transform: capitalize;
 }
 
+.appt-row-secondary-line {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
 .appt-row-secondary {
   font-size: 0.82rem;
   color: var(--color-muted);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  min-width: 0;
 }
 
 .appt-row-meta {
@@ -2763,6 +2818,28 @@ button:disabled {
   padding: 0.75rem 0.9rem;
 }
 
+.modal-notes-card {
+  background: var(--color-bg);
+  border-radius: var(--radius-card);
+  padding: 0.75rem 0.9rem;
+}
+
+.modal-notes-label {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0 0 0.3rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-muted);
+}
+
+.modal-notes-text {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 /* Right-aligned, auto-width buttons — anchored under the price/status
    column instead of centered, which left awkward empty space on both
    sides on wider cards. */
@@ -2827,6 +2904,12 @@ button:disabled {
   margin: -2px;
 }
 
+.appt-row-notes-flag {
+  display: inline-flex;
+  flex-shrink: 0;
+  color: var(--color-muted);
+}
+
 .appt-row-name-line {
   display: flex;
   align-items: center;
@@ -2838,76 +2921,18 @@ button:disabled {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 2px;
-  margin: -2px;
+  width: 28px;
+  height: 28px;
   color: var(--color-muted);
   background: transparent;
   border: none;
+  border-radius: 6px;
   flex-shrink: 0;
 }
 
 .name-editor-trigger:hover {
   color: var(--color-primary);
-}
-
-.name-editor {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  min-width: 0;
-}
-
-.name-editor-input {
-  min-width: 0;
-  width: 11rem;
-  max-width: 40vw;
-  font-size: 0.85rem;
-  padding: 0.2rem 0.4rem;
-  border: 1px solid var(--color-primary);
-  border-radius: 6px;
-  background: var(--color-surface);
-  color: var(--color-ink);
-}
-
-.name-editor-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  flex-shrink: 0;
-  padding: 0;
-  color: var(--color-muted);
-  background: transparent;
-  border: none;
-}
-
-.name-editor-btn:hover {
-  color: var(--color-ink);
   background: var(--color-bg);
-  border-radius: 6px;
-}
-
-/* CustomerRow: the phone display and its edit trigger sit together, right
-   where the phone normally reads — editing swaps the text for an input in
-   place rather than opening a panel elsewhere on the row. */
-.customers-page-row-phone-field {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  flex-shrink: 0;
-}
-
-.customers-page-row-edit-actions {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.15rem;
-  flex-shrink: 0;
-}
-
-.customers-page-row-error {
-  flex-basis: 100%;
-  font-size: 0.78rem;
 }
 
 .appt-row-status-line {
@@ -3317,99 +3342,139 @@ button:disabled {
   gap: 0.5rem;
 }
 
-.customers-page-row {
+/* Each customer is three stacked lines — name, phone, actions — not one
+   crammed horizontal row. See CustomerRow.tsx's top comment for why: a
+   single line forced long names to truncate and shrank every tap target. */
+.customer-card {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.75rem;
+  flex-direction: column;
+  gap: 0.5rem;
   background: var(--color-surface);
   border-radius: var(--radius-card);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
-  padding: 0.75rem 0.9rem;
+  padding: 0.85rem 0.9rem;
 }
 
-.customers-page-row-identity {
+.customer-card-top {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.customer-card-name {
   flex: 1;
   min-width: 0;
+  font-weight: 600;
+  font-size: 1rem;
+  overflow-wrap: break-word;
+}
+
+.customer-card-phone {
   display: flex;
   align-items: center;
   gap: 0.4rem;
-}
-
-.customers-page-row-name {
-  font-weight: 600;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.customers-page-row-phone {
   color: var(--color-muted);
   font-family: var(--font-mono);
-  font-size: 0.82rem;
-  flex-shrink: 0;
+  font-size: 0.85rem;
 }
 
-.customers-page-row-count {
+/* CustomerEditModal's form — same column/gap rhythm as
+   .customer-picker-add-form's name+phone fields. */
+.customer-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.customer-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 0.75rem;
+  padding-top: 0.15rem;
+}
+
+.customer-card-count-badge {
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
+  padding: 0.4rem 0.7rem;
+  border-radius: 999px;
+  background: var(--color-bg);
   color: var(--color-muted);
-  font-size: 0.78rem;
-  flex-shrink: 0;
+  font-size: 0.8rem;
+  font-weight: 500;
   white-space: nowrap;
 }
 
-/* Only bookings-count links to Agendamentos (empty "Sem marcações" stays
-   plain text — nothing useful to jump to) — primary color + hover fill
-   signal it's a real navigation control, not just a stat label. */
-.customers-page-row-count-link {
-  color: var(--color-primary);
-  font-weight: 600;
-  padding: 0.25rem 0.5rem;
-  margin: -0.25rem -0.5rem;
-  border-radius: 6px;
+/* Only bookings-count links to Agendamentos (empty "Sem marcações" stays a
+   plain, unpilled chip — nothing useful to jump to). A neutral tint chip +
+   trailing chevron reads as "tap to filter", not a raw hyperlink — the
+   count itself doesn't need primary color to be legible as a link. */
+.customer-card-count-link {
+  color: var(--color-ink);
 }
 
-.customers-page-row-count-link:hover,
-.customers-page-row-count-link:focus-visible {
-  background: var(--color-primary-soft);
+.customer-card-count-link svg:last-child {
+  color: var(--color-muted);
+}
+
+.customer-card-count-link:hover,
+.customer-card-count-link:focus-visible {
+  background: var(--color-border);
 }
 
 /* .agendamentos-new-link is normally a <Link> (no default chrome to
    fight) — here it's a real <button>, which the global button rule paints
    with a solid primary background, so it needs its own reset (same trap as
    .back-link had before it got one). */
+/* Solid primary, not the soft-tint pill cards like .customer-card-new-appt-btn
+   use — this is the page-level "create a new entity" action, not a secondary
+   action inside a card, and sharing the soft tint made it read as one of the
+   card buttons rather than a header-level control. */
 .customers-page-add-btn {
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
-  background: none;
+  gap: 0.35rem;
+  background: var(--color-primary);
+  color: #fff;
   border: none;
-  padding: 0;
+  border-radius: 8px;
+  padding: 0.5rem 0.85rem;
   font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
   cursor: pointer;
 }
 
-/* Icon-only "nova marcação for this customer" — same circular hover
-   treatment as .name-editor-trigger, but primary-colored since it's a
-   create action rather than an edit affordance. */
-.customers-page-row-new-appt {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  color: var(--color-primary);
-  background: none;
+.customers-page-add-btn:hover,
+.customers-page-add-btn:focus-visible {
+  opacity: 0.9;
 }
 
-.customers-page-row-new-appt:hover,
-.customers-page-row-new-appt:focus-visible {
+/* Labeled "Nova marcação" pill, not an icon-only circle — the identity
+   line above already keeps the name/edit affordances legible on their own
+   line, so there's room to spell the action out and grow the tap target
+   past a 26px circle. */
+.customer-card-new-appt-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+  padding: 0.45rem 0.75rem;
+  border-radius: 999px;
   background: var(--color-primary-soft);
+  color: var(--color-primary);
+  font-size: 0.82rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.customer-card-new-appt-btn:hover,
+.customer-card-new-appt-btn:focus-visible {
+  background: var(--color-primary);
+  color: #fff;
 }
 
 
@@ -3549,8 +3614,9 @@ button:disabled {
 .settings-day-main {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   justify-content: space-between;
-  gap: 0.5rem;
+  gap: 0.15rem 0.5rem;
   min-height: var(--touch-min);
 }
 
@@ -3587,6 +3653,20 @@ button:disabled {
   font-family: var(--font-mono);
   font-size: 0.85rem;
   color: var(--color-ink);
+}
+
+/* Below ~480px, the day label + both time inputs no longer fit on one line
+   — space-between used to just squeeze everything down to min-content,
+   wrapping the label mid-word ("Terça-\nfeira") while the close-time input
+   got pushed past the card edge and clipped instead of wrapping. Forcing
+   the times onto their own full-width row (flex-basis: 100%) gives the
+   label room to render on one line and gives the time inputs room to render
+   at full size, right-aligned to match the "Encerrado" rows above/below. */
+@media (max-width: 480px) {
+  .settings-day-times {
+    flex-basis: 100%;
+    justify-content: flex-end;
+  }
 }
 
 .settings-day-times input[aria-invalid="true"] {

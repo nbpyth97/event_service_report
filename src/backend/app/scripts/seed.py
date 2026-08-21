@@ -8,6 +8,7 @@ name, not slug: registration now auto-generates the slug from company_name
 """
 
 import asyncio
+import random
 from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
@@ -56,6 +57,17 @@ SERVICES = [
 ]
 
 CUSTOMERS = [("Maria", "+351911111001"), ("Joana", "+351911111002"), ("Inês", "+351911111003")]
+
+# Sampled onto roughly half the seeded bookings (see the None entries mixed
+# in below) — most real public bookings don't carry a note, so an all-or-
+# nothing fixture set would misrepresent how the UI actually looks day to day.
+SAMPLE_NOTES = [
+    "Trazer amostra da cor pretendida",
+    "Prefiro que seja a Ana a atender",
+    "Alergia a produtos com amoníaco",
+    "Primeira vez, por favor explicar o procedimento",
+    "Chego uns minutos atrasada",
+]
 
 COMPANY_NAME = "Salão Anabela"
 DEFAULT_PASSWORD = "changeme123"
@@ -125,6 +137,7 @@ async def seed() -> None:
                 end_time=start_time + timedelta(minutes=service.duration_min),
                 status=BookingStatus.PENDING.value,
                 customer_name=customer.customer_known_name,
+                notes=random.choice(SAMPLE_NOTES) if random.random() < 0.5 else None,
             )
             await agendamentos_repository.insert(db, agendamento)
             agendamento = await agendamentos_service.get_agendamento(db, admin.tenant_id, agendamento.id)

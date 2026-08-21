@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { Phone, User } from "lucide-react";
 import type { Customer } from "@/api/client";
@@ -24,6 +25,12 @@ export default function NewCustomerForm({
   onCancel: () => void;
 }) {
   const createCustomer = useCreateCustomer();
+  // See CustomerEditModal.tsx for why: autocomplete="off"/"new-password"
+  // alone don't stop Chrome/Android's autofill accessory strip on these
+  // fields — loading each readOnly and lifting that only on focus is the
+  // remaining lever.
+  const [nameLocked, setNameLocked] = useState(true);
+  const [phoneLocked, setPhoneLocked] = useState(true);
   const {
     control,
     register,
@@ -45,12 +52,17 @@ export default function NewCustomerForm({
   };
 
   return (
-    <form className="customer-picker-add-form" onSubmit={handleSubmit(onSubmit)} noValidate>
+    <form className="customer-picker-add-form" onSubmit={handleSubmit(onSubmit)} noValidate autoComplete="new-password">
       <div className="service-form-input-wrap">
         <User size={16} aria-hidden="true" />
         <input
           placeholder="Nome"
           autoFocus
+          readOnly={nameLocked}
+          onFocus={() => setNameLocked(false)}
+          autoComplete="off"
+          data-lpignore="true"
+          data-1p-ignore
           maxLength={150}
           aria-invalid={Boolean(errors.name)}
           {...register("name", {
@@ -58,6 +70,7 @@ export default function NewCustomerForm({
             validate: (v) => v.trim().length > 0 || "Indique o nome.",
             setValueAs: (v: string) => v.trim(),
           })}
+          name="cf-nm"
         />
       </div>
       {errors.name && <p className="form-error" role="alert">{errors.name.message}</p>}
@@ -71,11 +84,16 @@ export default function NewCustomerForm({
           render={({ field }) => (
             <input
               placeholder="351 912 345 678"
-              type="tel"
+              type="text"
               inputMode="tel"
+              readOnly={phoneLocked}
+              onFocus={() => setPhoneLocked(false)}
+              autoComplete="off"
+              data-lpignore="true"
+              data-1p-ignore
               maxLength={16}
               aria-invalid={Boolean(errors.phone)}
-              name={field.name}
+              name="cf-ph"
               ref={field.ref}
               value={field.value}
               onBlur={field.onBlur}

@@ -1,149 +1,65 @@
-import { useState, type KeyboardEvent } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
-import { CalendarCheck, CalendarPlus, Check, Pencil, X } from "lucide-react";
+import { CalendarCheck, CalendarPlus, ChevronRight, Pencil, Phone } from "lucide-react";
 import type { Customer } from "@/api/client";
-import { useUpdateCustomer } from "@/hooks/queries";
-import { fmtPhoneLocalPT, formatPhonePT, validatePhoneDigits } from "@/lib/format";
+import { fmtPhoneLocalPT } from "@/lib/format";
+import CustomerEditModal from "@/components/CustomerEditModal";
 
-// One row of CustomersPage's directory. Editing swaps the name and phone
-// text for inputs right where they already sit (not a floating panel
-// elsewhere on the row) and moves the trigger next to the phone — phone
-// corrections are the common case (a customer mistyping their number), so
-// that's the field the edit affordance should sit beside. Phone validation
-// mirrors the booking forms exactly (same formatPhonePT / validatePhoneDigits)
-// since it's the same identity key on the backend.
+// One card of CustomersPage's directory. Stacked into three lines — name,
+// phone, actions — rather than one crammed horizontal row: squeezing
+// Name + Phone + Edit + Count + Action onto a single line is what forced
+// long names ("Oselinda Francisca…") to truncate on narrow phones, and
+// shrank every tap target in the process. Each line now gets the full card
+// width, so the name never needs an ellipsis and the count/new-appointment
+// controls stay comfortably tappable. The card itself stays static — editing
+// opens CustomerEditModal as a bottom sheet rather than swapping the name/
+// phone lines for inputs in place, which read as visual clutter (double
+// blue outlines, tiny inline checkmarks) in a card this small.
 export default function CustomerRow({ customer, bookingCount }: { customer: Customer; bookingCount: number }) {
   const [editing, setEditing] = useState(false);
-  const [nameValue, setNameValue] = useState(customer.customer_known_name);
-  const [phoneValue, setPhoneValue] = useState(() => formatPhonePT(customer.phone));
-  const [error, setError] = useState<string | null>(null);
-  const updateCustomer = useUpdateCustomer();
-
   const displayName = customer.customer_known_name;
 
-  const startEditing = () => {
-    setNameValue(customer.customer_known_name);
-    setPhoneValue(formatPhonePT(customer.phone));
-    setError(null);
-    setEditing(true);
-  };
-
-  const save = () => {
-    const trimmedName = nameValue.trim();
-    if (!trimmedName) return;
-    const phoneCheck = validatePhoneDigits(phoneValue);
-    if (phoneCheck !== true) {
-      setError(phoneCheck);
-      return;
-    }
-    updateCustomer.mutate(
-      { id: customer.id, customer_known_name: trimmedName, phone: phoneValue },
-      {
-        onSuccess: () => setEditing(false),
-        onError: (err) => setError(err instanceof Error ? err.message : "Não foi possível guardar."),
-      }
-    );
-  };
-
-  const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") save();
-    if (e.key === "Escape") setEditing(false);
-  };
-
   return (
-    <li className="customers-page-row">
-      <div className="customers-page-row-identity">
-        {editing ? (
-          <input
-            className="name-editor-input"
-            value={nameValue}
-            placeholder="Nome do cliente"
-            onChange={(e) => setNameValue(e.target.value)}
-            onKeyDown={onKeyDown}
-          />
-        ) : (
-          <span className="customers-page-row-name">{displayName}</span>
-        )}
+    <li className="customer-card">
+      <div className="customer-card-top">
+        <span className="customer-card-name">{displayName}</span>
+        <button
+          type="button"
+          className="name-editor-trigger"
+          onClick={() => setEditing(true)}
+          aria-label="Editar cliente"
+          title="Editar cliente"
+        >
+          <Pencil size={14} aria-hidden="true" />
+        </button>
       </div>
 
-      <div className="customers-page-row-phone-field">
-        {editing ? (
-          <input
-            className="name-editor-input"
-            value={phoneValue}
-            type="tel"
-            inputMode="tel"
-            maxLength={16}
-            autoFocus
-            placeholder="351 912 345 678"
-            aria-invalid={Boolean(error)}
-            onChange={(e) => {
-              setPhoneValue(formatPhonePT(e.target.value));
-              setError(null);
-            }}
-            onKeyDown={onKeyDown}
-          />
-        ) : (
-          <span className="customers-page-row-phone">{fmtPhoneLocalPT(customer.phone)}</span>
-        )}
-        {!editing && (
-          <button
-            type="button"
-            className="name-editor-trigger"
-            onClick={startEditing}
-            aria-label="Editar cliente"
-            title="Editar cliente"
-          >
-            <Pencil size={12} aria-hidden="true" />
-          </button>
-        )}
+      <div className="customer-card-phone">
+        <Phone size={13} aria-hidden="true" />
+        <span>{fmtPhoneLocalPT(customer.phone)}</span>
       </div>
 
-      {editing ? (
-        <span className="customers-page-row-edit-actions">
-          <button
-            type="button"
-            className="name-editor-btn"
-            onClick={save}
-            disabled={updateCustomer.isPending}
-            aria-label="Guardar cliente"
-          >
-            <Check size={13} aria-hidden="true" />
-          </button>
-          <button type="button" className="name-editor-btn" onClick={() => setEditing(false)} aria-label="Cancelar">
-            <X size={13} aria-hidden="true" />
-          </button>
-        </span>
-      ) : (
-        <>
-          {bookingCount > 0 ? (
-            <Link
-              to={`/agendamentos?person=${encodeURIComponent(displayName)}`}
-              className="customers-page-row-count customers-page-row-count-link"
-              title={`Ver marcações de ${displayName}`}
-            >
-              <CalendarCheck size={13} aria-hidden="true" />
-              {bookingCount} marcaç{bookingCount === 1 ? "ão" : "ões"}
-            </Link>
-          ) : (
-            <span className="customers-page-row-count">Sem marcações</span>
-          )}
+      <div className="customer-card-actions">
+        {bookingCount > 0 ? (
           <Link
-            to={`/servicos?book=1&customerId=${customer.id}`}
-            className="customers-page-row-new-appt"
-            aria-label={`Nova marcação para ${displayName}`}
-            title={`Nova marcação para ${displayName}`}
+            to={`/agendamentos?person=${encodeURIComponent(displayName)}&personId=${customer.id}`}
+            className="customer-card-count-badge customer-card-count-link"
+            title={`Ver marcações de ${displayName}`}
           >
-            <CalendarPlus size={15} aria-hidden="true" />
+            <CalendarCheck size={14} aria-hidden="true" />
+            {bookingCount} marcaç{bookingCount === 1 ? "ão" : "ões"}
+            <ChevronRight size={14} aria-hidden="true" />
           </Link>
-        </>
-      )}
+        ) : (
+          <span className="customer-card-count-badge">Sem marcações</span>
+        )}
+        <Link to={`/servicos?book=1&customerId=${customer.id}`} className="customer-card-new-appt-btn">
+          <CalendarPlus size={15} aria-hidden="true" />
+          Nova Marcação
+        </Link>
+      </div>
 
-      {error && (
-        <span className="form-error customers-page-row-error" role="alert">
-          {error}
-        </span>
-      )}
+      {editing && <CustomerEditModal customer={customer} onClose={() => setEditing(false)} />}
     </li>
   );
 }

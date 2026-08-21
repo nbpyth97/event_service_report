@@ -180,6 +180,11 @@ class Agendamento(Base):
     # typed into the form; for a staff-created one it's customer_known_name
     # as of that moment (see routers/agendamentos.py).
     customer_name: Mapped[str] = mapped_column(String(150), nullable=False)
+    # Free-text note the customer typed at public-booking time (e.g. "trazer
+    # amostra de cor"). Nullable/optional, set once at creation — staff has
+    # no edit path for it, same as customer_name above. NULL, not "", when
+    # not provided (see create_agendamento's .strip() or None).
+    notes: Mapped[str | None] = mapped_column(String(500), nullable=True)
     # Set when staff opens the wa.me link to tell the customer their status —
     # never set automatically by a status change, only by the explicit
     # /notify PATCH the frontend fires alongside opening that link. Purely a

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { CalendarDays, CheckCircle2, Clock, Euro, MessageCircle, User, X, XCircle } from "lucide-react";
+import { CalendarDays, CheckCircle2, Clock, Euro, MessageCircle, StickyNote, User, X, XCircle } from "lucide-react";
 import type { Agendamento } from "@/api/client";
 import { useAgendamentoHistory, useUpdateAgendamentoStatus } from "@/hooks/queries";
 import { useToast } from "@/lib/toast";
@@ -145,6 +145,16 @@ export default function AgendamentoDetailModal({
               <span className="ticket-meta-price">{fmtPriceValue(agendamento.service_price)}</span>
             </div>
           </div>
+
+          {agendamento.notes && (
+            <div className="modal-notes-card">
+              <p className="modal-notes-label">
+                <StickyNote size={13} aria-hidden="true" />
+                Nota do cliente
+              </p>
+              <p className="modal-notes-text">{agendamento.notes}</p>
+            </div>
+          )}
         </div>
 
         {agendamento.status === "pending" && !confirmingDecline && (

@@ -30,6 +30,8 @@ export interface Agendamento {
   // Set by PATCH /notify, fired when staff opens the wa.me status-update
   // link — not a delivery receipt, just "did someone already message them".
   notified_at: string | null;
+  // Free-text note the customer typed at public-booking time, or null.
+  notes: string | null;
   // Snapshot taken at booking time — used ONLY for the WhatsApp bell's
   // greeting text (see NotifyWhatsappLink.tsx), never for on-screen display.
   customer_name: string;
@@ -206,6 +208,9 @@ export const api = {
   publicServices: (slug: string) => request<Service[]>(`/api/public/${slug}/services`),
   publicAvailability: (slug: string, serviceId: string, date: string) =>
     request<Availability>(`/api/public/${slug}/services/${serviceId}/availability?date=${date}`),
-  publicBook: (slug: string, payload: { service_id: string; start_time: string; name: string; phone: string }) =>
+  publicBook: (
+    slug: string,
+    payload: { service_id: string; start_time: string; name: string; phone: string; notes?: string }
+  ) =>
     request<Agendamento>(`/api/public/${slug}/book`, { method: "POST", body: JSON.stringify(payload) }),
 };

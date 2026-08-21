@@ -43,12 +43,22 @@ export default function AgendamentosPage() {
   const [datePreset, setDatePreset] = useState<DatePreset>("week");
   const [dateRange, setDateRange] = useState<DateRange>(() => computePresetRange("week"));
   const [personQuery, setPersonQuery] = useState("");
+  // Set only by the deep-link effect below, from a specific customer's card
+  // — customer_known_name has no uniqueness constraint (see core/models.py),
+  // so two customers can share a name, and filtering the list by that name
+  // as plain text would silently mix their bookings together. An exact
+  // customer_id match is what actually scopes to "this one customer";
+  // personQuery stays the free-text substring search for manual typing.
+  // Any manual edit to the search box (see the SearchFilterInput below)
+  // clears this back to null, handing filtering back to the text search.
+  const [personCustomerId, setPersonCustomerId] = useState<string | null>(null);
   const [defaultsReady, setDefaultsReady] = useState(false);
   const defaultsApplied = useRef(false);
   const [searchParams, setSearchParams] = useSearchParams();
   const [highlightedId, setHighlightedId] = useState<string | null>(null);
   const highlightRequest = searchParams.get("highlight");
   const personRequest = searchParams.get("person");
+  const personIdRequest = searchParams.get("personId");
 
   const pendingCount = agendamentos?.filter((a) => a.status === "pending").length ?? 0;
 
@@ -93,6 +103,10 @@ export default function AgendamentosPage() {
     if (!personRequest) return;
     setMode("overview");
     setPersonQuery(personRequest);
+    // personId scopes the filter to this exact customer (see
+    // personCustomerId's declaration above) — personRequest alone only
+    // seeds the search box's displayed text.
+    setPersonCustomerId(personIdRequest);
     setSelectedStatuses([]);
     setDatePreset("week");
     setDateRange(computePresetRange("week"));
@@ -102,11 +116,12 @@ export default function AgendamentosPage() {
       (prev) => {
         const next = new URLSearchParams(prev);
         next.delete("person");
+        next.delete("personId");
         return next;
       },
       { replace: true }
     );
-  }, [personRequest, setSearchParams]);
+  }, [personRequest, personIdRequest, setSearchParams]);
 
   // Smart first-load default: open straight to what needs a decision. If
   // there's nothing pending, "esta semana" of confirmed bookings is the more
@@ -137,7 +152,9 @@ export default function AgendamentosPage() {
   // status-tab counts and the final filtered list.
   const dateAndPersonFiltered = useMemo(() => {
     let list = agendamentos ?? [];
-    if (personQuery.trim()) {
+    if (personCustomerId) {
+      list = list.filter((a) => a.customer_id === personCustomerId);
+    } else if (personQuery.trim()) {
       const q = personQuery.trim().toLowerCase();
       list = list.filter((a) => a.customer_known_name.toLowerCase().includes(q));
     }
@@ -148,10 +165,12 @@ export default function AgendamentosPage() {
       list = list.filter((a) => zonedDateStr(a.start_time) <= dateRange.end);
     }
     return list;
-  }, [agendamentos, personQuery, dateRange]);
+  }, [agendamentos, personQuery, personCustomerId, dateRange]);
 
   const overviewVisible = dateAndPersonFiltered.filter((a) => matchesStatusFilter(a, selectedStatuses));
-  const filtersActive = Boolean(dateRange.start || dateRange.end || personQuery.trim() || selectedStatuses.length > 0);
+  const filtersActive = Boolean(
+    dateRange.start || dateRange.end || personQuery.trim() || personCustomerId || selectedStatuses.length > 0
+  );
 
   const statusAdjective = joinAdjectives(selectedStatuses);
   const summaryText = `${overviewVisible.length} agendamento${overviewVisible.length === 1 ? "" : "s"}${
@@ -199,7 +218,12 @@ export default function AgendamentosPage() {
           />
           <SearchFilterInput
             value={personQuery}
-            onChange={setPersonQuery}
+            onChange={(v) => {
+              setPersonQuery(v);
+              // A manual edit hands filtering back to the free-text
+              // substring search — see personCustomerId's declaration above.
+              setPersonCustomerId(null);
+            }}
             placeholder="Filtrar por cliente…"
             ariaLabel="Filtrar por cliente"
           />
