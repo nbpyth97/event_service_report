@@ -9,6 +9,7 @@ import StatusStepper, { stepIndexOf } from "@/components/StatusStepper";
 import StatusHistoryStepper from "@/components/StatusHistoryStepper";
 import NotifyWhatsappLink from "@/components/NotifyWhatsappLink";
 import Button from "@/components/Button";
+import { useEvent } from "@/lib/useEvent";
 
 export default function AgendamentoDetailModal({
   agendamento,
@@ -23,15 +24,16 @@ export default function AgendamentoDetailModal({
   const [confirmingDecline, setConfirmingDecline] = useState(false);
   const [confirmingCancel, setConfirmingCancel] = useState(false);
   const closeBtnRef = useRef<HTMLButtonElement>(null);
+  const handleClose = useEvent(onClose);
 
   useEffect(() => {
     closeBtnRef.current?.focus();
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") handleClose();
     };
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
-  }, [onClose]);
+  }, [handleClose]);
 
   const isEndedState = agendamento.status === "declined" || agendamento.status === "cancelled";
   const historyTimes = Object.fromEntries((history ?? []).map((h) => [h.to_status, h.changed_at])) as Partial<

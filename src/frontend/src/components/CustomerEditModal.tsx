@@ -1,14 +1,18 @@
 import { useEffect, useRef, useState } from "react";
-import { Controller, useForm } from "react-hook-form";
+import { Controller, useForm, useWatch } from "react-hook-form";
 import { Phone, User, X } from "lucide-react";
 import type { Customer } from "@/api/client";
 import { useUpdateCustomer } from "@/hooks/queries";
-import { formatPhonePT, validatePhoneDigits } from "@/lib/format";
+import { formatPhoneDisplay, validatePhone } from "@/lib/format";
+import { phonePlaceholderFor, splitE164 } from "@/lib/countryCodes";
+import { useEvent } from "@/lib/useEvent";
 import Button from "@/components/Button";
+import CountryCodeSelect from "@/components/CountryCodeSelect";
 
 interface EditFormValues {
   name: string;
   phone: string;
+  country: string;
 }
 
 // Bottom sheet, not inline inputs squeezed into the card — a customer card
@@ -27,37 +31,47 @@ export default function CustomerEditModal({
 }) {
   const updateCustomer = useUpdateCustomer();
   const [error, setError] = useState<string | null>(null);
-  // Neither autocomplete="off" nor "new-password" alone stops Chrome/
-  // Android's autofill accessory strip (passkey/payment/address icons) on
-  // these fields — the browser decides at its initial DOM scan, before any
-  // attribute-based opt-out is read as authoritative. Loading each field
-  // readOnly and only lifting that on focus is the remaining lever: autofill
-  // only attaches to fields it sees as editable during that scan.
-  const [nameLocked, setNameLocked] = useState(true);
-  const [phoneLocked, setPhoneLocked] = useState(true);
   const closeBtnRef = useRef<HTMLButtonElement>(null);
+  // Preselect the picker to the customer's actual country (matched off the
+  // stored dial code) and show only the national number in the phone field —
+  // otherwise the dial code appeared twice: once in the picker ("Portugal
+  // (+351)"), once again at the start of the phone input ("+351 911 ...").
+  // Falls back to the old PT-default + full-"+"-prefixed-number behaviour
+  // for a customer whose country isn't in COUNTRY_CODES, since there's then
+  // no dial code to preselect or strip.
+  const phoneSplit = splitE164(customer.phone);
   const {
     control,
-    register,
     handleSubmit,
     formState: { errors },
   } = useForm<EditFormValues>({
-    defaultValues: { name: customer.customer_known_name, phone: formatPhonePT(customer.phone) },
+    defaultValues: {
+      name: customer.customer_known_name,
+      phone: phoneSplit ? formatPhoneDisplay(phoneSplit.national) : formatPhoneDisplay(customer.phone),
+      country: phoneSplit?.iso2 ?? "PT",
+    },
   });
+  // useWatch, not the plain `watch()` method — `watch()` re-renders this
+  // whole component on every change to ANY field in the form (not just
+  // "country"), including every keystroke in name/phone; useWatch scopes the
+  // subscription to just the field named here.
+  const country = useWatch({ control, name: "country" });
+  const phonePlaceholder = phonePlaceholderFor(country);
+  const handleClose = useEvent(onClose);
 
   useEffect(() => {
     closeBtnRef.current?.focus();
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") handleClose();
     };
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
-  }, [onClose]);
+  }, [handleClose]);
 
   const onSubmit = (values: EditFormValues) => {
     setError(null);
     updateCustomer.mutate(
-      { id: customer.id, customer_known_name: values.name.trim(), phone: values.phone.trim() },
+      { id: customer.id, customer_known_name: values.name.trim(), phone: values.phone.trim(), country: values.country },
       {
         onSuccess: onClose,
         onError: (err) => setError(err instanceof Error ? err.message : "Não foi possível guardar."),
@@ -86,22 +100,30 @@ export default function CustomerEditModal({
             <label className="auth-label" htmlFor="customer-edit-name">Nome</label>
             <div className="service-form-input-wrap">
               <User size={16} aria-hidden="true" />
-              <input
-                id="customer-edit-name"
-                placeholder="Nome do cliente"
-                autoFocus
-                readOnly={nameLocked}
-                onFocus={() => setNameLocked(false)}
-                autoComplete="off"
-                data-lpignore="true"
-                data-1p-ignore
-                maxLength={150}
-                aria-invalid={Boolean(errors.name)}
-                {...register("name", {
+              <Controller
+                name="name"
+                control={control}
+                rules={{
                   required: "Indique o nome.",
                   validate: (v) => v.trim().length > 0 || "Indique o nome.",
-                })}
-                name="cf-nm"
+                }}
+                render={({ field }) => (
+                  <input
+                    id="customer-edit-name"
+                    placeholder="Nome do cliente"
+                    autoFocus
+                    autoComplete="off"
+                    data-lpignore="true"
+                    data-1p-ignore
+                    maxLength={150}
+                    aria-invalid={Boolean(errors.name)}
+                    ref={field.ref}
+                    value={field.value}
+                    onBlur={field.onBlur}
+                    onChange={(e) => field.onChange(e.target.value)}
+                    name="cf-nm"
+                  />
+                )}
               />
             </div>
             {errors.name && <p className="form-error" role="alert">{errors.name.message}</p>}
@@ -109,33 +131,38 @@ export default function CustomerEditModal({
 
           <div className="auth-field">
             <label className="auth-label" htmlFor="customer-edit-phone">Telemóvel</label>
-            <div className="service-form-input-wrap">
-              <Phone size={16} aria-hidden="true" />
+            <div className="phone-field-row">
               <Controller
-                name="phone"
+                name="country"
                 control={control}
-                rules={{ required: "Indique o telemóvel.", validate: validatePhoneDigits }}
-                render={({ field }) => (
-                  <input
-                    id="customer-edit-phone"
-                    placeholder="351 912 345 678"
-                    type="text"
-                    inputMode="tel"
-                    readOnly={phoneLocked}
-                    onFocus={() => setPhoneLocked(false)}
-                    autoComplete="off"
-                    data-lpignore="true"
-                    data-1p-ignore
-                    maxLength={16}
-                    aria-invalid={Boolean(errors.phone)}
-                    name="cf-ph"
-                    ref={field.ref}
-                    value={field.value}
-                    onBlur={field.onBlur}
-                    onChange={(e) => field.onChange(formatPhonePT(e.target.value))}
-                  />
-                )}
+                render={({ field }) => <CountryCodeSelect value={field.value} onChange={field.onChange} />}
               />
+              <div className="service-form-input-wrap">
+                <Phone size={16} aria-hidden="true" />
+                <Controller
+                  name="phone"
+                  control={control}
+                  rules={{ required: "Indique o telemóvel.", validate: validatePhone }}
+                  render={({ field }) => (
+                    <input
+                      id="customer-edit-phone"
+                      placeholder={phonePlaceholder}
+                      type="text"
+                      inputMode="tel"
+                      autoComplete="off"
+                      data-lpignore="true"
+                      data-1p-ignore
+                      maxLength={20}
+                      aria-invalid={Boolean(errors.phone)}
+                      name="cf-ph"
+                      ref={field.ref}
+                      value={field.value}
+                      onBlur={field.onBlur}
+                      onChange={(e) => field.onChange(formatPhoneDisplay(e.target.value))}
+                    />
+                  )}
+                />
+              </div>
             </div>
             {errors.phone && <p className="form-error" role="alert">{errors.phone.message}</p>}
           </div>

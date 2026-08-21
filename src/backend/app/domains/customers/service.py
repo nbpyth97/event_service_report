@@ -1,4 +1,3 @@
-import re
 import uuid
 
 from fastapi import HTTPException
@@ -6,24 +5,29 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.models import Customer
+from app.core.phone import DEFAULT_REGION, to_e164
 from app.domains.customers import repository
 
 
-def normalize_phone(raw: str) -> str:
-    """Digits only, no '+' — it's noise, not help. This is the business
-    identity (see uq_customers_tenant_id_phone), so there must be exactly one
-    way to spell a given number; schemas.py's _validate_phone_digits already
-    requires the caller to type the full 351<9-digit mobile> number (exactly
-    12 digits, both sides of every endpoint), so a bare digit-strip is enough
-    to land on one canonical form. A version that instead tried to guess
-    whether to keep or add '+'/the country code let "+351929349996" and
-    "351929349996" normalize to two different strings and silently split one
-    customer into two rows with two independent booking histories."""
-    return re.sub(r"\D", "", raw.strip())
+def normalize_phone(raw: str, country: str) -> str:
+    """Turn a customer-typed (phone, country) pair into the canonical E.164
+    value this domain treats as its business key (uq_customers_tenant_id_phone)
+    — the single place that decision is made, so there's exactly one spelling
+    of a given number regardless of whether it arrived from staff (customers
+    router) or an anonymous customer (public router). Deliberately not in
+    core/schemas.py: which numbering plan applies, whether an explicit "+"
+    overrides the selected country, and what counts as a valid number are
+    business rules (see core/phone.py::to_e164), not wire-format concerns."""
+    try:
+        return to_e164(raw, country)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
-async def find_or_create_customer(db: AsyncSession, tenant_id: uuid.UUID, name: str, phone: str) -> Customer:
-    return await repository.upsert_by_phone(db, tenant_id, normalize_phone(phone), name.strip())
+async def find_or_create_customer(
+    db: AsyncSession, tenant_id: uuid.UUID, name: str, phone: str, country: str
+) -> Customer:
+    return await repository.upsert_by_phone(db, tenant_id, normalize_phone(phone, country), name.strip())
 
 
 async def list_customers(db: AsyncSession, tenant_id: uuid.UUID) -> list[Customer]:
@@ -38,9 +42,14 @@ async def get_customer(db: AsyncSession, tenant_id: uuid.UUID, customer_id: uuid
 
 
 async def update_customer(
-    db: AsyncSession, tenant_id: uuid.UUID, customer_id: uuid.UUID, name: str, phone: str | None = None
+    db: AsyncSession,
+    tenant_id: uuid.UUID,
+    customer_id: uuid.UUID,
+    name: str,
+    phone: str | None = None,
+    country: str = DEFAULT_REGION,
 ) -> Customer:
-    normalized_phone = normalize_phone(phone) if phone is not None else None
+    normalized_phone = normalize_phone(phone, country) if phone is not None else None
     try:
         customer = await repository.update(db, tenant_id, customer_id, name.strip(), normalized_phone)
     except IntegrityError as exc:

@@ -357,7 +357,7 @@ async def test_public_booking_succeeds_with_no_auth(client, unique_slug):
 
     assert agendamento["created_by"] is None
     assert agendamento["customer_name"] == "Maria"
-    assert agendamento["customer_phone"] == "351911112222"
+    assert agendamento["customer_phone"] == "+351911112222"
     assert agendamento["status"] == "pending"
 
 

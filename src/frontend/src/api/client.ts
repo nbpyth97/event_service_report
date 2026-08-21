@@ -185,9 +185,9 @@ export const api = {
     request<Company>("/api/companies/me", { method: "PATCH", body: JSON.stringify(payload) }),
 
   customers: () => request<Customer[]>("/api/customers"),
-  createCustomer: (payload: { customer_known_name: string; phone: string }) =>
+  createCustomer: (payload: { customer_known_name: string; phone: string; country: string }) =>
     request<Customer>("/api/customers", { method: "POST", body: JSON.stringify(payload) }),
-  updateCustomer: (id: string, payload: { customer_known_name: string; phone?: string }) =>
+  updateCustomer: (id: string, payload: { customer_known_name: string; phone?: string; country?: string }) =>
     request<Customer>(`/api/customers/${id}`, { method: "PUT", body: JSON.stringify(payload) }),
 
   agendamentos: () => request<Agendamento[]>("/api/agendamentos"),
@@ -210,7 +210,7 @@ export const api = {
     request<Availability>(`/api/public/${slug}/services/${serviceId}/availability?date=${date}`),
   publicBook: (
     slug: string,
-    payload: { service_id: string; start_time: string; name: string; phone: string; notes?: string }
+    payload: { service_id: string; start_time: string; name: string; phone: string; country: string; notes?: string }
   ) =>
     request<Agendamento>(`/api/public/${slug}/book`, { method: "POST", body: JSON.stringify(payload) }),
 };

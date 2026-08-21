@@ -561,7 +561,7 @@ async def test_another_tenant_may_hold_the_very_same_range(client, unique_slug):
     theirs = await _register_company(client, f"{unique_slug}-b")
     their_token, _ = await _login(client, theirs["tenant_slug"], "admin")
     their_service = await _create_service(client, their_token, duration_min=30)
-    their_customer = await _create_customer(client, their_token, phone="+351944444444")
+    their_customer = await _create_customer(client, their_token, phone="+351964444444")
 
     # Identical range, different tenant — must be accepted.
     await _insert_raw_booking(

@@ -7,25 +7,15 @@ from zoneinfo import ZoneInfo, available_timezones
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.core.enums import BookingStatus
+from app.core.phone import DEFAULT_REGION
 
-# Portugal-only (single pilot tenant): exactly 351 + a 9-digit mobile = 12
-# digits, no more, no less — a fixed length rather than a 9-12 range means
-# there's only one way to type a given number, so two spellings of the same
-# phone (with/without the country code) can never normalize to two different
-# values (see domains/customers/service.py::normalize_phone) and silently
-# split one customer into two rows. No "+": it reads as noise, not help, so
-# the placeholder ("351 912 345 678") is what teaches the format. Frontend-only
-# validation doesn't mean anything on the public booking endpoint — it's
-# unauthenticated, so this is the actual enforcement, not just UX polish (see
-# lib/format.ts::validatePhoneDigits for the matching frontend rule).
-_PHONE_DIGITS = 12
-
-
-def _validate_phone_digits(value: str) -> str:
-    digits = re.sub(r"\D", "", value)
-    if len(digits) != _PHONE_DIGITS:
-        raise ValueError(f"Phone number must have exactly {_PHONE_DIGITS} digits (country code + mobile number)")
-    return value
+# `phone` here is the raw, as-typed string — this layer only carries it and
+# its `country` alongside each other over the wire; it does not parse or
+# validate it. Turning (phone, country) into a canonical E.164 value is a
+# business rule (which numbering plan applies, whether "+" wins over the
+# selected country, what counts as valid), not a wire-format concern, so it
+# lives in domains/customers/service.py::normalize_phone (core/phone.py's
+# to_e164), not here.
 
 
 class RegisterCompanyPayload(BaseModel):
@@ -129,8 +119,7 @@ class CustomerOut(BaseModel):
 class CustomerCreate(BaseModel):
     customer_known_name: str = Field(min_length=1, max_length=150)
     phone: str = Field(min_length=1, max_length=30)
-
-    _validate_phone = field_validator("phone")(_validate_phone_digits)
+    country: str = Field(default=DEFAULT_REGION, min_length=2, max_length=2)
 
 
 class CustomerUpdate(BaseModel):
@@ -139,11 +128,7 @@ class CustomerUpdate(BaseModel):
     # None) means "leave the phone alone"; the column itself is never
     # nullable, so None can't mean "clear it".
     phone: str | None = Field(default=None, min_length=1, max_length=30)
-
-    @field_validator("phone")
-    @classmethod
-    def _validate_phone(cls, value: str | None) -> str | None:
-        return _validate_phone_digits(value) if value is not None else value
+    country: str = Field(default=DEFAULT_REGION, min_length=2, max_length=2)
 
 
 class PublicCompanyOut(BaseModel):
@@ -164,9 +149,8 @@ class PublicBookingCreate(BaseModel):
     start_time: datetime
     name: str = Field(min_length=1, max_length=150)
     phone: str = Field(min_length=1, max_length=30)
+    country: str = Field(default=DEFAULT_REGION, min_length=2, max_length=2)
     notes: str | None = Field(default=None, max_length=500)
-
-    _validate_phone = field_validator("phone")(_validate_phone_digits)
 
 
 class AgendamentoStatusHistoryOut(BaseModel):

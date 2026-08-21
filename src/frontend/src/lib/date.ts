@@ -38,6 +38,18 @@ export function fmtSlot(iso: string): string {
   });
 }
 
+// Portuguese weekday names take different prepositions by grammatical
+// gender: the "-feira" days (segunda-feira ... sexta-feira) are feminine
+// ("na segunda-feira"), but sábado and domingo are masculine ("no sábado",
+// "no domingo") — a single hardcoded "em" before fmtSlot's output ("em
+// sábado") reads wrong for one group or the other. Reads the weekday off the
+// same locale/timezone fmtSlot uses, so the two never disagree about which
+// day is meant.
+export function weekdayPreposition(iso: string): "na" | "no" {
+  const weekday = new Date(iso).toLocaleDateString("pt-PT", { timeZone: getDisplayTimeZone(), weekday: "long" });
+  return weekday.startsWith("sábado") || weekday.startsWith("domingo") ? "no" : "na";
+}
+
 // "Hoje" / "Amanhã" read faster than a weekday name when scanning a
 // schedule — full weekday+day+month only once the date is further out.
 export function fmtDateHeading(d: Date): string {

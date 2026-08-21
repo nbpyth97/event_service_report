@@ -47,7 +47,9 @@ async def get_public_availability(
 @router.post("/book", response_model=AgendamentoOut, status_code=201)
 async def create_public_booking(tenant_slug: str, payload: PublicBookingCreate, db: AsyncSession = Depends(get_db)):
     company = await companies_service.get_company_by_slug(db, tenant_slug)
-    customer = await customers_service.find_or_create_customer(db, company.id, payload.name, payload.phone)
+    customer = await customers_service.find_or_create_customer(
+        db, company.id, payload.name, payload.phone, payload.country
+    )
     return await agendamentos_service.create_agendamento(
         db, company.id, customer.id, payload.service_id, payload.start_time,
         customer_name=payload.name, created_by=None, notes=payload.notes,

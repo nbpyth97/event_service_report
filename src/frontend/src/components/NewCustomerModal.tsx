@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { useEvent } from "@/lib/useEvent";
 import { X } from "lucide-react";
 import type { Customer } from "@/api/client";
 import NewCustomerForm from "@/components/NewCustomerForm";
@@ -17,15 +18,16 @@ export default function NewCustomerModal({
   onClose: () => void;
 }) {
   const closeBtnRef = useRef<HTMLButtonElement>(null);
+  const handleClose = useEvent(onClose);
 
   useEffect(() => {
     closeBtnRef.current?.focus();
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") handleClose();
     };
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
-  }, [onClose]);
+  }, [handleClose]);
 
   return (
     <div className="modal-scrim" onClick={onClose}>

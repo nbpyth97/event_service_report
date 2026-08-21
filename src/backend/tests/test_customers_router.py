@@ -70,11 +70,17 @@ async def test_staff_can_rename_a_customer_and_it_survives_a_repeat_booking(clie
     assert rebooked.json()["customer_known_name"] == "Maria Silva"
 
 
-async def test_phone_normalizes_the_same_regardless_of_a_leading_plus(client, unique_slug):
+async def test_phone_normalizes_the_same_regardless_of_leading_plus_or_00(client, unique_slug):
     """Regression: normalize_phone used to keep-or-drop '+' based on whatever
     the caller sent, so "+351911111111" and "351911111111" landed as two
     different stored values and silently split one customer into two rows
-    with two independent booking histories (real data hit this)."""
+    with two independent booking histories (real data hit this). Now that
+    phone parsing goes through `phonenumbers` (core/phone.py::to_e164), a bare
+    "351911111111" with no "+" is genuinely ambiguous (is "351" a country
+    code, or the start of an 12-digit national number?) and is correctly
+    rejected rather than guessed at — "00" is the other standard, unambiguous
+    way to spell an international prefix instead of "+", so that's the
+    no-plus variant this now checks."""
     company = await _register_company(client, unique_slug)
     admin_token, _ = await _login(client, company["tenant_slug"], "admin")
 
@@ -85,14 +91,14 @@ async def test_phone_normalizes_the_same_regardless_of_a_leading_plus(client, un
     )
     assert with_plus.status_code == 201, with_plus.text
 
-    without_plus = await client.post(
+    with_00 = await client.post(
         "/api/customers",
-        json={"customer_known_name": "Not Maria", "phone": "351911111111"},
+        json={"customer_known_name": "Not Maria", "phone": "00351911111111"},
         headers=_auth_headers(admin_token),
     )
-    assert without_plus.status_code == 201, without_plus.text
-    assert without_plus.json()["id"] == with_plus.json()["id"]
-    assert without_plus.json()["customer_known_name"] == "Maria"
+    assert with_00.status_code == 201, with_00.text
+    assert with_00.json()["id"] == with_plus.json()["id"]
+    assert with_00.json()["customer_known_name"] == "Maria"
 
 
 async def test_staff_can_correct_a_customers_phone(client, unique_slug):
@@ -112,7 +118,7 @@ async def test_staff_can_correct_a_customers_phone(client, unique_slug):
         headers=_auth_headers(admin_token),
     )
     assert corrected.status_code == 200, corrected.text
-    assert corrected.json()["phone"] == "351922222222"
+    assert corrected.json()["phone"] == "+351922222222"
 
     # A booking against the old number no longer resolves to this customer —
     # it's a brand new phone as far as find-or-create is concerned.
@@ -151,7 +157,7 @@ async def test_correcting_a_phone_to_one_already_in_use_409s(client, unique_slug
     # The failed write didn't leave Joana's row half-updated.
     unchanged = await client.get("/api/customers", headers=_auth_headers(admin_token))
     joana_row = next(c for c in unchanged.json() if c["id"] == joana_id)
-    assert joana_row["phone"] == "351922222222"
+    assert joana_row["phone"] == "+351922222222"
 
 
 async def test_renaming_another_tenants_customer_404s(client, unique_slug):

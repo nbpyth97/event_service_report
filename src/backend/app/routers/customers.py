@@ -28,7 +28,7 @@ async def create_customer(
     domains/customers/service.py) — an admin adding a "new" customer who
     already booked once themselves resolves to that same Customer row."""
     return await customers_service.find_or_create_customer(
-        db, current_user.tenant_id, payload.customer_known_name, payload.phone
+        db, current_user.tenant_id, payload.customer_known_name, payload.phone, payload.country
     )
 
 
@@ -40,5 +40,5 @@ async def update_customer(
     db: AsyncSession = Depends(get_db),
 ):
     return await customers_service.update_customer(
-        db, current_user.tenant_id, customer_id, payload.customer_known_name, payload.phone
+        db, current_user.tenant_id, customer_id, payload.customer_known_name, payload.phone, payload.country
     )

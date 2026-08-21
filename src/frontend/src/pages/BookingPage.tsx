@@ -6,7 +6,7 @@ import CustomerPicker from "@/components/CustomerPicker";
 import Button from "@/components/Button";
 import { useAvailability, useCreateAgendamento, useCustomers, useMyCompany, useServices } from "@/hooks/queries";
 import { useToast } from "@/lib/toast";
-import { fmtSlot } from "@/lib/date";
+import { fmtSlot, weekdayPreposition } from "@/lib/date";
 
 // Staff booking on a customer's behalf — the mirror of
 // pages/public/PublicBookingPage.tsx, sharing ServiceBookingFlow for the
@@ -85,8 +85,8 @@ export default function BookingPage() {
         {selectedSlot && customer && (
           <div className="booking-confirm-card">
             <p>
-              Marcar <strong>{service.name}</strong> para <strong>{customer.customer_known_name}</strong> em{" "}
-              <strong>{fmtSlot(selectedSlot)}</strong>?
+              Marcar <strong>{service.name}</strong> para <strong>{customer.customer_known_name}</strong>{" "}
+              {weekdayPreposition(selectedSlot)} <strong>{fmtSlot(selectedSlot)}</strong>?
             </p>
             <Button onClick={handleConfirm} disabled={createAgendamento.isPending}>
               {createAgendamento.isPending ? "Agendando…" : "Confirmar marcação"}

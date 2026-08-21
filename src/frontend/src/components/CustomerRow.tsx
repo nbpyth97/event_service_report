@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { CalendarCheck, CalendarPlus, ChevronRight, Pencil, Phone } from "lucide-react";
 import type { Customer } from "@/api/client";
-import { fmtPhoneLocalPT } from "@/lib/format";
+import { formatStoredPhone } from "@/lib/format";
 import CustomerEditModal from "@/components/CustomerEditModal";
 
 // One card of CustomersPage's directory. Stacked into three lines — name,
@@ -36,7 +36,7 @@ export default function CustomerRow({ customer, bookingCount }: { customer: Cust
 
       <div className="customer-card-phone">
         <Phone size={13} aria-hidden="true" />
-        <span>{fmtPhoneLocalPT(customer.phone)}</span>
+        <span>{formatStoredPhone(customer.phone)}</span>
       </div>
 
       <div className="customer-card-actions">

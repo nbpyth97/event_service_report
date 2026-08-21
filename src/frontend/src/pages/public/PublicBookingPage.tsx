@@ -6,16 +6,19 @@ import ServiceBookingFlow from "@/components/booking/ServiceBookingFlow";
 import ServiceSelectList from "@/components/ServiceSelectList";
 import { usePublicAvailability, usePublicBook, usePublicCompany, usePublicServices } from "@/hooks/queries";
 import { useToast } from "@/lib/toast";
-import { fmtSlot } from "@/lib/date";
+import { fmtSlot, weekdayPreposition } from "@/lib/date";
 import { setDisplayTimeZone } from "@/lib/tz";
-import { formatPhonePT, validatePhoneDigits } from "@/lib/format";
+import { formatPhoneDisplay, validatePhone } from "@/lib/format";
+import { phonePlaceholderFor } from "@/lib/countryCodes";
 import Button from "@/components/Button";
+import CountryCodeSelect from "@/components/CountryCodeSelect";
 
 const NOTES_MAX_LENGTH = 500;
 
 interface BookingFormValues {
   name: string;
   phone: string;
+  country: string;
   notes: string;
 }
 
@@ -56,7 +59,8 @@ export default function PublicBookingPage() {
     handleSubmit,
     watch,
     formState: { errors },
-  } = useForm<BookingFormValues>({ defaultValues: { name: "", phone: "", notes: "" } });
+  } = useForm<BookingFormValues>({ defaultValues: { name: "", phone: "", country: "PT", notes: "" } });
+  const phonePlaceholder = phonePlaceholderFor(watch("country"));
 
   const notesLength = watch("notes")?.length ?? 0;
 
@@ -103,6 +107,7 @@ export default function PublicBookingPage() {
           start_time: selectedSlot,
           name: values.name.trim(),
           phone: values.phone.trim(),
+          country: values.country,
           notes: values.notes.trim() || undefined,
         },
       },
@@ -151,7 +156,8 @@ export default function PublicBookingPage() {
           {selectedSlot && (
             <form className="booking-confirm-card" onSubmit={handleSubmit(onSubmit)} noValidate>
               <p>
-                Marcar <strong>{service.name}</strong> em <strong>{fmtSlot(selectedSlot)}</strong>
+                Marcar <strong>{service.name}</strong> {weekdayPreposition(selectedSlot)}{" "}
+                <strong>{fmtSlot(selectedSlot)}</strong>
               </p>
 
               <div className="auth-field">
@@ -176,29 +182,36 @@ export default function PublicBookingPage() {
 
               <div className="auth-field">
                 <label className="auth-label" htmlFor="public-booking-phone">Telemóvel</label>
-                <div className="service-form-input-wrap">
-                  <Phone size={16} aria-hidden="true" />
+                <div className="phone-field-row">
                   <Controller
-                    name="phone"
+                    name="country"
                     control={control}
-                    rules={{ required: "Indique o seu telemóvel.", validate: validatePhoneDigits }}
-                    render={({ field }) => (
-                      <input
-                        id="public-booking-phone"
-                        placeholder="351 912 345 678"
-                        type="tel"
-                        inputMode="tel"
-                        maxLength={16}
-                        autoComplete="tel"
-                        aria-invalid={Boolean(errors.phone)}
-                        name={field.name}
-                        ref={field.ref}
-                        value={field.value}
-                        onBlur={field.onBlur}
-                        onChange={(e) => field.onChange(formatPhonePT(e.target.value))}
-                      />
-                    )}
+                    render={({ field }) => <CountryCodeSelect value={field.value} onChange={field.onChange} />}
                   />
+                  <div className="service-form-input-wrap">
+                    <Phone size={16} aria-hidden="true" />
+                    <Controller
+                      name="phone"
+                      control={control}
+                      rules={{ required: "Indique o seu telemóvel.", validate: validatePhone }}
+                      render={({ field }) => (
+                        <input
+                          id="public-booking-phone"
+                          placeholder={phonePlaceholder}
+                          type="tel"
+                          inputMode="tel"
+                          maxLength={20}
+                          autoComplete="tel"
+                          aria-invalid={Boolean(errors.phone)}
+                          name={field.name}
+                          ref={field.ref}
+                          value={field.value}
+                          onBlur={field.onBlur}
+                          onChange={(e) => field.onChange(formatPhoneDisplay(e.target.value))}
+                        />
+                      )}
+                    />
+                  </div>
                 </div>
                 {errors.phone && <p className="form-error" role="alert">{errors.phone.message}</p>}
                 <p className="auth-field-hint">Usado pelo salão para confirmar a sua marcação.</p>
