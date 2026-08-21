@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
-import { Briefcase, Building2, Check, Clock, Copy, ExternalLink, Link2, Save, Timer } from "lucide-react";
+import { Briefcase, Building2, Check, Clock, Copy, ExternalLink, Link2, Moon, Save, Sun, Timer } from "lucide-react";
 import { useMyCompany, useUpdateMyCompany } from "@/hooks/queries";
+import { useTheme } from "@/hooks/useTheme";
 import { useToast } from "@/lib/toast";
 import Button from "@/components/Button";
 import type { Company, CompanySettings, DayHours } from "@/api/client";
@@ -115,6 +116,7 @@ export default function CompanySettingsPage() {
     <div className="page settings-page">
       <h1>Definições</h1>
       <PublicLinkCard company={company} />
+      <AppearanceCard />
       {/* Split out and keyed on the company so useForm's defaultValues are
           always seeded from real data: mounting the form before the query
           resolves would initialise every field empty and then need a reset to
@@ -167,6 +169,37 @@ function PublicLinkCard({ company }: { company: Company }) {
       <p className="muted settings-hint">
         O identificador <code>{company.slug}</code> é permanente porque este endereço já foi partilhado com clientes.
       </p>
+    </section>
+  );
+}
+
+// A device-local preference, not company data — kept out of SettingsForm's
+// <form> so toggling it never trips react-hook-form's isDirty guard (which
+// warns about leaving the page with unsaved changes). See hooks/useTheme.ts
+// for why the toggle lives here instead of the top bar.
+function AppearanceCard() {
+  const [theme, setTheme] = useTheme();
+  const isDark = theme === "dark";
+
+  return (
+    <section className="settings-section">
+      <p className="settings-section-title">
+        {isDark ? <Moon size={13} aria-hidden="true" /> : <Sun size={13} aria-hidden="true" />} Aparência
+      </p>
+      <label className="switch">
+        <input
+          type="checkbox"
+          checked={isDark}
+          onChange={(e) => setTheme(e.target.checked ? "dark" : "light")}
+          aria-label={isDark ? "Mudar para tema claro" : "Mudar para tema escuro"}
+        />
+        <span className="switch-track" aria-hidden="true">
+          <span className="switch-thumb" />
+        </span>
+        <span className={`switch-label ${isDark ? "switch-label-active" : "switch-label-inactive"}`}>
+          {isDark ? "Escuro" : "Claro"}
+        </span>
+      </label>
     </section>
   );
 }

@@ -1,14 +1,15 @@
-import { useEffect, useState } from "react";
 import { NavLink, Navigate, Outlet, Route, Routes } from "react-router-dom";
-import { Briefcase, CalendarCheck, LayoutGrid, LogOut, Moon, Sun, Users } from "lucide-react";
+import { Briefcase, CalendarCheck, LayoutGrid, Users } from "lucide-react";
 import ProtectedRoute from "@/router/ProtectedRoute";
 import { useCurrentUser } from "@/auth/user";
 import { useMyCompany } from "@/hooks/queries";
 import { setDisplayTimeZone } from "@/lib/tz";
 import { useNotificationStream } from "@/hooks/useNotificationStream";
+// Side-effect import — see hooks/applyStoredTheme.ts.
+import "@/hooks/applyStoredTheme";
 import NotificationBell from "@/components/NotificationBell";
 import StartingSoonIndicator from "@/components/StartingSoonIndicator";
-import Button from "@/components/Button";
+import ProfileMenu from "@/components/ProfileMenu";
 import LoginPage from "@/pages/public/LoginPage";
 // Self-service signup is switched off — see the route below.
 // import RegisterPage from "@/pages/public/RegisterPage";
@@ -27,32 +28,9 @@ const NAV_ITEMS = [
   { to: "/clientes", label: "Clientes", icon: Users, end: false },
 ];
 
-type Theme = "light" | "dark";
-const THEME_KEY = "meeting-scheduler.theme";
-
-function initialTheme(): Theme {
-  const stored = localStorage.getItem(THEME_KEY);
-  if (stored === "light" || stored === "dark") return stored;
-  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-}
-
-// Applied at module load (not inside a component) so the theme is correct on
-// first paint no matter which route loads first — AppShell (where the
-// toggle lives) never mounts on /login, so waiting for its effect would
-// leave the login screen stuck on the default theme after a refresh.
-document.documentElement.dataset.theme = initialTheme();
-
-function initialsOf(name: string): string {
-  const parts = name.trim().split(/\s+/);
-  const first = parts[0]?.[0] ?? "";
-  const last = parts.length > 1 ? (parts[parts.length - 1]?.[0] ?? "") : "";
-  return (first + last).toUpperCase();
-}
-
 function AppShell() {
   const { user, logout } = useCurrentUser();
   const { data: company } = useMyCompany();
-  const [theme, setTheme] = useState<Theme>(initialTheme);
 
   // Set during render, not in an effect: every formatter reads this at call
   // time, so an effect would let the first paint after login print times in
@@ -61,11 +39,6 @@ function AppShell() {
   setDisplayTimeZone(company?.settings.timezone);
 
   useNotificationStream(Boolean(user));
-
-  useEffect(() => {
-    document.documentElement.dataset.theme = theme;
-    localStorage.setItem(THEME_KEY, theme);
-  }, [theme]);
 
   return (
     <div className="app-shell">
@@ -82,32 +55,10 @@ function AppShell() {
         <div className="app-nav-account">
           <StartingSoonIndicator />
           <NotificationBell />
-          <span className="app-nav-divider" aria-hidden="true" />
-          <Button
-            variant="icon"
-            onClick={() => setTheme((t) => (t === "dark" ? "light" : "dark"))}
-            aria-label={theme === "dark" ? "Mudar para tema claro" : "Mudar para tema escuro"}
-            title={theme === "dark" ? "Mudar para tema claro" : "Mudar para tema escuro"}
-          >
-            {theme === "dark" ? <Sun size={17} aria-hidden="true" /> : <Moon size={17} aria-hidden="true" />}
-          </Button>
-          {user && (
-            /* The avatar is the only entry point to company settings — it is
-               deliberately not in NAV_ITEMS, since the bottom nav is for the
-               four day-to-day surfaces and settings is visited rarely. */
-            <NavLink
-              to="/definicoes"
-              className="app-nav-avatar"
-              title={`${user.name} — definições`}
-              aria-label="Definições da empresa"
-            >
-              {initialsOf(user.name)}
-            </NavLink>
-          )}
-          <span className="app-nav-divider app-nav-divider-wide" aria-hidden="true" />
-          <Button variant="icon-danger" onClick={() => void logout()} aria-label="Sair" title="Sair">
-            <LogOut size={17} aria-hidden="true" />
-          </Button>
+          {/* The only entry point to company settings, plus logout —
+              deliberately not in NAV_ITEMS, since the bottom nav is for the
+              four day-to-day surfaces and this cluster is visited rarely. */}
+          {user && <ProfileMenu userName={user.name} onLogout={() => void logout()} />}
         </div>
       </header>
       <main id="main-content" tabIndex={-1}>
