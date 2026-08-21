@@ -9,6 +9,7 @@ import { useToast } from "@/lib/toast";
 import { fmtSlot } from "@/lib/date";
 import { setDisplayTimeZone } from "@/lib/tz";
 import { formatPhonePT, validatePhoneDigits } from "@/lib/format";
+import Button from "@/components/Button";
 
 interface BookingFormValues {
   name: string;
@@ -196,9 +197,9 @@ export default function PublicBookingPage() {
                 <p className="auth-field-hint">Usado pelo salão para confirmar a sua marcação.</p>
               </div>
 
-              <button type="submit" disabled={publicBook.isPending}>
+              <Button type="submit" disabled={publicBook.isPending}>
                 {publicBook.isPending ? "A enviar…" : "Confirmar marcação"}
-              </button>
+              </Button>
             </form>
           )}
         </ServiceBookingFlow>

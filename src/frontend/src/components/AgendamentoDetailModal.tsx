@@ -8,6 +8,7 @@ import { waLink } from "@/lib/whatsapp";
 import StatusStepper, { stepIndexOf } from "@/components/StatusStepper";
 import StatusHistoryStepper from "@/components/StatusHistoryStepper";
 import NotifyWhatsappLink from "@/components/NotifyWhatsappLink";
+import Button from "@/components/Button";
 
 export default function AgendamentoDetailModal({
   agendamento,
@@ -148,67 +149,47 @@ export default function AgendamentoDetailModal({
 
         {agendamento.status === "pending" && !confirmingDecline && (
           <div className="ticket-actions">
-            <button
-              type="button"
-              className="ticket-decline-btn"
-              onClick={() => setConfirmingDecline(true)}
-              disabled={updateStatus.isPending}
-            >
+            <Button variant="danger-outline" onClick={() => setConfirmingDecline(true)} disabled={updateStatus.isPending}>
               <XCircle size={16} aria-hidden="true" />
               Recusar
-            </button>
-            <button type="button" className="ticket-confirm-btn" onClick={handleConfirm} disabled={updateStatus.isPending}>
+            </Button>
+            <Button variant="confirm" onClick={handleConfirm} disabled={updateStatus.isPending}>
               <CheckCircle2 size={16} aria-hidden="true" />
               Confirmar
-            </button>
+            </Button>
           </div>
         )}
 
         {confirmingDecline && (
           <div className="ticket-decline-confirm">
             <p>Recusar a marcação de {agendamento.customer_known_name}?</p>
-            <button type="button" className="ticket-decline-cancel" onClick={() => setConfirmingDecline(false)}>
+            <Button variant="cancel" onClick={() => setConfirmingDecline(false)}>
               Cancelar
-            </button>
-            <button
-              type="button"
-              className="ticket-decline-submit"
-              onClick={handleDecline}
-              disabled={updateStatus.isPending}
-            >
+            </Button>
+            <Button variant="danger" onClick={handleDecline} disabled={updateStatus.isPending}>
               {updateStatus.isPending ? "A recusar…" : "Sim, recusar"}
-            </button>
+            </Button>
           </div>
         )}
 
         {agendamento.status === "confirmed" && !confirmingCancel && (
           <div className="ticket-actions">
-            <button
-              type="button"
-              className="ticket-decline-btn"
-              onClick={() => setConfirmingCancel(true)}
-              disabled={updateStatus.isPending}
-            >
+            <Button variant="danger-outline" onClick={() => setConfirmingCancel(true)} disabled={updateStatus.isPending}>
               <XCircle size={16} aria-hidden="true" />
               Cancelar marcação
-            </button>
+            </Button>
           </div>
         )}
 
         {confirmingCancel && (
           <div className="ticket-decline-confirm">
             <p>Cancelar a marcação de {agendamento.customer_known_name}?</p>
-            <button type="button" className="ticket-decline-cancel" onClick={() => setConfirmingCancel(false)}>
+            <Button variant="cancel" onClick={() => setConfirmingCancel(false)}>
               Voltar
-            </button>
-            <button
-              type="button"
-              className="ticket-decline-submit"
-              onClick={handleCancel}
-              disabled={updateStatus.isPending}
-            >
+            </Button>
+            <Button variant="danger" onClick={handleCancel} disabled={updateStatus.isPending}>
               {updateStatus.isPending ? "A cancelar…" : "Sim, cancelar"}
-            </button>
+            </Button>
           </div>
         )}
       </div>

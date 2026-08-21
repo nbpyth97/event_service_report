@@ -10,6 +10,7 @@ import { waLink } from "@/lib/whatsapp";
 import StatusChip from "@/components/StatusChip";
 import AgendamentoDetailModal from "@/components/AgendamentoDetailModal";
 import NotifyWhatsappLink from "@/components/NotifyWhatsappLink";
+import Button from "@/components/Button";
 
 interface DateGroup {
   dateStr: string;
@@ -135,36 +136,26 @@ function AppointmentRow({
 
       {agendamento.status === "pending" && !confirmingDecline && (
         <div className="ticket-actions">
-          <button
-            type="button"
-            className="ticket-decline-btn"
-            onClick={() => setConfirmingDecline(true)}
-            disabled={updateStatus.isPending}
-          >
+          <Button variant="danger-outline" onClick={() => setConfirmingDecline(true)} disabled={updateStatus.isPending}>
             <XCircle size={15} aria-hidden="true" />
             Recusar
-          </button>
-          <button type="button" className="ticket-confirm-btn" onClick={handleConfirm} disabled={updateStatus.isPending}>
+          </Button>
+          <Button variant="confirm" onClick={handleConfirm} disabled={updateStatus.isPending}>
             <CheckCircle2 size={15} aria-hidden="true" />
             Confirmar
-          </button>
+          </Button>
         </div>
       )}
 
       {confirmingDecline && (
         <div className="ticket-decline-confirm">
           <p>Recusar a marcação de {agendamento.customer_known_name}?</p>
-          <button type="button" className="ticket-decline-cancel" onClick={() => setConfirmingDecline(false)}>
+          <Button variant="cancel" onClick={() => setConfirmingDecline(false)}>
             Cancelar
-          </button>
-          <button
-            type="button"
-            className="ticket-decline-submit"
-            onClick={handleDecline}
-            disabled={updateStatus.isPending}
-          >
+          </Button>
+          <Button variant="danger" onClick={handleDecline} disabled={updateStatus.isPending}>
             {updateStatus.isPending ? "A recusar…" : "Sim, recusar"}
-          </button>
+          </Button>
         </div>
       )}
     </li>

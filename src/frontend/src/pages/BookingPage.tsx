@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
 import type { Customer } from "@/api/client";
 import ServiceBookingFlow from "@/components/booking/ServiceBookingFlow";
 import CustomerPicker from "@/components/CustomerPicker";
+import Button from "@/components/Button";
 import { useAvailability, useCreateAgendamento, useCustomers, useMyCompany, useServices } from "@/hooks/queries";
 import { useToast } from "@/lib/toast";
 import { fmtSlot } from "@/lib/date";
@@ -87,9 +88,9 @@ export default function BookingPage() {
               Marcar <strong>{service.name}</strong> para <strong>{customer.customer_known_name}</strong> em{" "}
               <strong>{fmtSlot(selectedSlot)}</strong>?
             </p>
-            <button type="button" onClick={handleConfirm} disabled={createAgendamento.isPending}>
+            <Button onClick={handleConfirm} disabled={createAgendamento.isPending}>
               {createAgendamento.isPending ? "Agendando…" : "Confirmar marcação"}
-            </button>
+            </Button>
           </div>
         )}
       </ServiceBookingFlow>

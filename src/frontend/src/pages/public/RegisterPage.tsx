@@ -4,6 +4,7 @@ import { Building2, Copy, Eye, EyeOff, Lock, User } from "lucide-react";
 import { api } from "@/api/client";
 import { useCurrentUser } from "@/auth/user";
 import { useToast } from "@/lib/toast";
+import Button from "@/components/Button";
 
 // Customers never had a "register" flow of their own on this page anymore —
 // they book from the public /marcar-agendamento link with just name+phone,
@@ -68,9 +69,9 @@ export default function RegisterPage() {
               </button>
             </div>
           </div>
-          <button type="button" className="auth-submit" onClick={() => navigate(`/entrar?company=${tenantSlug}`)}>
+          <Button className="auth-submit" onClick={() => navigate(`/entrar?company=${tenantSlug}`)}>
             Ir para o login
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -160,9 +161,9 @@ export default function RegisterPage() {
           </p>
         )}
 
-        <button type="submit" className="auth-submit" disabled={submitting}>
+        <Button type="submit" className="auth-submit" disabled={submitting}>
           {submitting ? "Cadastrando…" : "Cadastrar"}
-        </button>
+        </Button>
       </form>
 
       <p className="auth-hint">

@@ -4,6 +4,7 @@ import type { Service } from "@/api/client";
 import { useDeleteService, useUpdateService } from "@/hooks/queries";
 import { useToast } from "@/lib/toast";
 import { fmtPrice } from "@/lib/format";
+import Button from "@/components/Button";
 
 function ActiveToggle({ service }: { service: Service }) {
   const updateService = useUpdateService();
@@ -100,14 +101,14 @@ function EditServiceForm({ service, onDone }: { service: Service; onDone: () => 
       </div>
 
       <div className="service-card-edit-actions">
-        <button type="button" className="ticket-decline-cancel" onClick={onDone}>
+        <Button variant="cancel" onClick={onDone}>
           <X size={15} aria-hidden="true" />
           Cancelar
-        </button>
-        <button type="submit" disabled={updateService.isPending}>
+        </Button>
+        <Button type="submit" disabled={updateService.isPending}>
           <Save size={15} aria-hidden="true" />
           {updateService.isPending ? "A guardar…" : "Guardar"}
-        </button>
+        </Button>
       </div>
     </form>
   );
@@ -138,38 +139,33 @@ function ServiceCard({ service }: { service: Service }) {
       {!confirmingRemove && (
         <div className="service-card-actions">
           <ActiveToggle service={service} />
-          <button
-            type="button"
-            className="service-card-edit-btn"
+          <Button
+            variant="outline"
+            className="btn-labeled"
             onClick={() => setIsEditing(true)}
             aria-label={`Editar ${service.name}`}
           >
             <Pencil size={14} aria-hidden="true" />
             Editar
-          </button>
-          <button type="button" className="service-card-remove" onClick={() => setConfirmingRemove(true)}>
+          </Button>
+          <Button variant="danger-outline" className="btn-labeled" onClick={() => setConfirmingRemove(true)}>
             <Trash2 size={14} aria-hidden="true" />
             Remover
-          </button>
+          </Button>
         </div>
       )}
 
       {confirmingRemove && (
         <div className="ticket-decline-confirm">
           <p>Remover {service.name}? Pode reativar depois em "Inativo".</p>
-          <button type="button" className="ticket-decline-cancel" onClick={() => setConfirmingRemove(false)}>
+          <Button variant="cancel" onClick={() => setConfirmingRemove(false)}>
             <X size={15} aria-hidden="true" />
             Cancelar
-          </button>
-          <button
-            type="button"
-            className="ticket-decline-submit"
-            onClick={() => deleteService.mutate(service.id)}
-            disabled={deleteService.isPending}
-          >
+          </Button>
+          <Button variant="danger" onClick={() => deleteService.mutate(service.id)} disabled={deleteService.isPending}>
             <Trash2 size={15} aria-hidden="true" />
             {deleteService.isPending ? "A remover…" : "Sim, remover"}
-          </button>
+          </Button>
         </div>
       )}
     </li>

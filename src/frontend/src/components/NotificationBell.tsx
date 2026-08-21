@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Bell, Check, X } from "lucide-react";
 import type { Notification } from "@/api/client";
 import StatusChip from "@/components/StatusChip";
+import Button from "@/components/Button";
 import { useMarkNotificationRead, useNotifications, useUpdateAgendamentoStatus } from "@/hooks/queries";
 import { useToast } from "@/lib/toast";
 import { fmtDateTime } from "@/lib/format";
@@ -66,25 +67,24 @@ export default function NotificationBell() {
 
   return (
     <div className="notification-bell">
-      <button
-        type="button"
-        className="app-nav-logout"
+      <Button
+        variant="icon"
         onClick={() => setOpen((v) => !v)}
         aria-label={unreadCount > 0 ? `Notificações (${unreadCount} não lidas)` : "Notificações"}
         title="Notificações"
       >
         <Bell size={17} aria-hidden="true" />
         {unreadCount > 0 && <span className="notification-bell-badge">{unreadCount}</span>}
-      </button>
+      </Button>
       {open && (
         <>
           <div className="reminder-panel-backdrop" onClick={() => setOpen(false)} />
           <div className="reminder-panel">
             <div className="reminder-panel-header">
               <span className="reminder-panel-title">Notificações</span>
-              <button type="button" className="reminder-panel-close" onClick={() => setOpen(false)}>
+              <Button variant="link" onClick={() => setOpen(false)}>
                 Fechar
-              </button>
+              </Button>
             </div>
             {!notifications || notifications.length === 0 ? (
               <p className="reminder-panel-empty">Sem notificações.</p>
@@ -115,24 +115,24 @@ export default function NotificationBell() {
                               <span className="reminder-panel-item-time">{fmtDateTime(n.created_at)}</span>
                             </div>
                             <div className="notif-card-actions">
-                              <button
-                                type="button"
-                                className="notif-action-btn ticket-confirm-btn"
+                              <Button
+                                variant="confirm"
+                                className="notif-action-btn"
                                 disabled={updateStatus.isPending}
                                 onClick={() => handleDecide(n, "confirmed")}
                               >
                                 <Check size={13} aria-hidden="true" />
                                 Confirmar
-                              </button>
-                              <button
-                                type="button"
-                                className="notif-action-btn ticket-decline-btn"
+                              </Button>
+                              <Button
+                                variant="danger-outline"
+                                className="notif-action-btn"
                                 disabled={updateStatus.isPending}
                                 onClick={() => handleDecide(n, "declined")}
                               >
                                 <X size={13} aria-hidden="true" />
                                 Recusar
-                              </button>
+                              </Button>
                             </div>
                           </li>
                         );

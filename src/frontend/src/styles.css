@@ -290,12 +290,13 @@ body {
   color: var(--color-surface);
 }
 
-/* Row 1's icon buttons run a touch under the 44px touch-target guideline on
-   the narrowest phones (38px) — a deliberate trade against six controls
+/* Generic square icon button — shared by every icon-only trigger in the app
+   (nav logout, theme toggle, notification/reminder bells, …), not just the
+   nav row. Row 1's icons run a touch under the 44px touch-target guideline
+   on the narrowest phones (38px) — a deliberate trade against six controls
    crushing the brand name to a few letters. Full 44px from ~480px up, where
    there's room for both. */
-.app-nav-logout,
-.theme-toggle {
+.btn-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -309,27 +310,25 @@ body {
 }
 
 @media (min-width: 480px) {
-  .app-nav-logout,
-  .theme-toggle {
+  .btn-icon {
     width: var(--touch-min);
     height: var(--touch-min);
   }
 }
 
-.app-nav-logout:hover,
-.theme-toggle:hover {
+.btn-icon:hover {
   color: var(--color-ink);
   background: var(--color-bg);
 }
 
 /* Reserved icon slots (history/notifications) with no feature behind them
    yet — visibly inert rather than pretending to be live. */
-.app-nav-logout:disabled {
+.btn-icon:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
 
-.app-nav-logout:disabled:hover {
+.btn-icon:disabled:hover {
   color: var(--color-muted);
   background: transparent;
 }
@@ -343,12 +342,12 @@ body {
   margin-left: 0.65rem;
 }
 
-.app-nav-logout-danger {
+.btn-icon-danger {
   margin-left: 0.3rem;
   color: var(--color-declined);
 }
 
-.app-nav-logout-danger:hover {
+.btn-icon-danger:hover {
   color: var(--color-declined);
   background: var(--color-declined-soft);
 }
@@ -421,7 +420,10 @@ body {
   color: var(--color-ink);
 }
 
-.reminder-panel-close {
+/* Plain text-link button — was .reminder-panel-close, duplicated verbatim
+   across NotificationBell and StartingSoonIndicator; now one class both
+   panels' "Fechar" button shares via Button's variant="link". */
+.btn-link {
   background: none;
   border: none;
   color: var(--color-primary);
@@ -538,8 +540,8 @@ body {
   border-top: 1px solid var(--color-border);
 }
 
-/* Layout only — background/color/border stay owned by .ticket-confirm-btn /
-   .ticket-decline-btn (and the global button default they fall back to) so
+/* Layout only — background/color/border stay owned by .btn-confirm /
+   .btn-danger-outline (and the global button default they fall back to) so
    this can't end up on the wrong side of a stylesheet-order fight with them. */
 .notif-action-btn {
   flex: 1;
@@ -885,22 +887,6 @@ button {
 button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
-}
-
-.register-mode-toggle {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.register-mode-toggle button {
-  flex: 1;
-  background: var(--color-bg);
-  color: var(--color-ink);
-}
-
-.register-mode-toggle button.active {
-  background: var(--color-primary);
-  color: #fff;
 }
 
 .form-error {
@@ -1278,25 +1264,13 @@ button:disabled {
   gap: 0.75rem;
 }
 
-.service-card-remove {
+/* Layout for any icon+text button with no parent selector already sizing
+   it (unlike .ticket-actions button / .notif-action-btn, which cover that
+   for the ticket-decision buttons) — pair with a .btn-* color variant. */
+.btn-labeled {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  background: var(--color-surface);
-  color: var(--color-declined);
-  border: 1.5px solid var(--color-declined);
-  min-height: var(--touch-min);
-}
-
-/* Same outlined weight as .service-card-remove so edit/remove read as a
-   matched pair — only the color signals which action is which. */
-.service-card-edit-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  background: var(--color-surface);
-  color: var(--color-primary);
-  border: 1.5px solid var(--color-primary);
   min-height: var(--touch-min);
 }
 
@@ -1692,7 +1666,10 @@ button:disabled {
   margin-bottom: 0.5rem;
 }
 
-.calendar-nav button {
+/* Shared with .cal-nav > button below — same chevron look in both the
+   booking-flow calendar and the admin day/week calendar. */
+.calendar-nav button,
+.cal-nav > button {
   background: transparent;
   color: var(--color-ink);
   border: none;
@@ -1701,7 +1678,8 @@ button:disabled {
   min-height: var(--touch-min);
 }
 
-.calendar-nav button:hover {
+.calendar-nav button:hover,
+.cal-nav > button:hover {
   background: var(--color-primary-soft);
   border-radius: 8px;
 }
@@ -2181,20 +2159,6 @@ button:disabled {
   background: var(--color-surface);
   border-radius: var(--radius-card) var(--radius-card) 0 0;
   padding: 0.6rem 0.75rem;
-}
-
-.cal-nav > button {
-  background: transparent;
-  color: var(--color-ink);
-  border: none;
-  font-size: 1.2rem;
-  min-width: var(--touch-min);
-  min-height: var(--touch-min);
-}
-
-.cal-nav > button:hover {
-  background: var(--color-primary-soft);
-  border-radius: 8px;
 }
 
 .cal-nav-heading {
@@ -2942,20 +2906,31 @@ button:disabled {
 /* Confirmar reads as positive (green), matching --color-confirmed
    everywhere else in the app — not the generic primary blue, which has no
    "approve" meaning here and clashed with the pending accent. */
-.ticket-confirm-btn {
+.btn-confirm {
   background: var(--color-confirmed);
 }
 
-/* Outlined, not filled — keeps Recusar a clearly real action without
-   competing with Confirmar's solid green for visual weight. */
-.ticket-decline-btn {
+/* Outlined, not filled — keeps Recusar/Remover a clearly real action
+   without competing with a solid destructive submit for visual weight.
+   Shared by the ticket decline flow and ServiceList's remove action (was
+   .service-card-remove) — identical look, one class. */
+.btn-danger-outline {
   background: var(--color-surface);
   color: var(--color-declined);
   border: 1.5px solid var(--color-declined);
 }
 
-.ticket-decline-btn:hover:not(:disabled) {
+.btn-danger-outline:hover:not(:disabled) {
   background: var(--color-declined-soft);
+}
+
+/* Same outlined weight as .btn-danger-outline so edit/remove read as a
+   matched pair — only the color signals which action is which. Was
+   .service-card-edit-btn. */
+.btn-outline {
+  background: var(--color-surface);
+  color: var(--color-primary);
+  border: 1.5px solid var(--color-primary);
 }
 
 .ticket-decline-confirm {
@@ -2983,12 +2958,15 @@ button:disabled {
   min-height: var(--touch-min);
 }
 
-.ticket-decline-cancel {
+/* Neutral "step back" out of a destructive confirm step — was
+   .ticket-decline-cancel / .customer-picker-add-cancel (identical rule,
+   two names; merged here). */
+.btn-cancel {
   background: var(--color-bg);
   color: var(--color-ink);
 }
 
-.ticket-decline-submit {
+.btn-danger {
   background: var(--color-declined);
 }
 
@@ -3268,16 +3246,6 @@ button:disabled {
   gap: 0.5rem;
 }
 
-.customer-picker-add-cancel {
-  background: var(--color-bg);
-  color: var(--color-ink);
-}
-
-.customer-picker-add-submit {
-  background: var(--color-primary);
-  color: #fff;
-}
-
 .customer-picker-selected {
   display: flex;
   align-items: center;
@@ -3478,7 +3446,11 @@ button:disabled {
   gap: 0.5rem;
 }
 
-.settings-ghost-btn {
+/* Secondary/ghost action — was .settings-ghost-btn. Applied to both
+   <button> (via the Button component's variant="ghost") and plain <a>/
+   <Link> (settings page's "Ver como cliente" / "Gerir serviços"), which is
+   why the class stays element-agnostic rather than folding into Button. */
+.btn-ghost {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -3494,7 +3466,7 @@ button:disabled {
   text-decoration: none;
 }
 
-.settings-ghost-btn:hover {
+.btn-ghost:hover {
   border-color: var(--color-primary);
   color: var(--color-primary);
 }

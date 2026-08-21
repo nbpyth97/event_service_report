@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Timer } from "lucide-react";
 import { useStartingSoon } from "@/hooks/useStartingSoon";
 import { fmtDateTime } from "@/lib/format";
+import Button from "@/components/Button";
 
 export default function StartingSoonIndicator() {
   const [open, setOpen] = useState(false);
@@ -16,9 +17,8 @@ export default function StartingSoonIndicator() {
 
   return (
     <div className="notification-bell">
-      <button
-        type="button"
-        className="app-nav-logout"
+      <Button
+        variant="icon"
         onClick={() => setOpen((v) => !v)}
         aria-label={startingSoon.length > 0 ? `Lembretes (${startingSoon.length})` : "Lembretes"}
         title="Lembretes"
@@ -27,16 +27,16 @@ export default function StartingSoonIndicator() {
         {startingSoon.length > 0 && (
           <span className="notification-bell-badge starting-soon-badge">{startingSoon.length}</span>
         )}
-      </button>
+      </Button>
       {open && (
         <>
           <div className="reminder-panel-backdrop" onClick={() => setOpen(false)} />
           <div className="reminder-panel">
             <div className="reminder-panel-header">
               <span className="reminder-panel-title">Lembretes</span>
-              <button type="button" className="reminder-panel-close" onClick={() => setOpen(false)}>
+              <Button variant="link" onClick={() => setOpen(false)}>
                 Fechar
-              </button>
+              </Button>
             </div>
             {startingSoon.length === 0 ? (
               <p className="reminder-panel-empty">Nada começando nos próximos 30 min.</p>

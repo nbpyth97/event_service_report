@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { Clock, Euro, Plus, Tag } from "lucide-react";
 import { useCreateService } from "@/hooks/queries";
+import Button from "@/components/Button";
 
 export default function ServiceForm() {
   const [name, setName] = useState("");
@@ -74,10 +75,10 @@ export default function ServiceForm() {
         </label>
       </div>
 
-      <button type="submit" disabled={createService.isPending}>
+      <Button type="submit" disabled={createService.isPending}>
         <Plus size={16} aria-hidden="true" />
         {createService.isPending ? "Salvando…" : "Adicionar serviço"}
-      </button>
+      </Button>
     </form>
   );
 }

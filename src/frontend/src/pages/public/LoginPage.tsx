@@ -3,6 +3,7 @@ import { useState, type FormEvent } from "react";
 import { Navigate, useSearchParams } from "react-router-dom";
 import { Building2, Eye, EyeOff, Lock, User } from "lucide-react";
 import { useCurrentUser } from "@/auth/user";
+import Button from "@/components/Button";
 
 export default function LoginPage() {
   const { user, login } = useCurrentUser();
@@ -133,9 +134,9 @@ export default function LoginPage() {
           </p>
         )}
 
-        <button type="submit" className="auth-submit" disabled={submitting}>
+        <Button type="submit" className="auth-submit" disabled={submitting}>
           {submitting ? "Entrando…" : "Entrar"}
-        </button>
+        </Button>
       </form>
 
       {/* Hidden while self-service signup is off (see App.tsx) — the route

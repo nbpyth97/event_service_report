@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 import { Briefcase, Building2, Check, Clock, Copy, ExternalLink, Link2, Save, Timer } from "lucide-react";
 import { useMyCompany, useUpdateMyCompany } from "@/hooks/queries";
 import { useToast } from "@/lib/toast";
+import Button from "@/components/Button";
 import type { Company, CompanySettings, DayHours } from "@/api/client";
 
 type DowKey = keyof CompanySettings["business_hours"];
@@ -154,11 +155,11 @@ function PublicLinkCard({ company }: { company: Company }) {
         {publicLink}
       </a>
       <div className="settings-link-actions">
-        <button type="button" className="settings-ghost-btn" onClick={() => void copyLink()}>
+        <Button variant="ghost" onClick={() => void copyLink()}>
           {copied ? <Check size={15} aria-hidden="true" /> : <Copy size={15} aria-hidden="true" />}
           {copied ? "Copiado" : "Copiar ligação"}
-        </button>
-        <a className="settings-ghost-btn" href={publicLink} target="_blank" rel="noreferrer">
+        </Button>
+        <a className="btn-ghost" href={publicLink} target="_blank" rel="noreferrer">
           <ExternalLink size={15} aria-hidden="true" />
           Ver como cliente
         </a>
@@ -333,7 +334,7 @@ function SettingsForm({ company }: { company: Company }) {
             section sets when a marcação may start, Serviços sets how long
             each one occupies. Reachable from the bottom nav too — this is
             the contextual shortcut, right where the hint above raises it. */}
-        <Link className="settings-ghost-btn settings-section-link" to="/servicos">
+        <Link className="btn-ghost settings-section-link" to="/servicos">
           <Briefcase size={15} aria-hidden="true" />
           Gerir serviços e durações
         </Link>
@@ -408,14 +409,14 @@ function SettingsForm({ company }: { company: Company }) {
         </span>
         <div className="settings-savebar-actions">
           {isDirty && !updateCompany.isPending && (
-            <button type="button" className="settings-ghost-btn" onClick={() => reset()}>
+            <Button variant="ghost" onClick={() => reset()}>
               Descartar
-            </button>
+            </Button>
           )}
-          <button type="submit" disabled={!isDirty || updateCompany.isPending}>
+          <Button type="submit" disabled={!isDirty || updateCompany.isPending}>
             <Save size={16} aria-hidden="true" />
             {updateCompany.isPending ? "A guardar…" : "Guardar alterações"}
-          </button>
+          </Button>
         </div>
       </div>
     </form>

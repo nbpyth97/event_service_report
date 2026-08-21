@@ -3,6 +3,7 @@ import { Phone, User } from "lucide-react";
 import type { Customer } from "@/api/client";
 import { useCreateCustomer } from "@/hooks/queries";
 import { formatPhonePT, validatePhoneDigits } from "@/lib/format";
+import Button from "@/components/Button";
 
 interface NewCustomerFormValues {
   name: string;
@@ -86,12 +87,12 @@ export default function NewCustomerForm({
       {errors.phone && <p className="form-error" role="alert">{errors.phone.message}</p>}
 
       <div className="customer-picker-add-actions">
-        <button type="button" className="customer-picker-add-cancel" onClick={onCancel}>
+        <Button variant="cancel" onClick={onCancel}>
           Cancelar
-        </button>
-        <button type="submit" className="customer-picker-add-submit" disabled={createCustomer.isPending}>
+        </Button>
+        <Button type="submit" disabled={createCustomer.isPending}>
           {createCustomer.isPending ? "A adicionar…" : "Adicionar cliente"}
-        </button>
+        </Button>
       </div>
     </form>
   );

@@ -8,6 +8,7 @@ import { setDisplayTimeZone } from "@/lib/tz";
 import { useNotificationStream } from "@/hooks/useNotificationStream";
 import NotificationBell from "@/components/NotificationBell";
 import StartingSoonIndicator from "@/components/StartingSoonIndicator";
+import Button from "@/components/Button";
 import LoginPage from "@/pages/public/LoginPage";
 // Self-service signup is switched off — see the route below.
 // import RegisterPage from "@/pages/public/RegisterPage";
@@ -82,15 +83,14 @@ function AppShell() {
           <StartingSoonIndicator />
           <NotificationBell />
           <span className="app-nav-divider" aria-hidden="true" />
-          <button
-            type="button"
-            className="theme-toggle"
+          <Button
+            variant="icon"
             onClick={() => setTheme((t) => (t === "dark" ? "light" : "dark"))}
             aria-label={theme === "dark" ? "Mudar para tema claro" : "Mudar para tema escuro"}
             title={theme === "dark" ? "Mudar para tema claro" : "Mudar para tema escuro"}
           >
             {theme === "dark" ? <Sun size={17} aria-hidden="true" /> : <Moon size={17} aria-hidden="true" />}
-          </button>
+          </Button>
           {user && (
             /* The avatar is the only entry point to company settings — it is
                deliberately not in NAV_ITEMS, since the bottom nav is for the
@@ -105,15 +105,9 @@ function AppShell() {
             </NavLink>
           )}
           <span className="app-nav-divider app-nav-divider-wide" aria-hidden="true" />
-          <button
-            type="button"
-            className="app-nav-logout app-nav-logout-danger"
-            onClick={() => void logout()}
-            aria-label="Sair"
-            title="Sair"
-          >
+          <Button variant="icon-danger" onClick={() => void logout()} aria-label="Sair" title="Sair">
             <LogOut size={17} aria-hidden="true" />
-          </button>
+          </Button>
         </div>
       </header>
       <main id="main-content" tabIndex={-1}>
