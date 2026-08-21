@@ -60,3 +60,38 @@ Comentar o handler partia praticamente toda a suite backend.
 
  - Entender como gerar link seguro e com idepotency para o agendamento, para que o admin possa confirmar ou recusar o agendamento sem precisar de login, e que o link seja válido por um tempo limitado (ex: 24h) e que seja possível invalidar o link caso o agendamento seja cancelado ou recusado.
 - https://chatgpt.com/c/6a837228-b04c-83eb-9e8a-f14dbc8ba1de
+
+- Idepotency for booking submission
+ - It should have a way to generate a unique id for each booking submission, so that if the user submits the same booking multiple times, it will not create multiple bookings in the system. This can be done by generating a unique id for each booking submission and storing it in the database, and then checking if the id already exists before creating a new booking. If the id already exists, it should return an error message to the user indicating that the booking has already been submitted or instead return his booking general status and his url link to see the status of the booking. This will prevent duplicate bookings and ensure that the user can only submit one booking at a time.
+
+# Design System
+-  Criar DESIGN SYSTEM para o projeto, com componentes reutilizáveis e consistentes, para facilitar a manutenção e evolução do projeto.
+ - Ele ta gerando butões com cores diferentes, e isso não é bom para a consistência do projeto, então criar um design system com cores, tipografia, espaçamento, etc, para que o projeto fique mais consistente e fácil de manter.
+
+# UX
+- For tenant search by client, as b2b types should appear live dropdown of filtered clients
+missing toast notifications for sucess/failed operations
+ - all must have
+  - use ux guidelines for toast notifications
+
+# Tests
+- Tests
+ - Unit Tests -> Pure busines logic (policy, mocked services, etc)
+ - Integration Tests -> API and DB
+ - End to End Tests -> Full flow, from frontend to backend and DB
+ - Smoke Tests
+
+# To Think
+- Status Simplification (Nore more cancelled by user)
+
+# Config
+- `settings.environment` (`core/config.py`, `ENVIRONMENT` in .env, Literal["local","staging","production"]) is currently dead — declared but nothing in the codebase branches on it (grepped, zero reads besides the declaration itself).
+ - Possible uses if wired up: `docs_url=None` in production (redundant with nginx/network already blocking /docs, but real defense-in-depth), default `cookie_secure` off the environment instead of a separate flag, tag errors by environment once/if error tracking (Sentry etc.) is added, staging-only feature flags.
+ - Not a GitHub Secret candidate (not sensitive) — `deploy.yml` never writes `.env` at all, it assumes `.env` already exists persistently on the server (git pull + docker compose up only). Would only reach the server via GitHub Secrets/Environments if the deploy workflow is later changed to template `.env` instead of relying on it being set by hand.
+- Web Push notifications scope estimate: see `web-push-scope.md` (curiosity question, not scheduled).
+
+## Backlog
+- um agendamento pode ter mais de um serviço?
+ - Por hora não.
+- Servidor está no brasil
+ - Depois mudar para europa
