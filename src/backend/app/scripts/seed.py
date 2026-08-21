@@ -92,7 +92,7 @@ async def seed() -> None:
 
         customers = []
         for name, phone in CUSTOMERS:
-            customer = await customers_service.find_or_create_customer(db, admin.tenant_id, name, phone)
+            customer = await customers_service.find_or_create_customer(db, admin.tenant_id, name, phone, "PT")
             customers.append(customer)
         print(f"Created {len(customers)} customers")
 

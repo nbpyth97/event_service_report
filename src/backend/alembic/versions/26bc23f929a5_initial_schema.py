@@ -16,6 +16,13 @@ follow-up revision (a1f3c9d7e824) — same rationale as above: still no
 production data, so there's nothing that stepwise revision needed to
 preserve either.
 
+customers.phone (String(50), no schema-level format) was also, briefly,
+followed by a stepwise data migration (7f3a1b2c9d40) that backfilled a
+leading '+' onto every row once phone storage moved to canonical E.164 (see
+core/phone.py::to_e164) — folded back in here for the same reason: no real
+customer data existed yet, so a fresh DB just starts with the app already
+writing E.164 and never has digit-only rows to backfill.
+
 Revision ID: 26bc23f929a5
 Revises: 0001
 Create Date: 2026-08-21
