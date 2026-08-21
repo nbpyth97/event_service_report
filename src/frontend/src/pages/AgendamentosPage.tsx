@@ -183,20 +183,20 @@ export default function AgendamentosPage() {
         <button
           type="button"
           role="tab"
-          aria-selected={mode === "calendar"}
-          className={mode === "calendar" ? "active" : ""}
-          onClick={() => setMode("calendar")}
-        >
-          Calendário
-        </button>
-        <button
-          type="button"
-          role="tab"
           aria-selected={mode === "overview"}
           className={mode === "overview" ? "active" : ""}
           onClick={() => setMode("overview")}
         >
           Visão geral
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={mode === "calendar"}
+          className={mode === "calendar" ? "active" : ""}
+          onClick={() => setMode("calendar")}
+        >
+          Calendário
         </button>
       </div>
 
