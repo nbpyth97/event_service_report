@@ -108,7 +108,9 @@ class AgendamentoOut(BaseModel):
     start_time: datetime
     end_time: datetime
     status: BookingStatus
+    notified_at: datetime | None
     customer_name: str
+    customer_known_name: str
     customer_phone: str | None
     service_name: str
     service_price: Decimal

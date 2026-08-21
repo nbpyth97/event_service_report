@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -39,6 +40,11 @@ async def save(db: AsyncSession, history: AgendamentoStatusHistory) -> None:
     status-history row, in one transaction — the history entry should never
     exist without the state change it describes, or vice versa."""
     db.add(history)
+    await db.commit()
+
+
+async def mark_notified(db: AsyncSession, agendamento: Agendamento, notified_at: datetime) -> None:
+    agendamento.notified_at = notified_at
     await db.commit()
 
 

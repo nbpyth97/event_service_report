@@ -27,7 +27,16 @@ export interface Agendamento {
   start_time: string;
   end_time: string;
   status: "pending" | "confirmed" | "declined" | "cancelled";
+  // Set by PATCH /notify, fired when staff opens the wa.me status-update
+  // link — not a delivery receipt, just "did someone already message them".
+  notified_at: string | null;
+  // Snapshot taken at booking time — used ONLY for the WhatsApp bell's
+  // greeting text (see NotifyWhatsappLink.tsx), never for on-screen display.
   customer_name: string;
+  // Staff's current label for this customer, live off Customer — what every
+  // other display of this booking (list, calendar, modal, search, toasts)
+  // should show, since that's the name staff actually recognizes them by.
+  customer_known_name: string;
   customer_phone: string | null;
   service_name: string;
   service_price: string;
@@ -184,6 +193,7 @@ export const api = {
     request<Agendamento>("/api/agendamentos", { method: "POST", body: JSON.stringify(payload) }),
   updateAgendamentoStatus: (id: string, status: "confirmed" | "declined" | "cancelled") =>
     request<Agendamento>(`/api/agendamentos/${id}/status`, { method: "PATCH", body: JSON.stringify({ status }) }),
+  notifyAgendamento: (id: string) => request<Agendamento>(`/api/agendamentos/${id}/notify`, { method: "PATCH" }),
   agendamentoHistory: (id: string) => request<AgendamentoStatusHistoryEntry[]>(`/api/agendamentos/${id}/history`),
 
   notifications: () => request<Notification[]>("/api/notifications"),

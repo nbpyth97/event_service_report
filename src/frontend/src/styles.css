@@ -2821,6 +2821,12 @@ button:disabled {
   color: var(--color-declined);
 }
 
+/* Already notified: same slot, muted — no longer demands attention, but
+   still clickable to resend. */
+.ticket-whatsapp-link-notified {
+  color: var(--color-muted);
+}
+
 /* List-row icon links sit inline with running text (the name, the status
    chip) — slightly larger tap target than their tiny icon alone, so they're
    still comfortably tappable at this size. */

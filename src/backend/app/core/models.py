@@ -170,6 +170,23 @@ class Agendamento(Base):
     start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     end_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending")
+    # Snapshot of the name to use for THIS booking's correspondence (WhatsApp
+    # greeting, list display) — set once at creation and never touched again.
+    # Deliberately not read live off Customer.customer_known_name: staff can
+    # rename that field to an internal nickname ("Oselio da rua de baixo")
+    # for their own directory, and a booking created (or re-notified) after
+    # that rename must not suddenly greet the customer by staff's private
+    # nickname for them. For a public booking it's exactly what the customer
+    # typed into the form; for a staff-created one it's customer_known_name
+    # as of that moment (see routers/agendamentos.py).
+    customer_name: Mapped[str] = mapped_column(String(150), nullable=False)
+    # Set when staff opens the wa.me link to tell the customer their status —
+    # never set automatically by a status change, only by the explicit
+    # /notify PATCH the frontend fires alongside opening that link. Purely a
+    # "did someone already message them" indicator for staff, not a delivery
+    # receipt (wa.me is a client-side redirect; the backend can't know if the
+    # message was actually sent).
+    notified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
 
@@ -179,9 +196,17 @@ class Agendamento(Base):
 
     # Presentation-friendly accessors for the admin detail view — read from
     # already eager-loaded relationships (see agendamentos/repository.py's
-    # _with_relations), never trigger a lazy load.
+    # _with_relations), never trigger a lazy load. Phone has no
+    # snapshot/nickname split like customer_name above — correcting a typo'd
+    # phone (CustomersPage's edit flow) should apply to every booking, past
+    # and future, so it stays a live read off Customer.
     @property
-    def customer_name(self) -> str:
+    def customer_known_name(self) -> str:
+        """The staff-facing label — live off Customer, so a rename shows up
+        immediately everywhere staff browse bookings (list, calendar, modal,
+        search). The one deliberate exception is the WhatsApp bell, which
+        uses the customer_name snapshot column above instead — see its
+        docstring for why."""
         return self.customer.customer_known_name
 
     @property

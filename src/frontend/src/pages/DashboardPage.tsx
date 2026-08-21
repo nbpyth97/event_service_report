@@ -87,7 +87,7 @@ export default function DashboardPage() {
                   <span className="upcoming-item-service">{a.service_name}</span>
                   <span className="upcoming-item-customer">
                     <User size={13} aria-hidden="true" />
-                    {a.customer_name}
+                    {a.customer_known_name}
                   </span>
                 </div>
                 <div className="upcoming-item-meta">

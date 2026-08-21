@@ -46,7 +46,7 @@ export default function StartingSoonIndicator() {
                   <li key={a.id}>
                     <button type="button" className="reminder-panel-item" onClick={() => handleItemClick(a.id)}>
                       <span className="reminder-panel-item-message">
-                        {a.service_name} — {a.customer_name}
+                        {a.service_name} — {a.customer_known_name}
                       </span>
                       <span className="reminder-panel-item-time">{fmtDateTime(a.start_time)}</span>
                     </button>

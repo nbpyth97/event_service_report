@@ -49,5 +49,6 @@ async def create_public_booking(tenant_slug: str, payload: PublicBookingCreate, 
     company = await companies_service.get_company_by_slug(db, tenant_slug)
     customer = await customers_service.find_or_create_customer(db, company.id, payload.name, payload.phone)
     return await agendamentos_service.create_agendamento(
-        db, company.id, customer.id, payload.service_id, payload.start_time, created_by=None
+        db, company.id, customer.id, payload.service_id, payload.start_time,
+        customer_name=payload.name, created_by=None,
     )

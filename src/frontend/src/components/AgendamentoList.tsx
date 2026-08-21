@@ -1,14 +1,15 @@
 import { useEffect, useRef, useState } from "react";
-import { BellRing, CheckCircle2, MessageCircle, XCircle } from "lucide-react";
+import { CheckCircle2, MessageCircle, XCircle } from "lucide-react";
 import type { Agendamento } from "@/api/client";
 import { useUpdateAgendamentoStatus } from "@/hooks/queries";
 import { useToast } from "@/lib/toast";
 import { fmtPrice, fmtTime } from "@/lib/format";
 import { fmtDateHeading } from "@/lib/date";
 import { zonedDateStr } from "@/lib/tz";
-import { statusUpdateMessage, waLink } from "@/lib/whatsapp";
+import { waLink } from "@/lib/whatsapp";
 import StatusChip from "@/components/StatusChip";
 import AgendamentoDetailModal from "@/components/AgendamentoDetailModal";
+import NotifyWhatsappLink from "@/components/NotifyWhatsappLink";
 
 interface DateGroup {
   dateStr: string;
@@ -61,14 +62,14 @@ function AppointmentRow({
   const handleConfirm = () => {
     updateStatus.mutate(
       { id: agendamento.id, status: "confirmed" },
-      { onSuccess: () => showSuccess(`Marcação de ${agendamento.customer_name} confirmada.`) }
+      { onSuccess: () => showSuccess(`Marcação de ${agendamento.customer_known_name} confirmada.`) }
     );
   };
 
   const handleDecline = () => {
     updateStatus.mutate(
       { id: agendamento.id, status: "declined" },
-      { onSuccess: () => showSuccess(`Marcação de ${agendamento.customer_name} recusada.`) }
+      { onSuccess: () => showSuccess(`Marcação de ${agendamento.customer_known_name} recusada.`) }
     );
     setConfirmingDecline(false);
   };
@@ -102,7 +103,7 @@ function AppointmentRow({
         <div className="appt-row-identity">
           <span className="appt-row-name-line">
             <span className="appt-row-primary appt-row-customer-name">
-              {agendamento.customer_name}
+              {agendamento.customer_known_name}
             </span>
             {agendamento.customer_phone && (
               <a
@@ -110,7 +111,7 @@ function AppointmentRow({
                 target="_blank"
                 rel="noopener noreferrer"
                 className="ticket-whatsapp-link appt-row-icon-link"
-                aria-label={`Falar com ${agendamento.customer_name} via WhatsApp`}
+                aria-label={`Falar com ${agendamento.customer_known_name} via WhatsApp`}
                 title="Falar com o cliente"
                 onClick={(e) => e.stopPropagation()}
               >
@@ -126,17 +127,7 @@ function AppointmentRow({
             <StatusChip status={agendamento.status} />
             {agendamento.customer_phone &&
               (agendamento.status === "confirmed" || agendamento.status === "declined") && (
-                <a
-                  href={waLink(agendamento.customer_phone, statusUpdateMessage(agendamento))}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="ticket-whatsapp-link ticket-whatsapp-link-alert appt-row-icon-link"
-                  aria-label={`Atualizar ${agendamento.customer_name} sobre o estado da marcação via WhatsApp`}
-                  title="Enviar atualização de estado"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <BellRing size={13} aria-hidden="true" />
-                </a>
+                <NotifyWhatsappLink agendamento={agendamento} className="appt-row-icon-link" />
               )}
           </span>
         </div>
@@ -162,7 +153,7 @@ function AppointmentRow({
 
       {confirmingDecline && (
         <div className="ticket-decline-confirm">
-          <p>Recusar a marcação de {agendamento.customer_name}?</p>
+          <p>Recusar a marcação de {agendamento.customer_known_name}?</p>
           <button type="button" className="ticket-decline-cancel" onClick={() => setConfirmingDecline(false)}>
             Cancelar
           </button>

@@ -301,6 +301,7 @@ async def _insert_raw_booking(tenant_id: str, service_id: str, customer_id: str,
                 start_time=start,
                 end_time=end,
                 status="confirmed",
+                customer_name="Cliente",
             )
         )
         await db.commit()

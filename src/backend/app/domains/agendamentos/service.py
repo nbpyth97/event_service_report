@@ -6,7 +6,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.enums import BookingStatus
-from app.core.models import Agendamento, AgendamentoStatusHistory, User
+from app.core.models import Agendamento, AgendamentoStatusHistory, User, utcnow
 from app.domains.agendamentos import repository
 from app.domains.agendamentos.policy import InvalidStatusTransition, validate_transition
 from app.domains.availability.service import is_slot_bookable
@@ -20,12 +20,16 @@ async def create_agendamento(
     customer_id: uuid.UUID,
     service_id: uuid.UUID,
     start_time: datetime,
+    customer_name: str,
     created_by: uuid.UUID | None = None,
 ) -> Agendamento:
     """created_by is the staff member creating this on the admin manual-
     appointment path, or None for a customer's own anonymous booking (see
     routers/public.py) — it's an audit trail, not the booking's identity
-    (customer_id is)."""
+    (customer_id is). customer_name is a one-time snapshot for this booking's
+    correspondence (see models.py::Agendamento.customer_name) — the caller
+    decides what that name is (typed at submission for a public booking,
+    customer_known_name as-of-now for a staff-created one)."""
     service = await get_service(db, tenant_id, service_id)
     end_time = start_time + timedelta(minutes=service.duration_min)
 
@@ -44,6 +48,7 @@ async def create_agendamento(
         start_time=start_time,
         end_time=end_time,
         status=BookingStatus.PENDING.value,
+        customer_name=customer_name.strip(),
     )
     try:
         await repository.insert(db, agendamento)
@@ -101,6 +106,17 @@ async def update_status(
     if previous_status == BookingStatus.CONFIRMED and status == BookingStatus.CANCELLED:
         await notifications_service.notify_booking_cancelled(db, tenant_id, result)
     return result
+
+
+async def mark_notified(db: AsyncSession, current_user: User, agendamento_id: uuid.UUID) -> Agendamento:
+    """Staff opened the wa.me status-update link — record it so the icon
+    reflects "already messaged" across devices/refreshes. Not a delivery
+    receipt (wa.me is a client-side redirect); can be called again to
+    re-notify without restriction."""
+    tenant_id = current_user.tenant_id
+    agendamento = await get_agendamento(db, tenant_id, agendamento_id)
+    await repository.mark_notified(db, agendamento, utcnow())
+    return await get_agendamento(db, tenant_id, agendamento_id)
 
 
 async def get_status_history(db: AsyncSession, current_user: User, agendamento_id: uuid.UUID) -> list[dict]:

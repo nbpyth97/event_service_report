@@ -361,6 +361,118 @@ async def test_public_booking_succeeds_with_no_auth(client, unique_slug):
     assert agendamento["status"] == "pending"
 
 
+async def test_renaming_a_customer_does_not_change_an_existing_bookings_name(client, unique_slug):
+    """A booking's customer_name is a snapshot taken at creation time (see
+    models.py::Agendamento.customer_name) — staff renaming the customer to
+    their own internal nickname afterwards must not retroactively change the
+    wording of an already-created booking's WhatsApp greeting/list display."""
+    company = await _register_company(client, unique_slug)
+    slug = company["tenant_slug"]
+    admin_token, _ = await _login(client, slug, "admin")
+    service = await _create_service(client, admin_token)
+    customer = await _create_customer(client, admin_token, name="Oselio Candido de Araujo Limeira Lima")
+    agendamento = await _book(client, admin_token, service["id"], "2026-09-01T10:00:00Z", customer["id"])
+    assert agendamento["customer_name"] == "Oselio Candido de Araujo Limeira Lima"
+
+    res = await client.put(
+        f"/api/customers/{customer['id']}",
+        json={"customer_known_name": "Oselio da rua de baixo"},
+        headers=_auth_headers(admin_token),
+    )
+    assert res.status_code == 200
+
+    res = await client.get("/api/agendamentos", headers=_auth_headers(admin_token))
+    refreshed = next(a for a in res.json() if a["id"] == agendamento["id"])
+    assert refreshed["customer_name"] == "Oselio Candido de Araujo Limeira Lima"
+
+
+async def test_public_booking_typed_name_is_used_even_for_a_repeat_customer(client, unique_slug):
+    """The typed name on a repeat submission never updates Customer.customer_
+    known_name (see test_customers_router.py), but it should still be the
+    name snapshotted onto *this* booking — e.g. a different family member
+    booking under the same phone."""
+    company = await _register_company(client, unique_slug)
+    slug = company["tenant_slug"]
+    admin_token, _ = await _login(client, slug, "admin")
+    service = await _create_service(client, admin_token)
+
+    await _public_book(client, slug, service["id"], "2026-09-01T10:00:00Z", name="Maria", phone="+351911112222")
+    second = await _public_book(
+        client, slug, service["id"], "2026-09-01T11:00:00Z", name="Filho da Maria", phone="+351911112222"
+    )
+
+    assert second["customer_name"] == "Filho da Maria"
+
+
+async def test_renaming_a_customer_updates_customer_known_name_but_not_customer_name(client, unique_slug):
+    """customer_known_name (staff's current label — shown everywhere on the
+    agendamentos page) tracks a rename live; customer_name (the WhatsApp
+    bell's snapshot) does not — see models.py::Agendamento."""
+    company = await _register_company(client, unique_slug)
+    slug = company["tenant_slug"]
+    admin_token, _ = await _login(client, slug, "admin")
+    service = await _create_service(client, admin_token)
+    customer = await _create_customer(client, admin_token, name="Oselio Candido de Araujo Limeira Lima")
+    agendamento = await _book(client, admin_token, service["id"], "2026-09-01T10:00:00Z", customer["id"])
+    assert agendamento["customer_known_name"] == "Oselio Candido de Araujo Limeira Lima"
+
+    await client.put(
+        f"/api/customers/{customer['id']}",
+        json={"customer_known_name": "Oselio da rua de baixo"},
+        headers=_auth_headers(admin_token),
+    )
+
+    res = await client.get("/api/agendamentos", headers=_auth_headers(admin_token))
+    refreshed = next(a for a in res.json() if a["id"] == agendamento["id"])
+    assert refreshed["customer_known_name"] == "Oselio da rua de baixo"
+    assert refreshed["customer_name"] == "Oselio Candido de Araujo Limeira Lima"
+
+
+async def test_notify_sets_notified_at(client, unique_slug):
+    company = await _register_company(client, unique_slug)
+    slug = company["tenant_slug"]
+    admin_token, _ = await _login(client, slug, "admin")
+    service = await _create_service(client, admin_token)
+    customer = await _create_customer(client, admin_token)
+    agendamento = await _book(client, admin_token, service["id"], "2026-09-01T10:00:00Z", customer["id"])
+    assert agendamento["notified_at"] is None
+
+    res = await client.patch(f"/api/agendamentos/{agendamento['id']}/notify", headers=_auth_headers(admin_token))
+    assert res.status_code == 200
+    assert res.json()["notified_at"] is not None
+
+
+async def test_notify_can_be_called_again_to_resend(client, unique_slug):
+    company = await _register_company(client, unique_slug)
+    slug = company["tenant_slug"]
+    admin_token, _ = await _login(client, slug, "admin")
+    service = await _create_service(client, admin_token)
+    customer = await _create_customer(client, admin_token)
+    agendamento = await _book(client, admin_token, service["id"], "2026-09-01T10:00:00Z", customer["id"])
+
+    first = await client.patch(f"/api/agendamentos/{agendamento['id']}/notify", headers=_auth_headers(admin_token))
+    second = await client.patch(f"/api/agendamentos/{agendamento['id']}/notify", headers=_auth_headers(admin_token))
+    assert second.status_code == 200
+    assert second.json()["notified_at"] >= first.json()["notified_at"]
+
+
+async def test_notify_on_other_tenants_booking_404s(client, unique_slug):
+    company = await _register_company(client, unique_slug)
+    slug = company["tenant_slug"]
+    admin_token, _ = await _login(client, slug, "admin")
+    service = await _create_service(client, admin_token)
+    customer = await _create_customer(client, admin_token)
+    agendamento = await _book(client, admin_token, service["id"], "2026-09-01T10:00:00Z", customer["id"])
+
+    other_company = await _register_company(client, f"{unique_slug}-other")
+    other_admin_token, _ = await _login(client, other_company["tenant_slug"], "admin")
+
+    res = await client.patch(
+        f"/api/agendamentos/{agendamento['id']}/notify", headers=_auth_headers(other_admin_token)
+    )
+    assert res.status_code == 404
+
+
 async def test_public_booking_unknown_tenant_404s(client):
     res = await client.post(
         "/api/public/does-not-exist/book",

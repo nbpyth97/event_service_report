@@ -124,6 +124,7 @@ async def seed() -> None:
                 start_time=start_time,
                 end_time=start_time + timedelta(minutes=service.duration_min),
                 status=BookingStatus.PENDING.value,
+                customer_name=customer.customer_known_name,
             )
             await agendamentos_repository.insert(db, agendamento)
             agendamento = await agendamentos_service.get_agendamento(db, admin.tenant_id, agendamento.id)

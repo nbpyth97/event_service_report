@@ -1,8 +1,14 @@
 """Re-populate the pilot company's agendamentos with a richer,
 presentation-ready set of fake bookings for exercising the week calendar UI —
-every status, a handful of intentionally overlapping bookings (to check the
-side-by-side column layout), and a spread across a closed day (Mon/Sun), past
-days, today, and next week.
+every status, a handful of tightly back-to-back bookings (to check dense-day
+layout), and a spread across a closed day (Mon/Sun), past days, today, and
+next week.
+
+Note: these can be *adjacent* but never *overlapping* — ex_agendamentos_no_
+overlap (see models.py) enforces "one company = one bookable resource"
+tenant-wide, not per-service, so two active bookings at the same time would
+be rejected by the database regardless of which customer or service they're
+for.
 
 Assumes `app/scripts/seed.py` has already created the company, its admin, its
 customers (Maria/Joana/Inês) and its services. Only ever touches that
@@ -89,17 +95,17 @@ async def seed_calendar_demo() -> None:
         bookings = [
             # This week — Tue..Sat only (anabela is closed Mon/Sun)
             (maria, manicure, local_dt(d(0, 1), 9, 0), BookingStatus.CONFIRMED),
-            (joana, sobrancelha, local_dt(d(0, 1), 9, 15), BookingStatus.CONFIRMED),  # overlaps maria's manicure
+            (joana, sobrancelha, local_dt(d(0, 1), 9, 30), BookingStatus.CONFIRMED),  # back-to-back with maria's manicure
             (ines, pedicure, local_dt(d(0, 2), 10, 0), BookingStatus.DECLINED),
             (maria, massagem, local_dt(d(0, 2), 15, 0), BookingStatus.CONFIRMED),
             (joana, depilacao, local_dt(d(0, 3), 11, 0), BookingStatus.CANCELLED),
             (ines, manicure, local_dt(d(0, 3), 16, 30), BookingStatus.CONFIRMED),
             (maria, sobrancelha, local_dt(d(0, 4), 10, 0), BookingStatus.CONFIRMED),
             (joana, pedicure, local_dt(d(0, 4), 14, 0), None),
-            (ines, manicure, local_dt(d(0, 4), 14, 15), None),  # overlaps joana's pedicure
+            (ines, manicure, local_dt(d(0, 4), 14, 45), None),  # back-to-back with joana's pedicure
             (maria, massagem, local_dt(d(0, 4), 17, 0), None),
             (joana, manicure, local_dt(d(0, 5), 9, 30), BookingStatus.CONFIRMED),
-            (maria, sobrancelha, local_dt(d(0, 5), 9, 30), None),  # overlaps joana's manicure
+            (maria, sobrancelha, local_dt(d(0, 5), 10, 0), None),  # back-to-back with joana's manicure
             (ines, depilacao, local_dt(d(0, 5), 12, 0), None),
             # Next week
             (maria, pedicure, local_dt(d(1, 1), 9, 0), None),
@@ -122,6 +128,7 @@ async def seed_calendar_demo() -> None:
                 start_time=start_time,
                 end_time=start_time + timedelta(minutes=service.duration_min),
                 status=BookingStatus.PENDING.value,
+                customer_name=customer.customer_known_name,
             )
             await agendamentos_repository.insert(db, agendamento)
             agendamento = await agendamentos_service.get_agendamento(db, company.id, agendamento.id)

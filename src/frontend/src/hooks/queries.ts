@@ -166,6 +166,14 @@ export function useUpdateAgendamentoStatus() {
   });
 }
 
+export function useNotifyAgendamento() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: api.notifyAgendamento,
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.agendamentos }),
+  });
+}
+
 export function useNotifications() {
   return useQuery({ queryKey: queryKeys.notifications, queryFn: api.notifications });
 }

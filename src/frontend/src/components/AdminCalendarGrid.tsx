@@ -202,10 +202,10 @@ export default function AdminCalendarGrid({
                       width: `calc(${100 / colCount}% - 3px)`,
                     }}
                     onClick={() => setSelectedId(agendamento.id)}
-                    title={`${agendamento.customer_name} · ${agendamento.service_name}`}
+                    title={`${agendamento.customer_known_name} · ${agendamento.service_name}`}
                   >
                     <span className="cal-grid-card-head">
-                      <span className="cal-grid-card-title">{agendamento.customer_name}</span>
+                      <span className="cal-grid-card-title">{agendamento.customer_known_name}</span>
                       <CheckCircle2 className="cal-grid-card-icon" size={11} aria-hidden="true" />
                     </span>
                     {showDetails && <span className="cal-grid-card-subtitle">{agendamento.service_name}</span>}
