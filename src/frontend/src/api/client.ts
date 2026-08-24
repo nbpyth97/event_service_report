@@ -72,7 +72,9 @@ export interface AccessTokenWithUser {
   user: User;
 }
 
-export type DayHours = { open: string; close: string } | null;
+export type LunchBreak = { start: string; end: string };
+
+export type DayHours = { open: string; close: string; lunch_break?: LunchBreak | null } | null;
 
 export interface CompanySettings {
   // The zone slot times are generated and displayed in — fed to

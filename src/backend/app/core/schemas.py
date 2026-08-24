@@ -181,6 +181,30 @@ _HHMM_RE = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
 _DOW_KEYS = ("mon", "tue", "wed", "thu", "fri", "sat", "sun")
 
 
+class LunchBreakIn(BaseModel):
+    """A single blocked window within one day's open/close hours — the picker
+    and the write path both treat it as busy, exactly like an existing
+    agendamento (see availability/service.py::_candidate_slots)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    start: str
+    end: str
+
+    @field_validator("start", "end")
+    @classmethod
+    def _hhmm(cls, value: str) -> str:
+        if not _HHMM_RE.match(value):
+            raise ValueError("Hora deve estar no formato HH:MM (24 horas)")
+        return value
+
+    @model_validator(mode="after")
+    def _start_before_end(self) -> "LunchBreakIn":
+        if self.start >= self.end:
+            raise ValueError("O início do intervalo de almoço deve ser anterior ao fim")
+        return self
+
+
 class DayHoursIn(BaseModel):
     """One weekday's opening window. `None` in place of this object means the
     company is closed that day — see BusinessHoursIn below."""
@@ -189,6 +213,8 @@ class DayHoursIn(BaseModel):
 
     open: str
     close: str
+    # Optional — a day with no lunch_break simply has none, same as today.
+    lunch_break: LunchBreakIn | None = None
 
     @field_validator("open", "close")
     @classmethod
@@ -201,6 +227,12 @@ class DayHoursIn(BaseModel):
     def _open_before_close(self) -> "DayHoursIn":
         if self.open >= self.close:
             raise ValueError("A hora de abertura deve ser anterior à de fecho")
+        return self
+
+    @model_validator(mode="after")
+    def _lunch_break_within_hours(self) -> "DayHoursIn":
+        if self.lunch_break is not None and (self.lunch_break.start < self.open or self.lunch_break.end > self.close):
+            raise ValueError("O intervalo de almoço deve estar dentro do horário de funcionamento")
         return self
 
 

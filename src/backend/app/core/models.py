@@ -14,6 +14,9 @@ NOTIFICATION_TYPES = ("booking_pending", "booking_cancelled")
 # Python's date.weekday() names (mon..sun), open/close in "HH:MM" 24h local time.
 # A day mapped to None means closed. Mirrors the beauty-salon pilot tenant's
 # real hours (tenants/anabela/config.json) as a sane default for any new company.
+# No lunch_break by default — it's opt-in, set later by staff via
+# PATCH /api/companies/me (see DayHoursIn.lunch_break in schemas.py) and
+# treated as a busy interval by availability/service.py::_candidate_slots.
 DEFAULT_COMPANY_SETTINGS = {
     "timezone": "Europe/Lisbon",
     # The step the availability picker walks a day by — candidates land on

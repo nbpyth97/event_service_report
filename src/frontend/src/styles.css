@@ -3706,12 +3706,28 @@ button:disabled {
 .settings-day-times {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 0.35rem;
   color: var(--color-muted);
+  min-width: 0;
+  max-width: 100%;
 }
 
+/* Native <input type="time"> has no intrinsic shrink behaviour — left alone
+   it renders at its browser/OS default width (wider still on iOS Safari,
+   which draws an AM/PM segment), which is what was pushing the second input
+   of a pair past the edge of the screen and into body's overflow-x: hidden
+   (styles.css ~L101), i.e. silently clipped rather than scrollable into
+   view. Capping the width and allowing it to shrink is what keeps a pair,
+   plus the em dash between them, inside even a narrow phone's width — this
+   matters more now that the lunch-break section nests them one level
+   deeper than a plain weekday row. */
 .settings-day-times input {
-  padding: 0.35rem 0.45rem;
+  width: 6.4rem;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 0.35rem 0.4rem;
   font-family: var(--font-mono);
   font-size: 0.85rem;
   color: var(--color-ink);
@@ -3729,6 +3745,12 @@ button:disabled {
     flex-basis: 100%;
     justify-content: flex-end;
   }
+
+  .settings-day-times input {
+    width: 5.6rem;
+    padding: 0.32rem 0.3rem;
+    font-size: 0.8rem;
+  }
 }
 
 .settings-day-times input[aria-invalid="true"] {
@@ -3744,6 +3766,99 @@ button:disabled {
   margin: 0;
   font-size: 0.76rem;
   color: var(--color-declined);
+}
+
+/* The optional lunch-break block below the seven weekday rows, set off with a
+   divider since it isn't another day — its own checkbox opts it in, same
+   pattern as a weekday's isOpen toggle. */
+.settings-lunch-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-top: 0.3rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.settings-lunch-row > .settings-day-toggle span {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.settings-lunch-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-left: calc(18px + 0.5rem);
+  min-width: 0;
+}
+
+/* The indent that reads fine on desktop eats directly into the width budget
+   the time inputs need on a narrow phone — drop it below 480px rather than
+   fight for the same pixels twice. */
+@media (max-width: 480px) {
+  .settings-lunch-body {
+    padding-left: 0;
+  }
+}
+
+.settings-lunch-apply-all {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.82rem;
+  color: var(--color-muted);
+  cursor: pointer;
+}
+
+.settings-lunch-apply-all input {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  accent-color: var(--color-primary);
+  padding: 0;
+}
+
+.settings-lunch-hint {
+  margin: 0;
+}
+
+/* Granular per-day mode: one compact row per open day, each with its own
+   on/off checkbox — closed days are filtered out before this ever renders,
+   since there are no hours in them to break. */
+.settings-lunch-per-day {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.settings-lunch-day-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.settings-day-toggle-small {
+  font-size: 0.82rem;
+  font-weight: 400;
+  min-width: 8.5rem;
+}
+
+.settings-day-toggle-small input {
+  width: 16px;
+  height: 16px;
+}
+
+/* The 8.5rem min-width exists so the seven day labels line up on desktop;
+   on a narrow phone it just forces the row wider than the screen has room
+   for. Letting it shrink to content here is what lets .settings-day-times
+   drop to its own full-width line below instead of both fighting for the
+   same row. */
+@media (max-width: 480px) {
+  .settings-day-toggle-small {
+    min-width: 0;
+  }
 }
 
 /* .form-error is the app-wide field error (see NewCustomerForm); inside a

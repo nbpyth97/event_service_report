@@ -63,6 +63,14 @@ async def _candidate_slots(
     step = _slot_interval(company_settings)
 
     busy = await repository.list_busy_intervals(db, tenant_id, open_dt, close_dt)
+    # Lunch break is a fixed daily blocked window, not a real agendamento, so it
+    # is folded into `busy` here rather than stored in the DB — same overlap
+    # check as an existing booking, applied once per day instead of per query.
+    lunch_break = hours.get("lunch_break")
+    if lunch_break:
+        lunch_start = datetime.combine(day, time.fromisoformat(lunch_break["start"]), tzinfo=tz)
+        lunch_end = datetime.combine(day, time.fromisoformat(lunch_break["end"]), tzinfo=tz)
+        busy.append((lunch_start, lunch_end))
     now = datetime.now(timezone.utc)
 
     # Two independent knobs, and conflating them was the old bug: the cursor

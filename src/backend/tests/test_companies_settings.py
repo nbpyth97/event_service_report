@@ -130,9 +130,36 @@ async def test_patch_rejects_slug_and_bad_values(client, unique_slug):
         {"settings": {"business_hours": {"mon": {"open": "09:00", "close": "18:00"}}}},  # partial week
         {"settings": {"business_hours": {**OPEN_WEEK, "mon": {"open": "19:00", "close": "09:00"}}}},  # close <= open
         {"settings": {"business_hours": {**OPEN_WEEK, "mon": {"open": "9:00", "close": "18:00"}}}},  # not HH:MM
+        # lunch_break end before start
+        {
+            "settings": {
+                "business_hours": {
+                    **OPEN_WEEK,
+                    "mon": {"open": "10:00", "close": "20:00", "lunch_break": {"start": "14:00", "end": "13:00"}},
+                }
+            }
+        },
+        # lunch_break outside the day's open/close window
+        {
+            "settings": {
+                "business_hours": {
+                    **OPEN_WEEK,
+                    "mon": {"open": "10:00", "close": "20:00", "lunch_break": {"start": "09:00", "end": "13:00"}},
+                }
+            }
+        },
     ):
         res = await client.patch("/api/companies/me", headers=headers, json=payload)
         assert res.status_code == 422, f"{payload} was accepted: {res.text}"
+
+
+async def test_patch_accepts_lunch_break_within_hours(client, unique_slug):
+    _, headers = await _staff_client(client, unique_slug)
+    week = {**OPEN_WEEK, "mon": {"open": "10:00", "close": "20:00", "lunch_break": {"start": "13:00", "end": "14:00"}}}
+
+    res = await client.patch("/api/companies/me", headers=headers, json={"settings": {"business_hours": week}})
+    assert res.status_code == 200, res.text
+    assert res.json()["settings"]["business_hours"]["mon"]["lunch_break"] == {"start": "13:00", "end": "14:00"}
 
 
 async def test_patch_requires_auth(client):
