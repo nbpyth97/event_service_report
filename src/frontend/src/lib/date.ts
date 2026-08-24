@@ -1,0 +1,60 @@
+import { getDisplayTimeZone } from "@/lib/tz";
+
+export const DOW_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
+export type DowKey = (typeof DOW_KEYS)[number];
+
+export function toDateStr(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+export function dowKeyOf(d: Date): DowKey {
+  return DOW_KEYS[d.getDay()];
+}
+
+export function addDays(d: Date, days: number): Date {
+  const next = new Date(d);
+  next.setDate(next.getDate() + days);
+  return next;
+}
+
+// Monday-first week, matching how the booking calendar and date-range
+// presets both read a "week" — Sunday is the tail end, not the start.
+export function startOfWeek(d: Date): Date {
+  const day = d.getDay();
+  return addDays(d, day === 0 ? -6 : 1 - day);
+}
+
+// The chosen slot, spelled out in full on a booking confirmation — this is
+// the last thing someone reads before committing, so it names the weekday and
+// month rather than leaning on a numeric dd/mm.
+export function fmtSlot(iso: string): string {
+  return new Date(iso).toLocaleString("pt-PT", {
+    timeZone: getDisplayTimeZone(),
+    weekday: "long",
+    day: "2-digit",
+    month: "long",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+// Portuguese weekday names take different prepositions by grammatical
+// gender: the "-feira" days (segunda-feira ... sexta-feira) are feminine
+// ("na segunda-feira"), but sábado and domingo are masculine ("no sábado",
+// "no domingo") — a single hardcoded "em" before fmtSlot's output ("em
+// sábado") reads wrong for one group or the other. Reads the weekday off the
+// same locale/timezone fmtSlot uses, so the two never disagree about which
+// day is meant.
+export function weekdayPreposition(iso: string): "na" | "no" {
+  const weekday = new Date(iso).toLocaleDateString("pt-PT", { timeZone: getDisplayTimeZone(), weekday: "long" });
+  return weekday.startsWith("sábado") || weekday.startsWith("domingo") ? "no" : "na";
+}
+
+// "Hoje" / "Amanhã" read faster than a weekday name when scanning a
+// schedule — full weekday+day+month only once the date is further out.
+export function fmtDateHeading(d: Date): string {
+  const dStr = toDateStr(d);
+  if (dStr === toDateStr(new Date())) return "Hoje";
+  if (dStr === toDateStr(addDays(new Date(), 1))) return "Amanhã";
+  return d.toLocaleDateString("pt-PT", { weekday: "long", day: "2-digit", month: "long" });
+}

@@ -1,0 +1,53 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: meeting-scheduler-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./src/backend
+    container_name: meeting-scheduler-backend
+    restart: unless-stopped
+    entrypoint: ["sh", "-c", "uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --timeout-graceful-shutdown 5"]
+    env_file: .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8020:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/api/health/live || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+
+  backup_postgres:
+    image: alpine:3.20
+    profiles: ["backup"]
+    container_name: meeting-scheduler-backup
+    env_file: .env
+    depends_on:
+      - postgres
+    volumes:
+      - backup_tmp:/backups
+    entrypoint: ["/bin/sh", "-c", "
+      apk add --no-cache aws-cli postgresql16-client &&
+      mkdir -p /backups &&
+      PGPASSWORD=$$POSTGRES_PASSWORD pg_dump -h postgres -U $$POSTGRES_USER -d $$POSTGRES_DB -F c -f /backups/meeting_scheduler_$$YEAR-$$MONTH-$$DAY.dump &&
+      gzip -f /backups/meeting_scheduler_$$YEAR-$$MONTH-$$DAY.dump &&
+      aws s3 cp /backups/meeting_scheduler_$$YEAR-$$MONTH-$$DAY.dump.gz s3://$${AWS_S3_BUCKET_NAME}/meeting-scheduler/$$YEAR/$$MONTH/$${DAY}/meeting_scheduler.dump.gz"]
+
+volumes:
+  postgres_data:
+  backup_tmp:

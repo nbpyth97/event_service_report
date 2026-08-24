@@ -1,0 +1,3800 @@
+:root {
+  --color-ink: #1a1a1a;
+  --color-muted: #666;
+  --color-bg: #f7f7f8;
+  --color-surface: #fff;
+  --color-border: #e5e5e5;
+  --color-primary: #2563eb;
+  --color-primary-soft: #eff6ff;
+
+  /* Status semantics — always paired with an icon, never color-only.
+     Pending is amber (needs-attention) and declined is red (rejected) —
+     kept on clearly different hues (not just different shades of
+     orange/red) so they're distinguishable at a glance, not just on
+     close inspection. */
+  --color-pending: #b45309;
+  --color-pending-soft: #fef3e2;
+  /* Theme-invariant (same value in both themes) — used only for the
+     status-breakdown bar/dot decorative fill, which the dark theme's amber
+     (#e08e3e) reads better on than the darker --color-pending used for text
+     contrast on the light theme's pale --color-pending-soft background. */
+  --color-pending-chart: #e08e3e;
+  --color-confirmed: #16a34a;
+  --color-confirmed-soft: #ecfdf3;
+  --color-declined: #dc2626;
+  --color-declined-soft: #fef2f2;
+
+  /* Ledger accent — antique gold, reserved for the "value" reading of the
+     admin panel (revenue figures, the Painel header rule, stat-card marks).
+     Never used for buttons/links — that stays --color-primary's job. */
+  --color-accent: #9c7a1e;
+  --color-accent-soft: #f7f0dd;
+
+  /* Platform brand mark — used only for the "powered by" line under the
+     tenant name in the header. Deliberately its own token, not reused from
+     --color-pending or --color-accent, so it never picks up their semantics. */
+  --color-brand: #ea580c;
+
+  /* Reminders badge (StartingSoonIndicator) — a lighter, more saturated
+     orange than --color-pending's dark amber, so the "starting soon" count
+     reads as visually distinct from the notification bell's red badge
+     right next to it, not just a muted variant of the same color. */
+  --color-reminder: #f97316;
+
+  --color-dot: #dcdce0;
+  --color-skeleton-base: #eee;
+  --color-skeleton-highlight: #f5f5f5;
+
+  --font-mono: ui-monospace, "SF Mono", Consolas, monospace;
+  --font-display: "Fraunces", Georgia, serif;
+
+  --radius-card: 10px;
+  --touch-min: 44px;
+}
+
+/* Dark theme — same token names, different values, so every component that
+   already reads var(--color-*) themes for free. Status semantics (pending/
+   confirmed/declined) keep the same hue relationships, just brightened for
+   contrast against a dark surface. */
+:root[data-theme="dark"] {
+  --color-ink: #eceaf2;
+  --color-muted: #9694a3;
+  --color-bg: #121118;
+  --color-surface: #1c1b24;
+  --color-border: #2d2c39;
+  --color-primary: #3b82f6;
+  --color-primary-soft: #172647;
+
+  --color-pending: #e08e3e;
+  --color-pending-soft: #3a2a12;
+  --color-confirmed: #34d399;
+  --color-confirmed-soft: #103324;
+  --color-declined: #f87171;
+  --color-declined-soft: #3a1518;
+
+  --color-accent: #d8b34a;
+  --color-accent-soft: #362c14;
+
+  --color-brand: #fb923c;
+  --color-reminder: #fb923c;
+
+  --color-dot: #29283333;
+  --color-skeleton-base: #26252f;
+  --color-skeleton-highlight: #322f3d;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Theme-aware by default: form controls inherit current-theme colors so new
+   ones never need to hardcode a shade (and can't silently regress in dark
+   mode). Override only for a deliberate reason, and prefer a variable. */
+input,
+select,
+textarea {
+  background: var(--color-surface);
+  color: var(--color-ink);
+}
+
+html, body {
+  overflow-x: hidden;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, sans-serif;
+  background: var(--color-bg);
+  color: var(--color-ink);
+  transition: background 0.2s ease-out, color 0.2s ease-out;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Keyboard-only skip link — off-screen until focused, then jumps above the
+   nav so keyboard users don't have to tab through it on every page. */
+.skip-link {
+  position: absolute;
+  top: -50px;
+  left: 0.5rem;
+  background: var(--color-primary);
+  color: #fff;
+  padding: 0.6rem 1rem;
+  border-radius: 0 0 6px 6px;
+  z-index: 50;
+  text-decoration: none;
+  font-weight: 600;
+  transition: top 0.15s ease-out;
+}
+
+.skip-link:focus-visible {
+  top: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+.center-screen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+}
+
+/* Header is two stacked rows on the same themed surface (not a fixed-dark
+   bar), so both follow the light/dark toggle like every other surface.
+   Row 1 (.app-topbar): brand identity + account controls — who/what.
+   Row 2 (.app-nav): section tabs — where. Splitting them means neither row
+   fights the other for space, so nav labels can stay visible instead of
+   collapsing to icon-only on narrow phones. */
+.app-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+  padding: 0.5rem 1rem;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+@media (min-width: 480px) {
+  .app-topbar {
+    gap: 0.6rem;
+    padding: 0.6rem 1.25rem;
+  }
+}
+
+.app-topbar-identity {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.app-topbar-brand {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.05rem;
+  color: var(--color-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.app-topbar-powered {
+  font-size: 0.66rem;
+  color: var(--color-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.app-topbar-powered-brand {
+  color: var(--color-brand);
+  font-weight: 600;
+}
+
+/* Bottom tab bar — ported from activity-tracker's .bottom-nav pattern
+   (fixed to viewport bottom, one tab per route, active tab picks up the
+   primary color). #main-content gets matching bottom padding so content
+   never sits underneath the fixed bar. */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+  padding-bottom: env(safe-area-inset-bottom);
+  z-index: 20;
+}
+
+.bottom-nav a {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 8px 0 10px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  text-decoration: none;
+  color: var(--color-muted);
+  opacity: 0.7;
+  font-size: 0.72rem;
+  font-family: inherit;
+  min-height: var(--touch-min);
+}
+
+.bottom-nav a.active {
+  color: var(--color-primary);
+  opacity: 1;
+  font-weight: 600;
+}
+
+.bottom-nav .nav-icon {
+  width: 22px;
+  height: 22px;
+}
+
+#main-content {
+  padding-bottom: calc(64px + env(safe-area-inset-bottom));
+}
+
+/* Just the two "happening now" controls (reminders, notifications) — the
+   account/profile cluster moved to the bottom nav (see ProfileMenu.tsx), so
+   this row no longer needs generous whitespace standing in for a third,
+   unrelated destination. Tight gap reads as one cluster. */
+.app-nav-account {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  flex-shrink: 0;
+}
+
+.profile-menu {
+  position: relative;
+  flex: 1;
+  display: flex;
+}
+
+.bottom-nav-profile {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 8px 0 10px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--color-muted);
+  opacity: 0.7;
+  font-size: 0.72rem;
+  font-family: inherit;
+  min-height: var(--touch-min);
+}
+
+.bottom-nav-profile[aria-expanded="true"] {
+  color: var(--color-primary);
+  opacity: 1;
+  font-weight: 600;
+}
+
+.bottom-nav-avatar {
+  width: 22px;
+  height: 22px;
+  font-size: 0.62rem;
+}
+
+.app-nav-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  border: 1.5px solid var(--color-primary);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.bottom-nav-profile:hover .app-nav-avatar,
+.bottom-nav-profile[aria-expanded="true"] .app-nav-avatar {
+  background: var(--color-primary);
+  color: var(--color-surface);
+}
+
+.profile-menu-panel {
+  max-width: 260px;
+  padding: 0.4rem;
+}
+
+.profile-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  background: none;
+  border: none;
+  border-radius: 8px;
+  padding: 0.6rem 0.65rem;
+  font-size: 0.88rem;
+  color: var(--color-ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+.profile-menu-item:hover {
+  background: var(--color-bg);
+}
+
+.profile-menu-item-danger {
+  color: var(--color-declined);
+}
+
+.profile-menu-item-danger:hover {
+  background: var(--color-declined-soft);
+}
+
+.profile-menu-divider {
+  height: 1px;
+  background: var(--color-border);
+  margin: 0.3rem 0.2rem;
+}
+
+/* Generic square icon button — shared by every icon-only trigger in the app
+   (nav logout, theme toggle, notification/reminder bells, …), not just the
+   nav row. Row 1's icons run a touch under the 44px touch-target guideline
+   on the narrowest phones (38px) — a deliberate trade against six controls
+   crushing the brand name to a few letters. Full 44px from ~480px up, where
+   there's room for both. */
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  background: transparent;
+  color: var(--color-muted);
+  border: none;
+  border-radius: 8px;
+}
+
+@media (min-width: 480px) {
+  .btn-icon {
+    width: var(--touch-min);
+    height: var(--touch-min);
+  }
+}
+
+.btn-icon:hover {
+  color: var(--color-ink);
+  background: var(--color-bg);
+}
+
+/* Reserved icon slots (history/notifications) with no feature behind them
+   yet — visibly inert rather than pretending to be live. */
+.btn-icon:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn-icon:disabled:hover {
+  color: var(--color-muted);
+  background: transparent;
+}
+
+.btn-icon-danger {
+  color: var(--color-declined);
+}
+
+.btn-icon-danger:hover {
+  color: var(--color-declined);
+  background: var(--color-declined-soft);
+}
+
+.notification-bell {
+  position: relative;
+}
+
+.notification-bell-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--color-declined);
+  color: #fff;
+  border: 2px solid var(--color-surface);
+  font-size: 0.62rem;
+  font-weight: 700;
+  line-height: 14px;
+  text-align: center;
+}
+
+/* Notification/reminder panel — layout and grid ported from the
+   activity-tracker reference (src/frontend/src/components/NotificationPanel.tsx
+   + its .panel* CSS): a fixed, viewport-centered modal with a dimming
+   backdrop, rather than a dropdown anchored to the trigger icon. This is
+   what keeps it readable and centered on narrow mobile viewports instead of
+   a small anchored popover running off-screen. */
+.reminder-panel-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 30;
+}
+
+.reminder-panel {
+  position: fixed;
+  top: 64px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 24px);
+  max-width: 440px;
+  max-height: 70vh;
+  overflow-y: auto;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  z-index: 31;
+  padding: 0.75rem;
+}
+
+:root[data-theme="dark"] .reminder-panel {
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.reminder-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.reminder-panel-title {
+  font-size: 1.02rem;
+  font-weight: 700;
+  color: var(--color-ink);
+}
+
+/* Plain text-link button — was .reminder-panel-close, duplicated verbatim
+   across NotificationBell and StartingSoonIndicator; now one class both
+   panels' "Fechar" button shares via Button's variant="link". */
+.btn-link {
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0.2rem 0.3rem;
+}
+
+.reminder-panel-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.reminder-panel-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  width: 100%;
+  text-align: left;
+  background: var(--color-bg);
+  color: var(--color-ink);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 0.6rem 0.7rem;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.88rem;
+  transition: background 0.15s ease, transform 0.1s ease, border-color 0.15s ease;
+}
+
+.reminder-panel-item:active {
+  transform: scale(0.98);
+}
+
+@media (hover: hover) {
+  .reminder-panel-item:hover {
+    border-color: var(--color-primary);
+  }
+}
+
+.reminder-panel-item-unread {
+  background: var(--color-primary-soft);
+}
+
+.reminder-panel-item-message {
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.reminder-panel-item-time {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--color-muted);
+}
+
+.reminder-panel-empty {
+  color: var(--color-muted);
+  font-size: 0.85rem;
+  padding: 0.5rem 0.2rem;
+}
+
+/* NotificationBell's two sections — "Requer ação" (pending) vs "Histórico"
+   (cancelled) — reuse .reminder-panel-item/-list as their card/list shell
+   (shared with StartingSoonIndicator) but layer in a scannable title +
+   status-badge header instead of one long prefixed sentence. */
+.notif-group + .notif-group {
+  margin-top: 0.9rem;
+}
+
+.notif-group-title {
+  margin: 0 0 0.4rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-muted);
+}
+
+.notif-card-trigger {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  cursor: pointer;
+}
+
+.notif-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.notif-card-customer {
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: var(--color-ink);
+}
+
+.notif-card-service {
+  font-size: 0.82rem;
+  color: var(--color-muted);
+}
+
+.notif-card-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  padding-top: 0.55rem;
+  border-top: 1px solid var(--color-border);
+}
+
+/* Layout only — background/color/border stay owned by .btn-confirm /
+   .btn-danger-outline (and the global button default they fall back to) so
+   this can't end up on the wrong side of a stylesheet-order fight with them. */
+.notif-action-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  padding: 0.4rem 0;
+  font-size: 0.78rem;
+  border-radius: 8px;
+}
+
+/* Starting-soon reminders reuse the bell's badge/panel shell but in the
+   app's existing warm "needs attention" tone (matches
+   .ledger-header-status-alert), so the two live indicators read as related
+   but distinct at a glance. */
+.starting-soon-badge {
+  background: var(--color-reminder);
+}
+
+.page {
+  padding: 1rem;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+/* Sign in / register — a quiet "console" treatment: dotted-grid backdrop,
+   monospace status line, corner brackets on the card like a viewfinder,
+   card shakes on error. Ported from the activity-tracker reference. */
+.auth-screen {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.4rem;
+  padding: 2rem 1.25rem;
+  background-color: var(--color-bg);
+  background-image: radial-gradient(var(--color-dot) 1px, transparent 1px);
+  background-size: 20px 20px;
+  background-position: center;
+}
+
+.auth-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: ui-monospace, "SF Mono", Consolas, monospace;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: var(--color-muted);
+  animation: auth-in 0.4s ease-out both;
+}
+
+.auth-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--color-confirmed);
+  animation: auth-pulse 2s ease-out infinite;
+}
+
+@keyframes auth-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.5);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(22, 163, 74, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(22, 163, 74, 0);
+  }
+}
+
+.auth-card {
+  position: relative;
+  width: 100%;
+  max-width: 360px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  padding: 1.75rem 1.5rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1);
+  animation: auth-in 0.4s ease-out 0.08s both;
+}
+
+.auth-card-shake {
+  animation: auth-shake 0.4s ease-in-out;
+}
+
+@keyframes auth-shake {
+  10%,
+  90% {
+    transform: translateX(-2px);
+  }
+  20%,
+  80% {
+    transform: translateX(3px);
+  }
+  30%,
+  50%,
+  70% {
+    transform: translateX(-5px);
+  }
+  40%,
+  60% {
+    transform: translateX(5px);
+  }
+}
+
+.auth-corner {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--color-primary);
+  opacity: 0.7;
+}
+
+.auth-corner-tl {
+  top: -1px;
+  left: -1px;
+  border-right: none;
+  border-bottom: none;
+  border-top-left-radius: 4px;
+}
+.auth-corner-tr {
+  top: -1px;
+  right: -1px;
+  border-left: none;
+  border-bottom: none;
+  border-top-right-radius: 4px;
+}
+.auth-corner-bl {
+  bottom: -1px;
+  left: -1px;
+  border-right: none;
+  border-top: none;
+  border-bottom-left-radius: 4px;
+}
+.auth-corner-br {
+  bottom: -1px;
+  right: -1px;
+  border-left: none;
+  border-top: none;
+  border-bottom-right-radius: 4px;
+}
+
+.auth-title {
+  font-size: 1.4rem;
+  margin: 0;
+}
+
+.auth-subtitle {
+  color: var(--color-muted);
+  font-size: 0.88rem;
+  margin: -0.5rem 0 0;
+}
+
+.auth-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.auth-label {
+  font-family: ui-monospace, "SF Mono", Consolas, monospace;
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: var(--color-muted);
+}
+
+.auth-field-hint {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--color-muted);
+}
+
+.booking-notes-input {
+  padding: 0.6rem;
+  font-size: 0.95rem;
+  font-family: inherit;
+  border-radius: 6px;
+  border: 1px solid var(--color-border);
+  resize: vertical;
+  min-height: 2.5rem;
+}
+
+.booking-notes-count {
+  align-self: flex-end;
+}
+
+/* Password show/hide toggle — a plain flex child of .service-form-input-wrap
+   now (same icon-and-pill container every other input in the app uses),
+   not an absolutely-positioned overlay. */
+.auth-input-adorn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: none;
+  background: transparent;
+  color: var(--color-muted);
+  border-radius: 6px;
+  cursor: pointer;
+  padding: 0.2rem;
+}
+
+.auth-input-adorn:hover {
+  color: var(--color-primary);
+  background: var(--color-primary-soft);
+}
+
+.auth-submit {
+  width: 100%;
+  margin-top: 0.25rem;
+}
+
+.auth-hint {
+  max-width: 320px;
+  text-align: center;
+  color: var(--color-muted);
+  font-size: 0.8rem;
+  animation: auth-in 0.4s ease-out 0.16s both;
+}
+
+@keyframes auth-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.auth-form,
+.service-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  width: 100%;
+  max-width: 360px;
+}
+
+.service-form {
+  max-width: none;
+  background: var(--color-surface);
+  padding: 1rem 1.1rem 1.1rem;
+  border-radius: var(--radius-card);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  margin-bottom: 1rem;
+}
+
+.service-form-label {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+  margin: 0 0 0.15rem;
+}
+
+.service-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  flex: 1;
+}
+
+.service-form-field > span {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-muted);
+}
+
+.service-form-row {
+  display: flex;
+  gap: 0.6rem;
+}
+
+/* Same bordered-pill-with-icon treatment as .search-filter-input, so
+   every text input with a leading icon in the app looks the same. */
+.service-form-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  padding: 0 0.75rem;
+  min-height: var(--touch-min);
+}
+
+.service-form-input-wrap:focus-within {
+  border-color: var(--color-primary);
+}
+
+.service-form-input-wrap svg {
+  color: var(--color-muted);
+  flex-shrink: 0;
+}
+
+.service-form-input-wrap input {
+  border: none;
+  background: none;
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  padding: 0;
+}
+
+.service-form-input-wrap input:focus {
+  outline: none;
+}
+
+.service-form-input-suffix {
+  color: var(--color-muted);
+  font-size: 0.82rem;
+  font-family: var(--font-mono);
+  flex-shrink: 0;
+}
+
+/* Country picker + phone input side by side — see CountryCodeSelect.tsx.
+   The picker's closed state only shows a flag + dial code ("🇵🇹 +351"), not
+   the full country name, so it stays a small fixed-width chip on a phone
+   screen and the number input gets almost all the row — the real <select>
+   (with full "Name (+dial)" option text) is layered on top, invisible, so
+   the native mobile picker still opens on tap. */
+.phone-field-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.phone-field-row .service-form-input-wrap {
+  flex: 1;
+  min-width: 0;
+}
+
+.country-code-select {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  padding: 0 0.5rem;
+  min-height: var(--touch-min);
+  flex-shrink: 0;
+}
+
+.country-code-select:focus-within {
+  border-color: var(--color-primary);
+}
+
+.country-code-select-flag {
+  width: 20px;
+  height: 15px;
+  object-fit: cover;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.country-code-select-code {
+  font-size: 0.85rem;
+  color: var(--color-ink);
+  white-space: nowrap;
+}
+
+.country-code-select-chevron {
+  color: var(--color-muted);
+  flex-shrink: 0;
+}
+
+.country-code-select-native {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  border: none;
+  cursor: pointer;
+}
+
+.service-form button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: var(--radius-card);
+  min-height: var(--touch-min);
+  font-weight: 600;
+  margin-top: 0.2rem;
+}
+
+input,
+select,
+button {
+  padding: 0.6rem;
+  font-size: 1rem;
+  border-radius: 6px;
+  border: 1px solid var(--color-border);
+}
+
+button {
+  background: var(--color-primary);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.form-error {
+  color: var(--color-declined);
+  margin: 0;
+}
+
+.service-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.service-list-item {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  background: var(--color-surface);
+  padding: 0.75rem;
+  border-radius: 8px;
+}
+
+/* Status is always icon + label (see StatusChip.tsx), never color alone. */
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.status-chip.status-pending {
+  background: var(--color-pending-soft);
+  color: var(--color-pending);
+}
+
+.status-chip.status-confirmed {
+  background: var(--color-confirmed-soft);
+  color: var(--color-confirmed);
+}
+
+.status-chip.status-declined,
+.status-chip.status-cancelled {
+  background: var(--color-declined-soft);
+  color: var(--color-declined);
+}
+
+/* Page titles get the ledger's display face; everything else stays system-ui. */
+.page h1 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.9rem;
+  margin: 0 0 1rem;
+}
+
+.page h2 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.2rem;
+  margin: 0 0 0.6rem;
+}
+
+/* Ledger header — a date line above the Painel's stats, styled like the top
+   of a paper appointment book: mono date, a live status readout, gold rule. */
+.ledger-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding-bottom: 0.6rem;
+  margin-bottom: 0.75rem;
+  border-bottom: 2px solid var(--color-accent);
+}
+
+.ledger-header-date {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.03em;
+  color: var(--color-muted);
+}
+
+.ledger-header-date::first-letter {
+  text-transform: uppercase;
+}
+
+.ledger-header-status {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--color-confirmed);
+}
+
+.ledger-header-status-alert {
+  color: var(--color-pending);
+}
+
+/* Mobile-first: single column, promote to a 3-up grid from tablet width up. */
+.dashboard-cards {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+  margin-bottom: 1.75rem;
+}
+
+@media (min-width: 640px) {
+  .dashboard-cards {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.stat-card {
+  background: var(--color-surface);
+  border-radius: var(--radius-card);
+  padding: 1.1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  border-top: 3px solid var(--color-accent);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+/* Only Serviços/Agendamentos link out — Receita has nowhere to go yet, so
+   it deliberately stays a plain, non-interactive card. */
+.stat-card-link {
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  transition: box-shadow 0.15s ease-out, transform 0.15s ease-out;
+}
+
+.stat-card-link:hover {
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
+}
+
+.stat-card-icon {
+  color: var(--color-accent);
+  margin-bottom: 0.35rem;
+}
+
+.stat-card-value {
+  font-family: var(--font-display);
+  font-size: 1.9rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.stat-card-label {
+  color: var(--color-ink);
+  font-weight: 500;
+}
+
+.stat-card-secondary {
+  color: var(--color-muted);
+  font-size: 0.82rem;
+  font-family: var(--font-mono);
+}
+
+.dashboard-section {
+  margin-bottom: 1.75rem;
+}
+
+/* Status breakdown — a single segmented bar sized by count, plus a legend.
+   Reuses the app's existing status colors; no new semantics introduced. */
+.status-breakdown {
+  background: var(--color-surface);
+  border-radius: var(--radius-card);
+  padding: 1rem 1.1rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+.status-breakdown-bar {
+  display: flex;
+  height: 10px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--color-border);
+}
+
+.status-breakdown-segment.status-pending {
+  background: var(--color-pending-chart);
+}
+.status-breakdown-segment.status-confirmed {
+  background: var(--color-confirmed);
+}
+.status-breakdown-segment.status-declined {
+  background: var(--color-declined);
+}
+.status-breakdown-segment.status-cancelled {
+  background: var(--color-muted);
+}
+
+.status-breakdown-legend {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  padding: 0;
+  margin: 0.75rem 0 0;
+  font-size: 0.82rem;
+  color: var(--color-muted);
+}
+
+.status-breakdown-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.status-breakdown-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.status-breakdown-legend-item.status-pending .status-breakdown-dot {
+  background: var(--color-pending-chart);
+}
+.status-breakdown-legend-item.status-confirmed .status-breakdown-dot {
+  background: var(--color-confirmed);
+}
+.status-breakdown-legend-item.status-declined .status-breakdown-dot {
+  background: var(--color-declined);
+}
+.status-breakdown-legend-item.status-cancelled .status-breakdown-dot {
+  background: var(--color-muted);
+}
+
+/* Upcoming list — a quieter, non-actionable echo of the ticket-card rows
+   used in Agendamentos, sized for a dashboard preview. */
+.upcoming-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.upcoming-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  background: var(--color-surface);
+  border-radius: var(--radius-card);
+  padding: 0.75rem 1rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+.upcoming-item-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.upcoming-item-service {
+  font-weight: 600;
+}
+
+.upcoming-item-customer {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: var(--color-muted);
+  font-size: 0.85rem;
+}
+
+.upcoming-item-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.upcoming-item-time {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: var(--color-muted);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+}
+
+/* Serviços — card list replacing the old flat rows. */
+.service-card-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.service-card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  background: var(--color-surface);
+  border-radius: var(--radius-card);
+  padding: 0.9rem 1.1rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+/* Only the name/price dim for an inactive service — the reactivate switch
+   and Editar/Remover stay at full opacity, since fading the one control
+   that undoes "inactive" made it harder to find, not easier. */
+.service-card-inactive .service-card-main-dimmable {
+  opacity: 0.6;
+}
+
+/* Two groups separated by distance (proximity grouping), not just a divider
+   line — the gap before "inativo" is deliberately wider than the gap
+   between cards within a group. */
+.service-list-groups {
+  display: flex;
+  flex-direction: column;
+}
+
+.service-list-group-inactive {
+  margin-top: 1.75rem;
+}
+
+.service-list-section-label {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin: 0 0 0.5rem;
+}
+
+.service-list-section-label-active {
+  color: var(--color-confirmed);
+}
+
+.service-list-section-label-inactive {
+  color: var(--color-muted);
+}
+
+/* Editing state gets its own border (token-based, so it holds up in both
+   themes) since the edit form otherwise looks like any other surface card. */
+.service-card-editing {
+  border: 1.5px solid var(--color-primary);
+}
+
+.service-card-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.service-card-name {
+  font-weight: 600;
+}
+
+.service-card-meta {
+  color: var(--color-muted);
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+}
+
+.service-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* Layout for any icon+text button with no parent selector already sizing
+   it (unlike .ticket-actions button / .notif-action-btn, which cover that
+   for the ticket-decision buttons) — pair with a .btn-* color variant. */
+.btn-labeled {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: var(--touch-min);
+}
+
+.service-card-edit {
+  flex-basis: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.service-card-edit-actions {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.service-card-edit-actions button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  flex: 1;
+  min-height: var(--touch-min);
+}
+
+/* The reused ticket-decline-confirm block needs to span the full row here,
+   since .service-card is a flex row (not the ticket card's block layout). */
+.service-card .ticket-decline-confirm {
+  flex-basis: 100%;
+  margin-top: 0.6rem;
+}
+
+/* Active/inactive toggle switch. */
+.switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: var(--color-muted);
+  min-height: var(--touch-min);
+  padding: 0.4rem 0.2rem;
+  margin: -0.4rem -0.2rem;
+}
+
+/* Sized to fully overlay the visible track (not shrunk to 1px) so the whole
+   track is a real click/tap target, not just a near-invisible sliver. */
+.switch input {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 38px;
+  height: 22px;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.switch-track {
+  position: relative;
+  width: 38px;
+  height: 22px;
+  background: var(--color-border);
+  border-radius: 999px;
+  transition: background 0.15s ease-out;
+  flex-shrink: 0;
+  pointer-events: none;
+}
+
+.switch-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  transition: transform 0.15s ease-out;
+}
+
+.switch input:checked + .switch-track {
+  background: var(--color-confirmed);
+}
+
+.switch input:checked + .switch-track .switch-thumb {
+  transform: translateX(16px);
+}
+
+.switch input:focus-visible + .switch-track {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.switch-label {
+  min-width: 3.2em;
+  font-weight: 600;
+}
+
+.switch-label-active {
+  color: var(--color-confirmed);
+}
+
+.switch-label-inactive {
+  color: var(--color-muted);
+}
+
+.toast-stack {
+  position: fixed;
+  bottom: 1rem;
+  left: 1rem;
+  right: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  z-index: 1000;
+}
+
+@media (min-width: 480px) {
+  .toast-stack {
+    left: auto;
+    max-width: 320px;
+  }
+}
+
+.toast {
+  padding: 0.75rem 1rem;
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  min-height: 44px;
+}
+
+.toast:hover {
+  filter: brightness(1.08);
+}
+
+.toast-error {
+  background: var(--color-declined);
+}
+
+.toast-success {
+  background: var(--color-confirmed);
+}
+
+.page-header-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.agendamentos-new-link {
+  color: var(--color-primary);
+  font-weight: 600;
+  text-decoration: none;
+  /* Right-aligned even when it's the only child of .page-header-row (no
+     title sibling to space-between against, as on AgendamentosPage). */
+  margin-left: auto;
+}
+
+.pending-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: var(--color-pending-soft);
+  color: var(--color-pending);
+  font-weight: 700;
+  font-size: 0.85rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+}
+
+.back-link {
+  display: inline-block;
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--color-muted);
+  text-decoration: none;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+/* PublicBookingPage's storefront — the salon's own name is the hero (not a
+   generic "Marcar horário" label), and the service list is a single-column
+   scan (matches every other card-list in the app — agendamento-cards,
+   service-card-list, customers-page-list — rather than a desktop-oriented
+   grid) with an explicit tap affordance (price + "Selecionar" + chevron),
+   since a plain card gave no hint it was clickable. */
+.public-hero {
+  margin-bottom: 1.5rem;
+}
+
+.public-hero-title {
+  font-family: var(--font-display);
+  font-size: clamp(1.6rem, 5vw, 2.2rem);
+  font-weight: 600;
+  line-height: 1.15;
+  margin: 0.35rem 0 0.4rem;
+  color: var(--color-ink);
+}
+
+.public-hero-subtitle {
+  color: var(--color-muted);
+  margin: 0;
+  font-size: 0.92rem;
+}
+
+/* Service-picking step (ServiceSelectList.tsx) — shared by the public
+   anonymous booking page and the admin's manual-appointment flow, so the
+   card and the search-to-filter behavior above it read the same either
+   way. */
+.service-select {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.service-select-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.service-select-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  width: 100%;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  padding: 1rem 1.1rem;
+  text-align: left;
+  min-height: var(--touch-min);
+  transition: transform 0.15s ease-out, box-shadow 0.15s ease-out, border-color 0.15s ease-out;
+}
+
+.service-select-card:hover,
+.service-select-card:focus-visible {
+  border-color: var(--color-primary);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+}
+
+.service-select-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.service-select-card-name {
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--color-ink);
+  overflow-wrap: break-word;
+}
+
+.service-select-card-duration {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: var(--color-muted);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+}
+
+.service-select-card-action {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+
+.service-select-card-price {
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--color-ink);
+}
+
+.service-select-card-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  color: var(--color-primary);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.service-select-card-cta svg {
+  transition: transform 0.15s ease-out;
+}
+
+.service-select-card:hover .service-select-card-cta svg,
+.service-select-card:focus-visible .service-select-card-cta svg {
+  transform: translateX(3px);
+}
+
+.booking-header h1 {
+  margin-bottom: 0.1rem;
+}
+
+.booking-header .sub {
+  color: var(--color-muted);
+  margin-top: 0;
+}
+
+/* Public storefront's service-step header: salon name stays left where the
+   eye lands first, the way back to the service list sits right as a
+   secondary, low-commitment action — not stacked above the name where it'd
+   compete with it for the first read. */
+.public-booking-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.public-booking-topbar .sub {
+  margin: 0;
+}
+
+.public-back-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex-shrink: 0;
+  /* Right-aligned even with no sibling to space-between against (e.g.
+     BookingPage's topbar, which has no company-name label on the left). */
+  margin-left: auto;
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  border: 1px solid transparent;
+  padding: 0.4rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color 0.15s ease-out, box-shadow 0.15s ease-out;
+}
+
+.public-back-pill:hover,
+.public-back-pill:focus-visible {
+  border-color: var(--color-primary);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+/* Booking flow: calendar stacked above the time slots on mobile, side by
+   side from tablet width up. */
+.booking-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  margin-top: 1rem;
+}
+
+@media (min-width: 640px) {
+  .booking-layout {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+}
+
+.calendar-grid {
+  background: var(--color-surface);
+  border-radius: 8px;
+  padding: 1rem;
+  flex: 1;
+  min-width: 260px;
+}
+
+.calendar-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+/* Shared with .cal-nav > button below — same chevron look in both the
+   booking-flow calendar and the admin day/week calendar. */
+.calendar-nav button,
+.cal-nav > button {
+  background: transparent;
+  color: var(--color-ink);
+  border: none;
+  font-size: 1.2rem;
+  min-width: var(--touch-min);
+  min-height: var(--touch-min);
+}
+
+.calendar-nav button:hover,
+.cal-nav > button:hover {
+  background: var(--color-primary-soft);
+  border-radius: 8px;
+}
+
+.calendar-title {
+  font-weight: 600;
+}
+
+.calendar-dow-row,
+.calendar-days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  text-align: center;
+}
+
+.calendar-dow {
+  color: var(--color-muted);
+  font-size: 0.75rem;
+  padding: 0.25rem 0;
+}
+
+.calendar-cell {
+  aspect-ratio: 1;
+  min-height: var(--touch-min);
+  border: none;
+  background: transparent;
+  color: var(--color-ink);
+  border-radius: 6px;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.calendar-cell.empty {
+  cursor: default;
+}
+
+.calendar-cell.disabled {
+  color: var(--color-border);
+  cursor: not-allowed;
+}
+
+.calendar-cell.today {
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.calendar-cell:not(.disabled):not(.empty):hover {
+  background: var(--color-primary-soft);
+}
+
+.calendar-cell.selected {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.availability-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.9rem;
+  margin: 0.75rem 0 0;
+  font-size: 0.78rem;
+  color: var(--color-muted);
+}
+
+.availability-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.availability-legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.availability-legend-dot.is-open {
+  background: var(--color-primary-soft);
+  border: 1.5px solid var(--color-primary);
+}
+
+.availability-legend-dot.is-closed {
+  background: var(--color-bg);
+  border: 1.5px solid var(--color-border);
+}
+
+.availability-legend-dot.is-selected {
+  background: var(--color-primary);
+}
+
+.timeslot-list {
+  background: var(--color-surface);
+  border-radius: var(--radius-card);
+  padding: 1rem;
+  flex: 1;
+  min-width: 260px;
+}
+
+.timeslot-title {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.timeslot-period + .timeslot-period {
+  margin-top: 0.85rem;
+}
+
+.timeslot-period-label {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+  margin-bottom: 0.5rem;
+}
+
+.timeslot-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+  gap: 0.5rem;
+}
+
+.timeslot-btn {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary-soft);
+  min-height: var(--touch-min);
+}
+
+.timeslot-btn.selected {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.timeslot-skeleton {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+  gap: 0.5rem;
+}
+
+.timeslot-skeleton-item {
+  min-height: var(--touch-min);
+  border-radius: 6px;
+  background: linear-gradient(90deg, var(--color-skeleton-base) 25%, var(--color-skeleton-highlight) 37%, var(--color-skeleton-base) 63%);
+  background-size: 400% 100%;
+  animation: skeleton-shimmer 1.4s ease infinite;
+}
+
+@keyframes skeleton-shimmer {
+  0% { background-position: 100% 50%; }
+  100% { background-position: 0 50%; }
+}
+
+.muted {
+  color: var(--color-muted);
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+  color: var(--color-muted);
+  padding: 0.5rem 0;
+}
+
+.booking-confirm-card {
+  background: var(--color-surface);
+  border-radius: var(--radius-card);
+  padding: 1rem;
+  margin-top: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  border-left: 3px solid var(--color-primary);
+}
+
+/* Agendamentos page — mode switch between the global filtered overview and
+   the existing per-day timeline. */
+.agendamento-mode-switch {
+  display: inline-flex;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  padding: 3px;
+  gap: 2px;
+  margin: 0.75rem 0 1rem;
+}
+
+.agendamento-mode-switch button {
+  border: none;
+  background: none;
+  color: var(--color-muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.4rem 0.9rem;
+  border-radius: 999px;
+  cursor: pointer;
+  min-height: 38px;
+}
+
+.agendamento-mode-switch button.active {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+/* Date range — one full-width trigger instead of two bare date inputs with
+   dead space. Opens a preset row; "Personalizado" reveals the raw inputs. */
+.agendamento-date-picker {
+  margin-bottom: 0.6rem;
+}
+
+.agendamento-date-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 0.5rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  padding: 0 0.9rem;
+  min-height: var(--touch-min);
+  color: var(--color-ink);
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.agendamento-date-trigger-label {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.agendamento-date-trigger svg:first-child,
+.agendamento-date-trigger-label svg {
+  color: var(--color-primary);
+  flex-shrink: 0;
+}
+
+.agendamento-date-trigger svg:last-child {
+  color: var(--color-muted);
+  flex-shrink: 0;
+  transition: transform 0.15s ease-out;
+}
+
+.agendamento-date-chevron-open {
+  transform: rotate(180deg);
+}
+
+.agendamento-date-panel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-top: none;
+  border-radius: 0 0 var(--radius-card) var(--radius-card);
+  padding: 0.75rem;
+  margin-top: -1px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.agendamento-date-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.agendamento-date-presets button {
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.4rem 0.75rem;
+  border-radius: 999px;
+  cursor: pointer;
+  min-height: 36px;
+}
+
+.agendamento-date-presets button.active {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+/* Section counter above the card list, e.g. "5 agendamentos confirmados
+   esta semana" — the summary the filters above just built. */
+.agendamento-overview-summary {
+  color: var(--color-muted);
+  font-size: 0.85rem;
+  margin: 0 0 0.6rem;
+}
+
+/* Same bordered-pill-with-icon treatment as .service-form-input-wrap, plus
+   a trailing clear button — see SearchFilterInput.tsx. */
+.search-filter-input {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  padding: 0 0.75rem;
+  min-height: var(--touch-min);
+  margin-bottom: 0.9rem;
+}
+
+.search-filter-input:focus-within {
+  border-color: var(--color-primary);
+}
+
+.search-filter-input > svg {
+  color: var(--color-muted);
+  flex-shrink: 0;
+}
+
+.search-filter-input input {
+  border: none;
+  background: none;
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  color: var(--color-ink);
+  padding: 0;
+}
+
+.search-filter-input input:focus {
+  outline: none;
+}
+
+.search-filter-input-clear {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--color-muted);
+}
+
+.search-filter-input-clear:hover {
+  background: var(--color-bg);
+  color: var(--color-ink);
+}
+
+.agendamento-filter-dates {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.agendamento-filter-date-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: 0.72rem;
+  color: var(--color-muted);
+  font-weight: 600;
+}
+
+.agendamento-filter-date-field input {
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+  color: var(--color-ink);
+  padding: 0.45rem 0.5rem;
+  font: inherit;
+  min-height: 38px;
+}
+
+/* Status tabs — fixed 3-column grid, multiselect (no "Todos": an empty
+   selection already means "show everything"). min-width: 0 on the grid
+   items is load-bearing — without it, a grid track never shrinks below its
+   content's intrinsic width, which is what forced the page into horizontal
+   scroll (and dragged the fixed bottom nav along with it) on narrow phones. */
+.agendamento-status-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.4rem;
+  margin-bottom: 0.75rem;
+}
+
+.agendamento-status-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  min-width: 0;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.5rem 0.25rem;
+  border-radius: var(--radius-card);
+  cursor: pointer;
+  min-height: var(--touch-min);
+}
+
+.agendamento-status-tab-top {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.agendamento-status-tab-count {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.agendamento-status-tab.status-pending.active {
+  background: var(--color-pending-soft);
+  color: var(--color-pending);
+  border-color: var(--color-pending);
+}
+
+.agendamento-status-tab.status-confirmed.active {
+  background: var(--color-confirmed-soft);
+  color: var(--color-confirmed);
+  border-color: var(--color-confirmed);
+}
+
+.agendamento-status-tab.status-declined.active {
+  background: var(--color-declined-soft);
+  color: var(--color-declined);
+  border-color: var(--color-declined);
+}
+
+/* Unselected but needs attention: same amber tint as pending's active state,
+   just one notch lighter, so it reads as "notice me" not "selected". */
+/* Outline only, never filled — a filled amber tab reads as "selected", and
+   this one specifically isn't. Selected pending uses a solid tint (see
+   .status-pending.active above); this stays on the neutral surface so the
+   two states can't be mistaken for each other. */
+.agendamento-status-tab-alert {
+  background: var(--color-surface);
+  color: var(--color-pending);
+  border-color: var(--color-pending);
+}
+
+.agendamento-status-tab-alert .agendamento-status-tab-count {
+  color: var(--color-pending);
+}
+
+/* Admin's calendar — Day/Week/Month view switcher over the same bookings.
+   Day and Week share one hour-grid implementation (CalendarGrid, variant
+   prop); Month is its own compact tap-to-drill-in grid. */
+.cal-view {
+  margin-bottom: 1.25rem;
+}
+
+.cal-view-switch {
+  margin: 0 0 0.75rem;
+}
+
+.cal-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  background: var(--color-surface);
+  border-radius: var(--radius-card) var(--radius-card) 0 0;
+  padding: 0.6rem 0.75rem;
+}
+
+.cal-nav-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  text-align: center;
+  font-size: 0.85rem;
+}
+
+.cal-nav-today {
+  font-size: 0.72rem;
+  padding: 0.2rem 0.55rem;
+  min-height: auto;
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+/* Grid (day + week) — one scroll container holds the whole grid: the
+   day-header row sticks to its top, the hour gutter sticks to its left, so
+   both stay put while the grid scrolls underneath in either axis. Day
+   variant is just this same grid with a single, full-width column. */
+.cal-grid-scroll {
+  background: var(--color-surface);
+  border-radius: 0 0 var(--radius-card) var(--radius-card);
+  overflow: auto;
+  max-height: 62vh;
+  -webkit-overflow-scrolling: touch;
+}
+
+.cal-grid {
+  display: grid;
+  grid-template-rows: auto 1fr;
+}
+
+.cal-grid-day .cal-grid {
+  grid-template-columns: 44px 1fr;
+}
+
+.cal-grid-week .cal-grid {
+  grid-template-columns: 44px repeat(7, 76px);
+}
+
+@media (min-width: 640px) {
+  .cal-grid-week .cal-grid {
+    grid-template-columns: 44px repeat(7, minmax(0, 1fr));
+  }
+}
+
+.cal-grid-corner {
+  position: sticky;
+  top: 0;
+  left: 0;
+  z-index: 4;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.cal-grid-day-head {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: var(--color-surface);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  padding: 0.35rem 0 0.5rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.cal-grid-day-name {
+  color: var(--color-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-size: 0.6rem;
+}
+
+.cal-grid-day-num {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-ink);
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.cal-grid-day-head-today .cal-grid-day-num {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.cal-grid-day-head-today .cal-grid-day-name {
+  color: var(--color-primary);
+}
+
+/* Week view's day header doubles as a "jump to that day" control (mirrors
+   the month view's cell click) — the day view header has nothing to jump
+   to, so it never gets this affordance (see .cal-grid-day above). */
+.cal-grid-day-head-clickable {
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.cal-grid-day-head-clickable:hover,
+.cal-grid-day-head-clickable:focus-visible {
+  background: var(--color-primary-soft);
+}
+
+/* Day view already shows the full date in the nav header above — repeating
+   a 3-letter weekday + day number here is redundant, so the row collapses
+   down to a hairline instead of taking up vertical space for nothing. */
+.cal-grid-day .cal-grid-corner,
+.cal-grid-day .cal-grid-day-head {
+  padding: 0;
+  min-height: 0;
+  border-bottom: none;
+}
+
+.cal-grid-gutter {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: var(--color-surface);
+}
+
+.cal-grid-hour-label {
+  position: absolute;
+  left: 0;
+  right: 5px;
+  transform: translateY(-50%);
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  color: var(--color-muted);
+}
+
+/* The first/last hour label sit exactly on the grid's top/bottom edge —
+   centering them (the default, for every label in between) would clip half
+   the text against the scroll container's boundary. */
+.cal-grid-hour-label-first {
+  transform: translateY(0);
+}
+
+.cal-grid-hour-label-last {
+  transform: translateY(-100%);
+}
+
+.cal-grid-day-col {
+  position: relative;
+  border-left: 1px solid var(--color-border);
+  background-image: linear-gradient(to bottom, var(--color-border) 1px, transparent 1px);
+  background-repeat: repeat-y;
+  background-position: top;
+}
+
+.cal-grid-day-col-today {
+  background-color: var(--color-primary-soft);
+}
+
+.cal-grid-closed-day {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-muted);
+  font-size: 0.65rem;
+  background: repeating-linear-gradient(135deg, var(--color-bg), var(--color-bg) 6px, transparent 6px, transparent 12px);
+}
+
+.cal-grid-out-of-hours {
+  position: absolute;
+  left: 0;
+  right: 0;
+  background: var(--color-bg);
+  opacity: 0.65;
+}
+
+.cal-grid-now-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-top: 2px solid var(--color-declined);
+  z-index: 1;
+}
+
+.cal-grid-now-line::before {
+  content: "";
+  position: absolute;
+  left: -3px;
+  top: -3px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-declined);
+}
+
+/* Cards — pastel-tinted body + a solid status-colored spine, like a sticky
+   note pinned to the grid, matching the rest of the app's pending/confirmed
+   color language instead of a solid-fill block. */
+.cal-grid-card {
+  position: absolute;
+  border: none;
+  border-left: 3px solid transparent;
+  border-radius: 6px;
+  padding: 3px 6px;
+  text-align: left;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  cursor: pointer;
+}
+
+.cal-grid-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 3px;
+}
+
+.cal-grid-card-icon {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.cal-grid-card-confirmed {
+  background: var(--color-confirmed-soft);
+  border-left-color: var(--color-confirmed);
+  color: var(--color-confirmed);
+}
+
+.cal-grid-card-highlighted {
+  outline: 2px solid var(--color-ink);
+  outline-offset: 1px;
+}
+
+.cal-grid-card-title {
+  min-width: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--color-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cal-grid-card-subtitle {
+  font-size: 0.66rem;
+  line-height: 1.25;
+  opacity: 0.9;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Month — compact tap grid; a cell is too small for real event cards, so it
+   only needs to answer "is this day busy" via a few status-colored dots. */
+.cal-month {
+  background: var(--color-surface);
+  border-radius: 0 0 var(--radius-card) var(--radius-card);
+  padding: 0.5rem 0.35rem 0.75rem;
+}
+
+.cal-month-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  text-align: center;
+  font-size: 0.68rem;
+  color: var(--color-muted);
+  padding: 0.3rem 0 0.4rem;
+}
+
+.cal-month-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.cal-month-cell {
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 3px;
+  padding: 0.3rem 0.1rem;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  color: var(--color-ink);
+}
+
+.cal-month-cell:hover {
+  background: var(--color-bg);
+}
+
+.cal-month-cell-outside {
+  color: var(--color-muted);
+  opacity: 0.5;
+}
+
+.cal-month-cell-num {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.cal-month-cell-today .cal-month-cell-num {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.cal-month-cell-badge {
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--color-confirmed);
+  color: #fff;
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* Ticket-stub cards — a booking read like a torn appointment slip: what's
+   booked up top, a perforated tear line, then who/when/how-much below. */
+.agendamento-cards {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* Date is the grouping axis — shown once per group instead of repeated on
+   every card. */
+.agendamento-date-group {
+  margin-bottom: 1.5rem;
+}
+
+.agendamento-date-group:last-child {
+  margin-bottom: 0;
+}
+
+.agendamento-date-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin: 0 0 0.5rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.agendamento-date-heading-label {
+  font-weight: 600;
+  font-size: 0.92rem;
+  color: var(--color-ink);
+}
+
+.agendamento-date-heading-label::first-letter {
+  text-transform: uppercase;
+}
+
+.agendamento-date-heading-count {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--color-muted);
+  white-space: nowrap;
+}
+
+/* Appointment row — time anchor | client & service | price & status, so a
+   provider can skim down the time column instead of reading full sentences
+   card by card. Pending keeps its stronger contrast (tint + left border). */
+.appt-row {
+  position: relative;
+  background: var(--color-surface);
+  border-radius: var(--radius-card);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+/* Color is an accent here, not a wash — a full amber-tinted background
+   muddied text contrast against the dark surface and clashed with the blue
+   Confirmar button. The card stays on the normal surface; only the left
+   strip and the status chip carry the "needs a decision" signal. */
+.appt-row-pending {
+  border-left: 3px solid var(--color-pending);
+}
+
+/* Deep-linked from a notification/reminder click — marks the specific
+   booking the admin was pointed at, distinct from the pending strip above.
+   A hard outline ring clashed with the pending left-accent strip and the
+   card's own border-radius, so this is a soft background pulse that fades
+   back to the normal surface instead of leaving a permanent ring. */
+.appt-row-highlighted {
+  animation: appt-row-highlight-fade 2.4s ease-out forwards;
+}
+
+@keyframes appt-row-highlight-fade {
+  0% {
+    background-color: color-mix(in srgb, var(--color-primary) 22%, var(--color-primary-soft));
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 35%, transparent);
+  }
+  70% {
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 10%, transparent);
+  }
+  100% {
+    background-color: var(--color-surface);
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+/* The tint alone is the "you're here" signal — the trigger's normal hover
+   underline on the customer name is redundant next to it and reads as a
+   stray link. */
+.appt-row-highlighted .appt-row-trigger:hover .appt-row-primary {
+  text-decoration: none;
+}
+
+.appt-row-trigger {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0.7rem 0.9rem;
+  margin: 0;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  border-radius: var(--radius-card);
+}
+
+.appt-row-trigger:hover .appt-row-primary {
+  text-decoration: underline;
+}
+
+.appt-row-time {
+  display: flex;
+  flex-direction: column;
+  min-width: 3.4rem;
+  flex-shrink: 0;
+  padding-right: 0.7rem;
+  border-right: 1px solid var(--color-border);
+}
+
+.appt-row-time-value {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--color-ink);
+  line-height: 1.15;
+}
+
+.appt-row-time-duration {
+  font-size: 0.7rem;
+  color: var(--color-muted);
+  margin-top: 0.1rem;
+}
+
+.appt-row-identity {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.appt-row-primary {
+  font-weight: 600;
+  color: var(--color-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Customer names are free-typed at registration and often arrive all
+   lowercase ("joana") — capitalize for display only, without touching the
+   stored value. */
+.appt-row-customer-name {
+  text-transform: capitalize;
+}
+
+.appt-row-secondary-line {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.appt-row-secondary {
+  font-size: 0.82rem;
+  color: var(--color-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.appt-row-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.3rem;
+  flex-shrink: 0;
+}
+
+.appt-row-price {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 0.86rem;
+  color: var(--color-ink);
+  white-space: nowrap;
+}
+
+/* Confirmar/Recusar and the decline-confirm row are siblings of the trigger
+   button (no button-in-button nesting) — .appt-row itself has no padding of
+   its own, so they need their own to line up with the row above. */
+.appt-row > .ticket-actions,
+.appt-row > .ticket-decline-confirm {
+  padding: 0.65rem 0.9rem 0.75rem;
+}
+
+/* Divider so Confirmar/Recusar read as secondary controls under the
+   appointment's details, not a second, equally-weighted block. */
+.appt-row > .ticket-actions {
+  border-top: 1px solid var(--color-border);
+  margin-top: 0;
+}
+
+.ticket-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--color-ink);
+}
+
+.ticket-row svg {
+  color: var(--color-muted);
+  flex-shrink: 0;
+}
+
+.ticket-customer-name {
+  text-transform: capitalize;
+  font-weight: 600;
+}
+
+.ticket-meta-price {
+  color: var(--color-ink);
+  font-weight: 700;
+}
+
+/* Tinted panel around the date/customer/duration/price block — gives the
+   metadata a visible boundary and uniform horizontal padding instead of
+   floating loosely between the stepper and the action buttons. */
+.modal-meta-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  background: var(--color-bg);
+  border-radius: var(--radius-card);
+  padding: 0.75rem 0.9rem;
+}
+
+.modal-notes-card {
+  background: var(--color-bg);
+  border-radius: var(--radius-card);
+  padding: 0.75rem 0.9rem;
+}
+
+.modal-notes-label {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0 0 0.3rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-muted);
+}
+
+.modal-notes-text {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Right-aligned, auto-width buttons — anchored under the price/status
+   column instead of centered, which left awkward empty space on both
+   sides on wider cards. */
+.ticket-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  margin-top: 0.7rem;
+}
+
+/* Extra room + a divider so the decision buttons read as a distinct footer
+   below the metadata, not crowded right up against it. */
+.modal-sheet > .ticket-actions {
+  margin-top: 1.1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.ticket-actions button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  flex: 0 0 auto;
+  min-width: 140px;
+  padding: 0 1.4rem;
+  min-height: var(--touch-min);
+}
+
+/* Communication link, not a button — WhatsApp brand green, matching its use
+   elsewhere as a link out to an external app. */
+.ticket-whatsapp-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: #1fa855;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
+/* Atualizar cliente — icon-only, in the declined/alert color rather than
+   WhatsApp green: it's a status notification, not a "start chatting" action
+   like Falar com, so it reads as attention-worthy instead of a communication
+   affordance. */
+.ticket-whatsapp-link-alert {
+  color: var(--color-declined);
+}
+
+/* Already notified: same slot, muted — no longer demands attention, but
+   still clickable to resend. */
+.ticket-whatsapp-link-notified {
+  color: var(--color-muted);
+}
+
+/* List-row icon links sit inline with running text (the name, the status
+   chip) — slightly larger tap target than their tiny icon alone, so they're
+   still comfortably tappable at this size. */
+.appt-row-icon-link {
+  padding: 2px;
+  margin: -2px;
+}
+
+.appt-row-notes-flag {
+  display: inline-flex;
+  flex-shrink: 0;
+  color: var(--color-muted);
+}
+
+.appt-row-name-line {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.name-editor-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  color: var(--color-muted);
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.name-editor-trigger:hover {
+  color: var(--color-primary);
+  background: var(--color-bg);
+}
+
+.appt-row-status-line {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/* Bell sits next to whatever is currently showing the booking's status
+   (the stepper, or the declined/cancelled banner) — not next to the
+   client's identity, which is a separate concern. */
+.status-stepper-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0.9rem 0 1.1rem;
+}
+
+.status-stepper-row > .status-stepper {
+  flex: 1;
+  margin: 0;
+}
+
+/* Confirmar reads as positive (green), matching --color-confirmed
+   everywhere else in the app — not the generic primary blue, which has no
+   "approve" meaning here and clashed with the pending accent. */
+.btn-confirm {
+  background: var(--color-confirmed);
+}
+
+/* Outlined, not filled — keeps Recusar/Remover a clearly real action
+   without competing with a solid destructive submit for visual weight.
+   Shared by the ticket decline flow and ServiceList's remove action (was
+   .service-card-remove) — identical look, one class. */
+.btn-danger-outline {
+  background: var(--color-surface);
+  color: var(--color-declined);
+  border: 1.5px solid var(--color-declined);
+}
+
+.btn-danger-outline:hover:not(:disabled) {
+  background: var(--color-declined-soft);
+}
+
+/* Same outlined weight as .btn-danger-outline so edit/remove read as a
+   matched pair — only the color signals which action is which. Was
+   .service-card-edit-btn. */
+.btn-outline {
+  background: var(--color-surface);
+  color: var(--color-primary);
+  border: 1.5px solid var(--color-primary);
+}
+
+.ticket-decline-confirm {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  margin-top: 0.7rem;
+  flex-wrap: wrap;
+}
+
+.ticket-decline-confirm p {
+  margin: 0;
+  font-size: 0.85rem;
+  flex-basis: 100%;
+}
+
+.ticket-decline-confirm button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  flex: 0 0 auto;
+  padding: 0 1.1rem;
+  min-height: var(--touch-min);
+}
+
+/* Neutral "step back" out of a destructive confirm step — was
+   .ticket-decline-cancel / .customer-picker-add-cancel (identical rule,
+   two names; merged here). */
+.btn-cancel {
+  background: var(--color-bg);
+  color: var(--color-ink);
+}
+
+.btn-danger {
+  background: var(--color-declined);
+}
+
+/* Progression stepper — Solicitado -> Confirmado. Declined and cancelled
+   are terminal branches, rendered as .status-endstate instead of ever
+   appearing on this line (see StatusStepper.tsx). */
+.status-stepper {
+  display: flex;
+  list-style: none;
+  padding: 0;
+  margin: 0.9rem 0 1.1rem;
+}
+
+.status-stepper-step {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  text-align: center;
+  position: relative;
+  font-size: 0.78rem;
+}
+
+.status-stepper-label {
+  color: var(--color-ink);
+  opacity: 0.6;
+}
+
+.status-stepper-time {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--color-muted);
+}
+
+/* Connects this step's dot (centered at top:10px) to the next one's,
+   trimmed on each end by the dot's own radius (10px) so the line meets the
+   ring instead of running underneath it. */
+.status-stepper-step:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  top: 10px;
+  left: calc(50% + 10px);
+  width: calc(100% - 20px);
+  height: 2px;
+  background: var(--color-border);
+  z-index: 0;
+}
+
+.status-stepper-done:not(:last-child)::after {
+  background: var(--color-confirmed);
+}
+
+.status-stepper-dot {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--color-surface);
+  border: 2px solid var(--color-border);
+  color: var(--color-confirmed);
+}
+
+.status-stepper-dot-inner {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-border);
+}
+
+.status-stepper-done .status-stepper-dot {
+  border-color: var(--color-confirmed);
+  background: var(--color-confirmed-soft);
+}
+
+.status-stepper-current .status-stepper-dot {
+  border-color: var(--color-primary);
+}
+
+.status-stepper-current .status-stepper-dot-inner {
+  background: var(--color-primary);
+}
+
+.status-stepper-current .status-stepper-label {
+  color: var(--color-ink);
+  font-weight: 600;
+  opacity: 1;
+}
+
+.status-stepper-done .status-stepper-label {
+  color: var(--color-confirmed);
+  opacity: 1;
+}
+
+/* Terminal step of StatusHistoryStepper (declined/cancelled) — same shape as
+   .status-stepper-done but in the declined red instead of confirmed green,
+   since it's a stop rather than progress. Always the last step, so its own
+   ::after connector (done's green line-in) is irrelevant, but the *previous*
+   step's line-out still needs to reach it in green — see
+   .status-stepper-done:not(:last-child)::after above. */
+.status-stepper-terminal .status-stepper-dot {
+  border-color: var(--color-declined);
+  background: var(--color-declined-soft);
+  color: var(--color-declined);
+}
+
+.status-stepper-terminal .status-stepper-label {
+  color: var(--color-declined);
+  opacity: 1;
+}
+
+/* Agendamento detail modal — centered sheet on desktop, same card language
+   as the ticket cards it's opened from. */
+.modal-scrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 19, 24, 0.5);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0;
+  z-index: 40;
+}
+
+@media (min-width: 640px) {
+  .modal-scrim {
+    align-items: center;
+    padding: 1rem;
+  }
+}
+
+.modal-sheet {
+  background: var(--color-surface);
+  border-radius: var(--radius-card) var(--radius-card) 0 0;
+  padding: 1.35rem 1.5rem 1.6rem;
+  width: 100%;
+  max-width: 420px;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+@media (min-width: 640px) {
+  .modal-sheet {
+    border-radius: var(--radius-card);
+  }
+}
+
+.modal-sheet-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.modal-sheet-header h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.modal-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: var(--color-muted);
+  border: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.modal-close:hover {
+  background: var(--color-bg);
+  color: var(--color-ink);
+}
+
+.modal-sheet-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  font-size: 0.9rem;
+  margin-bottom: 0.6rem;
+}
+
+/* Admin manual-appointment customer picker (CustomerPicker.tsx) — search +
+   pick, or add a new customer inline. Same card/input language as the
+   auth screens (.service-form-input-wrap) so it doesn't read as a
+   different sub-app bolted onto the booking flow. */
+.customer-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  padding: 0.9rem;
+}
+
+.customer-picker-hint {
+  color: var(--color-muted);
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+.customer-picker-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 14rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.customer-picker-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.55rem 0.7rem;
+  background: var(--color-bg);
+  border: 1px solid transparent;
+  border-radius: 8px;
+  text-align: left;
+}
+
+.customer-picker-row:hover {
+  border-color: var(--color-primary);
+}
+
+.customer-picker-row-name {
+  /* .customer-picker-row is a <button> — without this it inherits the
+     global button's white text, unreadable against this row's light
+     background (the actual "can't read the customer name" bug). */
+  color: var(--color-ink);
+  font-weight: 600;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.customer-picker-row-phone {
+  color: var(--color-muted);
+  font-size: 0.82rem;
+  font-family: var(--font-mono);
+  flex-shrink: 0;
+}
+
+.customer-picker-add-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  align-self: flex-start;
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  padding: 0.45rem 0.8rem;
+}
+
+.customer-picker-add-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.customer-picker-add-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.customer-picker-selected {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  border-radius: var(--radius-card);
+  padding: 0.75rem 0.9rem;
+}
+
+.customer-picker-selected-name {
+  font-weight: 700;
+  color: var(--color-ink);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.customer-picker-selected-phone {
+  color: var(--color-muted);
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+}
+
+.customer-picker-change {
+  margin-left: auto;
+  background: transparent;
+  color: var(--color-primary);
+  font-weight: 600;
+  padding: 0.3rem 0.5rem;
+}
+
+/* CustomersPage — the admin's customer directory. */
+.customers-page-list {
+  list-style: none;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* Each customer is three stacked lines — name, phone, actions — not one
+   crammed horizontal row. See CustomerRow.tsx's top comment for why: a
+   single line forced long names to truncate and shrank every tap target. */
+.customer-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  background: var(--color-surface);
+  border-radius: var(--radius-card);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  padding: 0.85rem 0.9rem;
+}
+
+.customer-card-top {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.customer-card-name {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+  font-size: 1rem;
+  overflow-wrap: break-word;
+}
+
+.customer-card-phone {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--color-muted);
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+}
+
+/* CustomerEditModal's form — same column/gap rhythm as
+   .customer-picker-add-form's name+phone fields. */
+.customer-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.customer-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 0.75rem;
+  padding-top: 0.15rem;
+}
+
+.customer-card-count-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.4rem 0.7rem;
+  border-radius: 999px;
+  background: var(--color-bg);
+  color: var(--color-muted);
+  font-size: 0.8rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* Only bookings-count links to Agendamentos (empty "Sem marcações" stays a
+   plain, unpilled chip — nothing useful to jump to). A neutral tint chip +
+   trailing chevron reads as "tap to filter", not a raw hyperlink — the
+   count itself doesn't need primary color to be legible as a link. */
+.customer-card-count-link {
+  color: var(--color-ink);
+}
+
+.customer-card-count-link svg:last-child {
+  color: var(--color-muted);
+}
+
+.customer-card-count-link:hover,
+.customer-card-count-link:focus-visible {
+  background: var(--color-border);
+}
+
+/* .agendamentos-new-link is normally a <Link> (no default chrome to
+   fight) — here it's a real <button>, which the global button rule paints
+   with a solid primary background, so it needs its own reset (same trap as
+   .back-link had before it got one). */
+/* Solid primary, not the soft-tint pill cards like .customer-card-new-appt-btn
+   use — this is the page-level "create a new entity" action, not a secondary
+   action inside a card, and sharing the soft tint made it read as one of the
+   card buttons rather than a header-level control. */
+.customers-page-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: var(--color-primary);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.5rem 0.85rem;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.customers-page-add-btn:hover,
+.customers-page-add-btn:focus-visible {
+  opacity: 0.9;
+}
+
+/* Labeled "Nova marcação" pill, not an icon-only circle — the identity
+   line above already keeps the name/edit affordances legible on their own
+   line, so there's room to spell the action out and grow the tap target
+   past a 26px circle. */
+.customer-card-new-appt-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+  padding: 0.45rem 0.75rem;
+  border-radius: 999px;
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  font-size: 0.82rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.customer-card-new-appt-btn:hover,
+.customer-card-new-appt-btn:focus-visible {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+
+/* Company settings (/definicoes). One page background with restrained
+   sections rather than cards nested inside cards — the page is a
+   configuration surface, and each section is a domain (public link, company,
+   booking grid, weekly hours) that will grow its own fields later. */
+.settings-page {
+  padding-bottom: 6rem; /* clears the sticky save bar */
+}
+
+.settings-section {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  padding: 1rem 1.1rem 1.1rem;
+  margin-bottom: 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.settings-section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+  margin: 0;
+}
+
+.settings-section-lead {
+  margin-top: -0.35rem;
+}
+
+/* Deliberately --color-primary, not --color-accent: the gold accent reads as
+   "attention needed", and a working public link is not a warning. */
+.settings-link-card {
+  border-left: 3px solid var(--color-primary);
+}
+
+.settings-link-lead {
+  font-size: 0.82rem;
+  margin: 0;
+}
+
+.settings-link-url {
+  font-family: var(--font-mono);
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  overflow-wrap: anywhere;
+}
+
+.settings-link-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* Secondary/ghost action — was .settings-ghost-btn. Applied to both
+   <button> (via the Button component's variant="ghost") and plain <a>/
+   <Link> (settings page's "Ver como cliente" / "Gerir serviços"), which is
+   why the class stays element-agnostic rather than folding into Button. */
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.75rem;
+  min-height: 36px;
+  font-size: 0.83rem;
+  font-weight: 600;
+  border-radius: var(--radius-card);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-ink);
+  text-decoration: none;
+}
+
+.btn-ghost:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.settings-page select {
+  border: none;
+  background: none;
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  font-size: 1rem;
+  color: inherit;
+}
+
+.settings-page select:focus {
+  outline: none;
+}
+
+.settings-hint {
+  font-size: 0.78rem;
+  line-height: 1.45;
+  margin: 0;
+}
+
+.settings-meta {
+  font-size: 0.75rem;
+  margin: 0.15rem 0 0;
+}
+
+.settings-narrow-field {
+  max-width: 200px;
+}
+
+/* Sits apart from the fields it follows — it navigates away rather than
+   editing anything in this section, so it should not read as another control
+   in the form. */
+.settings-section-link {
+  align-self: flex-start;
+  margin-top: 0.2rem;
+}
+
+/* One row per weekday. The checkbox carries the day name so the whole label
+   is the hit target, and the time pair collapses to plain muted "Encerrado"
+   text (not a badge — nothing there is clickable) when the day is off. */
+.settings-day-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.15rem 0;
+}
+
+.settings-day-main {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.15rem 0.5rem;
+  min-height: var(--touch-min);
+}
+
+.settings-day-row-closed .settings-day-toggle span {
+  color: var(--color-muted);
+}
+
+.settings-day-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.88rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.settings-day-toggle input {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  accent-color: var(--color-primary);
+  padding: 0;
+}
+
+.settings-day-times {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--color-muted);
+}
+
+.settings-day-times input {
+  padding: 0.35rem 0.45rem;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--color-ink);
+}
+
+/* Below ~480px, the day label + both time inputs no longer fit on one line
+   — space-between used to just squeeze everything down to min-content,
+   wrapping the label mid-word ("Terça-\nfeira") while the close-time input
+   got pushed past the card edge and clipped instead of wrapping. Forcing
+   the times onto their own full-width row (flex-basis: 100%) gives the
+   label room to render on one line and gives the time inputs room to render
+   at full size, right-aligned to match the "Encerrado" rows above/below. */
+@media (max-width: 480px) {
+  .settings-day-times {
+    flex-basis: 100%;
+    justify-content: flex-end;
+  }
+}
+
+.settings-day-times input[aria-invalid="true"] {
+  border-color: var(--color-declined);
+  color: var(--color-declined);
+}
+
+.settings-day-closed {
+  font-size: 0.82rem;
+}
+
+.settings-day-error {
+  margin: 0;
+  font-size: 0.76rem;
+  color: var(--color-declined);
+}
+
+/* .form-error is the app-wide field error (see NewCustomerForm); inside a
+   .service-form-field it only needs the size/spacing to match the label. */
+.settings-field-error {
+  font-size: 0.76rem;
+  margin-top: 0.15rem;
+}
+
+/* Sticky above the bottom nav: the weekday list is long enough that a change
+   made at the top would otherwise scroll its own Save button out of sight,
+   and this bar is also the unsaved-changes warning for in-app navigation. */
+.settings-savebar {
+  position: sticky;
+  bottom: calc(58px + env(safe-area-inset-bottom) + 0.5rem);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+.settings-savebar-dirty {
+  border-color: var(--color-primary);
+}
+
+.settings-savebar span {
+  font-size: 0.8rem;
+}
+
+.settings-savebar-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
+.settings-savebar button[type="submit"] {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-weight: 600;
+  border-radius: var(--radius-card);
+  min-height: 40px;
+}
+
+.settings-savebar button[type="submit"]:disabled {
+  opacity: 0.45;
+}
