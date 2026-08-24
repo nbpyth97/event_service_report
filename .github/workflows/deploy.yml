@@ -61,7 +61,7 @@ jobs:
           sudo apt-get update && sudo apt-get install -y sshpass
           sshpass -e ssh -p 1111 -o StrictHostKeyChecking=no "${{ secrets.SSH_USER }}@${{ secrets.HOST }}" '
             for i in 1 2 3 4; do
-              if curl -sf http://localhost:8000/api/health/live > /dev/null; then
+              if curl -sf http://localhost:8020/api/health/live > /dev/null; then
                 echo "Backend process is up"
                 exit 0
               fi
@@ -84,7 +84,7 @@ jobs:
           sudo apt-get update && sudo apt-get install -y sshpass
           sshpass -e ssh -p 1111 -o StrictHostKeyChecking=no "${{ secrets.SSH_USER }}@${{ secrets.HOST }}" '
             for i in 1 2 3 4; do
-              if curl -sf http://localhost:8000/api/health/ready > /dev/null; then
+              if curl -sf http://localhost:8020/api/health/ready > /dev/null; then
                 echo "Backend is ready (dependencies reachable)"
                 exit 0
               fi
