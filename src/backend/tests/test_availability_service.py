@@ -91,6 +91,23 @@ async def _book(
     return agendamento
 
 
+async def _clear_lunch_break(tenant_id: str, day: date):
+    """DEFAULT_COMPANY_SETTINGS now seeds a 13:00-14:00 lunch_break on every
+    open day (models.py); tests that are about the slot-interval/close-time
+    grid itself, not about lunch_break, strip it so their slot counts and
+    adjacency checks stay exactly what they were before that default existed."""
+    async with AsyncSessionLocal() as db:
+        company = await db.get(Company, uuid.UUID(tenant_id))
+        settings = dict(company.settings)
+        hours = dict(settings["business_hours"])
+        day_hours = dict(hours[DOW_KEYS[day.weekday()]])
+        day_hours.pop("lunch_break", None)
+        hours[DOW_KEYS[day.weekday()]] = day_hours
+        settings["business_hours"] = hours
+        company.settings = settings
+        await db.commit()
+
+
 async def _open_all_day_today(tenant_id: str) -> date:
     """Force today open 00:00-23:59 so the already-past tests don't depend on
     which weekday the suite happens to run on. Reassigns settings rather than
@@ -121,6 +138,7 @@ async def test_open_day_slots_step_by_slot_interval_not_by_duration(client, uniq
     company = await _register_company(client, unique_slug)
     admin_token, _ = await _login(client, company["tenant_slug"], "admin")
     service = await _create_service(client, admin_token, duration_min=30)
+    await _clear_lunch_break(company["tenant_id"], OPEN_DAY)
 
     async with AsyncSessionLocal() as db:
         slots = await get_available_slots(db, uuid.UUID(company["tenant_id"]), uuid.UUID(service["id"]), OPEN_DAY)
@@ -143,6 +161,7 @@ async def test_slot_dropped_when_duration_would_run_past_close(client, unique_sl
     company = await _register_company(client, unique_slug)
     admin_token, _ = await _login(client, company["tenant_slug"], "admin")
     service = await _create_service(client, admin_token, duration_min=90)
+    await _clear_lunch_break(company["tenant_id"], OPEN_DAY)
 
     async with AsyncSessionLocal() as db:
         slots = await get_available_slots(db, uuid.UUID(company["tenant_id"]), uuid.UUID(service["id"]), OPEN_DAY)
@@ -547,6 +566,55 @@ async def test_cancelled_booking_frees_its_range_at_the_database_level(client, u
         _lisbon(OPEN_DAY, "09:00"),
         _lisbon(OPEN_DAY, "09:30"),
     )
+
+
+async def _set_lunch_break(tenant_id: str, day: date, start: str, end: str):
+    """Mirrors _open_all_day_today: reassigns settings rather than mutating in
+    place, since the JSONB column isn't change-tracked otherwise."""
+    async with AsyncSessionLocal() as db:
+        company = await db.get(Company, uuid.UUID(tenant_id))
+        settings = dict(company.settings)
+        hours = dict(settings["business_hours"])
+        day_hours = dict(hours[DOW_KEYS[day.weekday()]])
+        day_hours["lunch_break"] = {"start": start, "end": end}
+        hours[DOW_KEYS[day.weekday()]] = day_hours
+        settings["business_hours"] = hours
+        company.settings = settings
+        await db.commit()
+
+
+async def test_lunch_break_blocks_overlapping_slots(client, unique_slug):
+    """The lunch break is folded into `busy` in _candidate_slots, so it behaves
+    exactly like an existing booking: candidates whose duration reaches into
+    it are dropped, and candidates that only touch its edges survive."""
+    company = await _register_company(client, unique_slug)
+    admin_token, _ = await _login(client, company["tenant_slug"], "admin")
+    service = await _create_service(client, admin_token, duration_min=30)
+    await _set_lunch_break(company["tenant_id"], OPEN_DAY, "13:00", "14:00")
+
+    async with AsyncSessionLocal() as db:
+        slots = await get_available_slots(db, uuid.UUID(company["tenant_id"]), uuid.UUID(service["id"]), OPEN_DAY)
+    times = _hhmm(slots)
+
+    assert not (times & {"12:45", "13:00", "13:15", "13:30", "13:45"})
+    assert {"12:30", "14:00"} <= times  # touch the break's edges, don't overlap
+
+
+async def test_booking_during_lunch_break_is_rejected(client, unique_slug):
+    """is_slot_bookable shares _candidate_slots, so the write path refuses a
+    start time inside the lunch break exactly like it would a busy slot."""
+    company = await _register_company(client, unique_slug)
+    admin_token, _ = await _login(client, company["tenant_slug"], "admin")
+    service = await _create_service(client, admin_token, duration_min=30)
+    customer = await _create_customer(client, admin_token)
+    await _set_lunch_break(company["tenant_id"], OPEN_DAY, "13:00", "14:00")
+
+    res = await client.post(
+        "/api/agendamentos",
+        json={"service_id": service["id"], "start_time": _at(OPEN_DAY, "13:00"), "customer_id": customer["id"]},
+        headers=_auth_headers(admin_token),
+    )
+    assert res.status_code == 409, res.text
 
 
 async def test_another_tenant_may_hold_the_very_same_range(client, unique_slug):

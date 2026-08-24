@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
-import { Briefcase, Building2, Check, Clock, Copy, ExternalLink, Link2, Moon, Save, Sun, Timer } from "lucide-react";
+import { Briefcase, Building2, Check, Clock, Coffee, Copy, ExternalLink, Link2, Moon, Save, Sun, Timer } from "lucide-react";
 import { useMyCompany, useUpdateMyCompany } from "@/hooks/queries";
 import { useTheme } from "@/hooks/useTheme";
 import { useToast } from "@/lib/toast";
@@ -36,12 +36,21 @@ const FALLBACK_CLOSE = "18:00";
 const MIN_SLOT_INTERVAL = 5;
 const MAX_SLOT_INTERVAL = 120;
 
-// A closed day is `null` on the wire, but keeping the last typed hours in the
-// form means unticking and re-ticking a day does not wipe them.
+// Seeded into the lunch break the moment it is turned on, mirroring
+// FALLBACK_OPEN/FALLBACK_CLOSE above.
+const FALLBACK_BREAK_START = "13:00";
+const FALLBACK_BREAK_END = "14:00";
+
+// A closed day is `null` on the wire, but keeping the last typed hours (and
+// per-day lunch break, for the granular mode below) in the form means
+// unticking and re-ticking a day, or switching modes, never wipes them.
 interface DayValues {
   isOpen: boolean;
   open: string;
   close: string;
+  hasLunchBreak: boolean;
+  lunchStart: string;
+  lunchEnd: string;
 }
 
 interface SettingsFormValues {
@@ -53,31 +62,75 @@ interface SettingsFormValues {
   // backend would then 422 on).
   slotIntervalMin: string;
   hours: Record<DowKey, DayValues>;
+  // Lunch break is optional (many businesses don't run one at all) and can be
+  // set two ways: one shared window for every open day (the common case, and
+  // the default an admin lands on), or a per-day window via each day's own
+  // hasLunchBreak/lunchStart/lunchEnd for tenants that only break some days
+  // (e.g. Mon-Thu but not Fri/Sat). The backend always stores it per weekday
+  // either way (schemas.py::DayHoursIn.lunch_break) — lunchApplyToAll is a
+  // frontend-only convenience for filling all seven at once.
+  lunchBreakEnabled: boolean;
+  lunchApplyToAll: boolean;
+  lunchStart: string;
+  lunchEnd: string;
 }
 
 function toFormValues(company: Company): SettingsFormValues {
   const hours = {} as SettingsFormValues["hours"];
+  // "Apply to all" only when every open day already agrees (including all
+  // having none) — a tenant with genuinely different per-day breaks lands in
+  // granular mode instead of silently collapsing them on the next save.
+  const openSignatures = new Set<string>();
+  let firstLunchBreak: { start: string; end: string } | null = null;
+
   for (const { key } of WEEK) {
     const day = company.settings.business_hours?.[key] ?? null;
+    const lunchBreak = day?.lunch_break ?? null;
     hours[key] = {
       isOpen: day !== null,
       open: day?.open ?? FALLBACK_OPEN,
       close: day?.close ?? FALLBACK_CLOSE,
+      hasLunchBreak: lunchBreak !== null,
+      lunchStart: lunchBreak?.start ?? FALLBACK_BREAK_START,
+      lunchEnd: lunchBreak?.end ?? FALLBACK_BREAK_END,
     };
+    if (day !== null) {
+      openSignatures.add(lunchBreak ? `${lunchBreak.start}-${lunchBreak.end}` : "none");
+      if (lunchBreak && !firstLunchBreak) firstLunchBreak = lunchBreak;
+    }
   }
+
+  const applyToAll = openSignatures.size <= 1;
+  const enabled = openSignatures.size === 0 ? false : applyToAll ? !openSignatures.has("none") : true;
+
   return {
     name: company.name,
     timezone: company.settings.timezone,
     slotIntervalMin: String(company.settings.slot_interval_min),
     hours,
+    lunchBreakEnabled: enabled,
+    lunchApplyToAll: applyToAll,
+    lunchStart: firstLunchBreak?.start ?? FALLBACK_BREAK_START,
+    lunchEnd: firstLunchBreak?.end ?? FALLBACK_BREAK_END,
   };
 }
 
-function toBusinessHours(hours: SettingsFormValues["hours"]): CompanySettings["business_hours"] {
+function toBusinessHours(values: SettingsFormValues): CompanySettings["business_hours"] {
   const out = {} as CompanySettings["business_hours"];
   for (const { key } of WEEK) {
-    const d = hours[key];
-    out[key] = (d.isOpen ? { open: d.open, close: d.close } : null) as DayHours;
+    const d = values.hours[key];
+    if (!d.isOpen) {
+      out[key] = null as DayHours;
+      continue;
+    }
+    const lunchBreak = !values.lunchBreakEnabled
+      ? null
+      : values.lunchApplyToAll
+        ? { start: values.lunchStart, end: values.lunchEnd }
+        : d.hasLunchBreak
+          ? { start: d.lunchStart, end: d.lunchEnd }
+          : null;
+    out[key] = { open: d.open, close: d.close, lunch_break: lunchBreak } as DayHours;
   }
   return out;
 }
@@ -217,6 +270,8 @@ function SettingsForm({ company }: { company: Company }) {
   } = useForm<SettingsFormValues>({ defaultValues: toFormValues(company) });
 
   const hours = watch("hours");
+  const lunchBreakEnabled = watch("lunchBreakEnabled");
+  const lunchApplyToAll = watch("lunchApplyToAll");
 
   // Closing the tab is the one navigation this app cannot intercept from
   // React: BrowserRouter (main.tsx) is not a data router, so useBlocker is
@@ -241,8 +296,13 @@ function SettingsForm({ company }: { company: Company }) {
       // that is not a run of digits, so this can never be a fractional number.
       settings.slot_interval_min = Number(values.slotIntervalMin);
     }
-    if (JSON.stringify(values.hours) !== JSON.stringify(original.hours)) {
-      settings.business_hours = toBusinessHours(values.hours);
+    // Compares the actual wire shape rather than every individual form field —
+    // open/close, the enabled flag, apply-all vs. per-day, all fold into one
+    // business_hours object, so this is the one check that can't miss a
+    // combination that changes the outcome without changing any single field.
+    const newBusinessHours = toBusinessHours(values);
+    if (JSON.stringify(newBusinessHours) !== JSON.stringify(toBusinessHours(original))) {
+      settings.business_hours = newBusinessHours;
     }
 
     updateCompany.mutate(
@@ -385,7 +445,7 @@ function SettingsForm({ company }: { company: Company }) {
 
         {WEEK.map(({ key, label }) => {
           const isOpen = hours?.[key]?.isOpen ?? false;
-          const error = errors.hours?.[key]?.close;
+          const closeError = errors.hours?.[key]?.close;
           return (
             <div key={key} className={`settings-day-row${isOpen ? "" : " settings-day-row-closed"}`}>
               <div className="settings-day-main">
@@ -398,14 +458,14 @@ function SettingsForm({ company }: { company: Company }) {
                     <input
                       type="time"
                       aria-label={`Hora de abertura — ${label}`}
-                      aria-invalid={Boolean(error)}
+                      aria-invalid={Boolean(closeError)}
                       {...register(`hours.${key}.open` as const, { required: true })}
                     />
                     <span aria-hidden="true">—</span>
                     <input
                       type="time"
                       aria-label={`Hora de fecho — ${label}`}
-                      aria-invalid={Boolean(error)}
+                      aria-invalid={Boolean(closeError)}
                       {...register(`hours.${key}.close` as const, {
                         required: true,
                         // Reads the sibling open time off the whole form value
@@ -424,14 +484,140 @@ function SettingsForm({ company }: { company: Company }) {
               </div>
               {/* Next to the day it belongs to, not only in a toast — the
                   admin needs to see which of seven rows is wrong. */}
-              {error && (
+              {closeError && (
                 <p className="settings-day-error" role="alert">
-                  {error.message}
+                  {closeError.message}
                 </p>
               )}
             </div>
           );
         })}
+
+        {/* Lunch break is opt-in — a business that never stops for lunch (or
+            rotates staff through it) just leaves the checkbox off and the
+            picker offers every slot straight through business_hours, exactly
+            as if this feature didn't exist. */}
+        <div className="settings-day-row settings-lunch-row">
+          <label className="settings-day-toggle">
+            <input type="checkbox" {...register("lunchBreakEnabled")} />
+            <span>
+              <Coffee size={13} aria-hidden="true" /> Hora de almoço
+            </span>
+          </label>
+
+          {lunchBreakEnabled ? (
+            <div className="settings-lunch-body">
+              <label className="settings-lunch-apply-all">
+                <input type="checkbox" {...register("lunchApplyToAll")} />
+                <span>Aplicar o mesmo horário a todos os dias abertos</span>
+              </label>
+
+              {lunchApplyToAll ? (
+                <>
+                  <div className="settings-day-times">
+                    <input
+                      type="time"
+                      aria-label="Início do almoço"
+                      aria-invalid={Boolean(errors.lunchStart)}
+                      {...register("lunchStart", {
+                        required: true,
+                        validate: (v, values) =>
+                          !values.lunchBreakEnabled ||
+                          !values.lunchApplyToAll ||
+                          v < values.lunchEnd ||
+                          "O início do almoço deve ser anterior ao fim.",
+                      })}
+                    />
+                    <span aria-hidden="true">—</span>
+                    <input
+                      type="time"
+                      aria-label="Fim do almoço"
+                      aria-invalid={Boolean(errors.lunchEnd)}
+                      {...register("lunchEnd", {
+                        required: true,
+                        validate: (v, values) =>
+                          !values.lunchBreakEnabled ||
+                          !values.lunchApplyToAll ||
+                          v > values.lunchStart ||
+                          "O fim do almoço deve ser posterior ao início.",
+                      })}
+                    />
+                  </div>
+                  {(errors.lunchStart || errors.lunchEnd) && (
+                    <p className="settings-day-error" role="alert">
+                      {errors.lunchStart?.message ?? errors.lunchEnd?.message}
+                    </p>
+                  )}
+                </>
+              ) : (
+                // Granular mode: some tenants only break certain days (e.g.
+                // Mon-Thu but continuous Fri/Sat) — only open days are listed,
+                // since a closed day has no hours to break in the first place.
+                <div className="settings-lunch-per-day">
+                  {WEEK.filter(({ key }) => hours?.[key]?.isOpen).map(({ key, label }) => {
+                    const d = hours[key];
+                    const startError = errors.hours?.[key]?.lunchStart;
+                    const endError = errors.hours?.[key]?.lunchEnd;
+                    return (
+                      <div key={key} className="settings-lunch-day-row">
+                        <div className="settings-day-main">
+                          <label className="settings-day-toggle settings-day-toggle-small">
+                            <input type="checkbox" {...register(`hours.${key}.hasLunchBreak` as const)} />
+                            <span>{label}</span>
+                          </label>
+                          {d.hasLunchBreak ? (
+                            <div className="settings-day-times">
+                              <input
+                                type="time"
+                                aria-label={`Início do almoço — ${label}`}
+                                aria-invalid={Boolean(startError)}
+                                {...register(`hours.${key}.lunchStart` as const, {
+                                  required: true,
+                                  validate: (v, values) => {
+                                    const day = values.hours[key];
+                                    if (values.lunchApplyToAll || !values.lunchBreakEnabled || !day.hasLunchBreak) return true;
+                                    if (v < day.open) return "O almoço deve começar depois da abertura.";
+                                    return v < day.lunchEnd || "O início do almoço deve ser anterior ao fim.";
+                                  },
+                                })}
+                              />
+                              <span aria-hidden="true">—</span>
+                              <input
+                                type="time"
+                                aria-label={`Fim do almoço — ${label}`}
+                                aria-invalid={Boolean(endError)}
+                                {...register(`hours.${key}.lunchEnd` as const, {
+                                  required: true,
+                                  validate: (v, values) => {
+                                    const day = values.hours[key];
+                                    if (values.lunchApplyToAll || !values.lunchBreakEnabled || !day.hasLunchBreak) return true;
+                                    if (v > day.close) return "O almoço deve terminar antes do fecho.";
+                                    return v > day.lunchStart || "O fim do almoço deve ser posterior ao início.";
+                                  },
+                                })}
+                              />
+                            </div>
+                          ) : (
+                            <span className="muted settings-day-closed">Sem pausa</span>
+                          )}
+                        </div>
+                        {(startError || endError) && (
+                          <p className="settings-day-error" role="alert">
+                            {startError?.message ?? endError?.message}
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          ) : (
+            <p className="muted settings-hint settings-lunch-hint">
+              Sem pausa de almoço definida. As marcações serão contínuas durante o horário de funcionamento.
+            </p>
+          )}
+        </div>
       </section>
 
       {/* Sticky rather than a plain button at the end of the page: the hours
